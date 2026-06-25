@@ -10,27 +10,42 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchProfile = useCallback(async (userId) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
+
+    if (error || !data) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.user_metadata?.full_name || authUser.email,
+          role: authUser.user_metadata?.role || 'user',
+          status: 'active'
+        };
+      }
+      return null;
+    }
+
     return data;
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
         setIsAuthenticated(true);
-        fetchProfile(session.user.id).then(p => {
-          setProfile(p);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
+        const p = await fetchProfile(session.user.id);
+        setProfile(p);
       }
-    });
+      setLoading(false);
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -72,12 +87,11 @@ export function AuthProvider({ children }) {
       await supabase.from('users').insert({
         id: data.user.id,
         email,
-        password_hash: '',
+        password_hash: 'supabase_auth',
         full_name,
         role,
         status: 'active'
       });
-
       setUser(data.user);
       setIsAuthenticated(true);
       const p = await fetchProfile(data.user.id);
