@@ -1,14 +1,10 @@
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import { useInactivityClose } from '@/hooks/useInactivityClose';
-import { useRealtimeSync } from '@/hooks/useRealtimeSync';
-import { useWebSocketSync } from '@/hooks/useWebSocketSync';
-import { useNotifications } from '@/hooks/useNotifications';
 
 import { ThemeProvider } from '@/lib/ThemeContext';
 
@@ -148,22 +144,12 @@ function AppRoutes() {
         <ProtectedRoute><TicketDetail isPopup /></ProtectedRoute>
       } />
 
-      {/* Redirect unmatched to login or dashboard */}
+      {/* Redirect unmatched */}
       <Route path="*" element={
         isAuthenticated ? <Navigate to="/" /> : <Navigate to="/login" />
       } />
     </Routes>
   );
-}
-
-function InactivityChecker() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  useInactivityClose(queryClient);
-  useRealtimeSync();
-  useWebSocketSync();
-  useNotifications(user);
-  return null;
 }
 
 function App() {
@@ -172,7 +158,6 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AuthProvider>
-            <InactivityChecker />
             <AppRoutes />
           </AuthProvider>
         </Router>

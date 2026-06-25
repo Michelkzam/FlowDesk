@@ -1,74 +1,110 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const checkAuth = useCallback(async () => {
-    const token = api.getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const userData = await api.getMe();
-      setUser(userData);
-      setIsAuthenticated(true);
-    } catch (error) {
-      api.logout();
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
+  const fetchProfile = useCallback(async (userId) => {
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    return data;
   }, []);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+        fetchProfile(session.user.id).then(p => {
+          setProfile(p);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          setIsAuthenticated(true);
+          const p = await fetchProfile(session.user.id);
+          setProfile(p);
+        } else {
+          setUser(null);
+          setProfile(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [fetchProfile]);
 
   const login = async (email, password) => {
-    const data = await api.login(email, password);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
     setUser(data.user);
     setIsAuthenticated(true);
-    return data;
+    const p = await fetchProfile(data.user.id);
+    setProfile(p);
+    return { user: data.user, profile: p };
   };
 
-  const register = async (email, password, full_name, role) => {
-    const data = await api.register(email, password, full_name, role);
-    setUser(data.user);
-    setIsAuthenticated(true);
-    return data;
+  const register = async (email, password, full_name, role = 'user') => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name, role } }
+    });
+    if (error) throw error;
+
+    if (data.user) {
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email,
+        password_hash: '',
+        full_name,
+        role,
+        status: 'active'
+      });
+
+      setUser(data.user);
+      setIsAuthenticated(true);
+      const p = await fetchProfile(data.user.id);
+      setProfile(p);
+      return { user: data.user, profile: p };
+    }
   };
 
-  const logout = () => {
-    api.logout();
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
     setIsAuthenticated(false);
-  };
-
-  const updateUser = (newUserData) => {
-    setUser(prev => ({ ...prev, ...newUserData }));
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      profile,
       loading,
       isAuthenticated,
       login,
       register,
       logout,
-      updateUser,
-      isAdmin: user?.role === 'admin',
-      isAgent: user?.role === 'agent' || user?.role === 'admin',
-      isUser: user?.role === 'user',
+      isAdmin: profile?.role === 'admin',
+      isAgent: profile?.role === 'agent' || profile?.role === 'admin',
+      isUser: profile?.role === 'user',
     }}>
       {children}
     </AuthContext.Provider>
