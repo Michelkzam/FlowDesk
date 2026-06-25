@@ -1,0 +1,56 @@
+{
+  "name": "Schedule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do cronograma"
+    },
+    "timezone": {
+      "type": "string",
+      "description": "Fuso hor\u00e1rio"
+    },
+    "hours": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "closed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "Hor\u00e1rios por dia"
+    },
+    "holidays": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs de feriados aplicados"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

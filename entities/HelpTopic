@@ -1,0 +1,68 @@
+{
+  "name": "HelpTopic",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do t\u00f3pico"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "ID do t\u00f3pico pai"
+    },
+    "parent_name": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "department_name": {
+      "type": "string"
+    },
+    "sla_id": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "emergency"
+      ],
+      "default": "normal"
+    },
+    "auto_assign_agent_id": {
+      "type": "string"
+    },
+    "auto_assign_team_id": {
+      "type": "string"
+    },
+    "disable_auto_response": {
+      "type": "boolean",
+      "default": false
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

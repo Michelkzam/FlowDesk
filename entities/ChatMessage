@@ -1,0 +1,41 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "ticket_id": {
+      "type": "string",
+      "description": "ID do ticket"
+    },
+    "sender_type": {
+      "type": "string",
+      "enum": [
+        "client",
+        "operator",
+        "system"
+      ],
+      "description": "Tipo de remetente"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Nome do remetente"
+    },
+    "message": {
+      "type": "string",
+      "description": "Conte\u00fado da mensagem"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "whatsapp",
+        "telegram",
+        "email",
+        "portal"
+      ],
+      "description": "Canal"
+    }
+  },
+  "required": [
+    "ticket_id",
+    "message"
+  ]
+}

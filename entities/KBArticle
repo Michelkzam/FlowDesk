@@ -1,0 +1,42 @@
+{
+  "name": "KBArticle",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "category_name": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "string",
+      "description": "Palavras-chave separadas por v\u00edrgula"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft"
+      ],
+      "default": "draft"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}

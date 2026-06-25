@@ -1,0 +1,39 @@
+{
+  "name": "Operator",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do operador"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Telefone"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "ID do perfil de operador"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "ID da equipe"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline",
+        "busy"
+      ],
+      "default": "offline"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}

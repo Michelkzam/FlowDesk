@@ -1,0 +1,68 @@
+{
+  "name": "SLAPlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do plano de SLA"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descrição do plano"
+    },
+    "emergency_hours": {
+      "type": "number",
+      "description": "Prazo para prioridade Crítica (horas)",
+      "default": 2
+    },
+    "high_hours": {
+      "type": "number",
+      "description": "Prazo para prioridade Alta (horas)",
+      "default": 8
+    },
+    "normal_hours": {
+      "type": "number",
+      "description": "Prazo para prioridade Média (horas)",
+      "default": 24
+    },
+    "low_hours": {
+      "type": "number",
+      "description": "Prazo para prioridade Baixa (horas)",
+      "default": 48
+    },
+    "grace_period": {
+      "type": "number",
+      "description": "Período de tolerância em horas",
+      "default": 0
+    },
+    "schedule_id": {
+      "type": "string",
+      "description": "ID do cronograma"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Plano padrão do sistema"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
+  },
+  "required": [
+    "name",
+    "grace_period"
+  ]
+}

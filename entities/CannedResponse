@@ -1,0 +1,30 @@
+{
+  "name": "CannedResponse",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo da resposta"
+    },
+    "content": {
+      "type": "string",
+      "description": "Conte\u00fado da resposta"
+    },
+    "department_id": {
+      "type": "string",
+      "description": "Departamento (opcional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}

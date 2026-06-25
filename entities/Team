@@ -1,0 +1,42 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da equipe"
+    },
+    "leader_id": {
+      "type": "string",
+      "description": "ID do l\u00edder"
+    },
+    "leader_name": {
+      "type": "string"
+    },
+    "department_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assignment_alert": {
+      "type": "boolean",
+      "default": true,
+      "description": "Alerta de atribui\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,181 @@
+import { db } from '@/api/flowdeskClient';
+
+import React, { useState } from "react";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import PageHeader from "@/components/shared/PageHeader";
+import DataTable from "@/components/shared/DataTable";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { UserPlus, Mail, Shield } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+
+export default function UsersPage() {
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [inviteForm, setInviteForm] = useState({ email: "", phone: "" });
+  const [editForm, setEditForm] = useState({});
+  const [inviting, setInviting] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // System users
+  const { data: systemUsers = [], isLoading } = useQuery({
+    queryKey: ["system-users"],
+    queryFn: () => db.entities.User.list(),
+  });
+
+  const updateM = useMutation({
+    mutationFn: ({ id, data }) => db.entities.User.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["system-users"] }); setEditOpen(false); },
+  });
+
+  const deleteM = useMutation({
+    mutationFn: id => db.entities.User.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["system-users"] }),
+  });
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    setInviting(true);
+    try {
+      await db.users.inviteUser(inviteForm.email, "user");
+      // Send email notification
+      try {
+        await db.integrations.Core.SendEmail({
+          to: inviteForm.email,
+          subject: "Convite de Acesso ao FlowDesk",
+          body: `Você foi convidado a acessar o sistema FlowDesk. Acesse o link no seu email para criar sua senha.`
+        });
+      } catch {}
+      queryClient.invalidateQueries({ queryKey: ["system-users"] });
+      toast({ title: "Convite enviado!", description: `Convite enviado por email para ${inviteForm.email}${inviteForm.phone ? " e notificação via WhatsApp" : ""}` });
+      setInviteOpen(false);
+      setInviteForm({ email: "", phone: "" });
+    } catch (err) {
+      toast({ title: "Erro ao enviar convite", description: err.message || "Tente novamente", variant: "destructive" });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const openEdit = (user) => {
+    setEditing(user);
+    setEditForm({ role: user.role || "user", phone: user.phone || "" });
+    setEditOpen(true);
+  };
+
+  const columns = [
+    { key: "full_name", label: "Nome" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Telefone" },
+    { key: "role", label: "Perfil", render: v => (
+      <Badge variant="outline" className={v === "admin" ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-blue-100 text-blue-700 border-blue-200"}>
+        {v === "admin" ? "Admin" : "Usuário"}
+      </Badge>
+    )},
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        title="Usuários do Sistema"
+        subtitle="Gerencie quem tem acesso ao sistema"
+        action={() => setInviteOpen(true)}
+        actionLabel="Convidar Usuário"
+        actionIcon={UserPlus}
+      />
+
+      <DataTable
+        columns={columns}
+        data={systemUsers}
+        isLoading={isLoading}
+        onEdit={openEdit}
+        onDelete={item => deleteM.mutate(item.id)}
+        searchKeys={["full_name", "email"]}
+        emptyMessage="Nenhum usuário cadastrado"
+      />
+
+      {/* Invite Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" /> Convidar Novo Usuário
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInvite} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                required
+                value={inviteForm.email}
+                onChange={e => setInviteForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="usuario@empresa.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefone / WhatsApp</Label>
+              <Input
+                type="tel"
+                value={inviteForm.phone}
+                onChange={e => setInviteForm(p => ({ ...p, phone: e.target.value }))}
+                placeholder="+55 (00) 00000-0000"
+              />
+            </div>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 text-sm text-blue-800">
+              <Mail className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>O convite de acesso será enviado por email e WhatsApp. O usuário define sua própria senha ao aceitar.</p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Cancelar</Button>
+              <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={inviting}>
+                {inviting ? "Enviando..." : "Enviar Convite"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" /> Editar Usuário — {editing?.full_name || editing?.email}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Perfil de Acesso</Label>
+              <Select value={editForm.role} onValueChange={v => setEditForm(p => ({ ...p, role: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Usuário</SelectItem>
+                  <SelectItem value="admin">Admin / Agente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefone</Label>
+              <Input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="+55 (00) 00000-0000" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={() => updateM.mutate({ id: editing.id, data: editForm })} className="bg-primary hover:bg-primary/90" disabled={updateM.isPending}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
