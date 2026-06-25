@@ -3,7 +3,7 @@ import { db } from '@/api/flowdeskClient';
 import React, { useState, useEffect } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Search, Download, ExternalLink, LayoutList, Columns, Calendar, X, CheckSquare, Square, History, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,9 +42,10 @@ function exportCSV(tickets) {
 export default function TicketList({ myTickets = false }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "all");
+  const [priorityFilter, setPriorityFilter] = useState(searchParams.get("priority") || "all");
   const [clientFilter, setClientFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");

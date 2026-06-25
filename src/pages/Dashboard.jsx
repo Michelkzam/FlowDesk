@@ -162,12 +162,12 @@ export default function Dashboard() {
 
       {/* Stats principais */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard title="Abertos" value={open} icon={Ticket} color="blue" to="/tickets/todos" />
-        <StatCard title="Em Atendimento" value={inProgress} icon={Clock} color="amber" to="/tickets/meus" />
-        <StatCard title="Aguardando" value={waiting} icon={Clock} color="purple" to="/tickets/todos" />
-        <StatCard title="Aprovação" value={pendingApproval} icon={ShieldCheck} color="orange" to="/tickets/aprovacao" />
-        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" to="/tickets/historico" />
-        <StatCard title="Críticos" value={emergency} icon={AlertTriangle} color="red" to="/tickets/todos" />
+        <StatCard title="Abertos" value={open} icon={Ticket} color="blue" to="/tickets/todos?status=open" />
+        <StatCard title="Em Atendimento" value={inProgress} icon={Clock} color="amber" to="/tickets/todos?status=in_progress" />
+        <StatCard title="Aguardando" value={waiting} icon={Clock} color="purple" to="/tickets/todos?status=waiting" />
+        <StatCard title="Aprovação" value={pendingApproval} icon={ShieldCheck} color="orange" to="/tickets/todos?status=pending_approval" />
+        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" to="/tickets/todos?status=resolved" />
+        <StatCard title="Críticos" value={emergency} icon={AlertTriangle} color="red" to="/tickets/todos?priority=emergency" />
       </div>
 
       {/* SLA Metrics */}
