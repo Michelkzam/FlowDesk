@@ -6,7 +6,7 @@ export function useTickets(params = {}) {
   return useQuery({
     queryKey: ['tickets', params],
     queryFn: () => api.getTickets(params),
-    refetchInterval: 10000,
+    refetchInterval: 300000,
   });
 }
 
@@ -68,7 +68,7 @@ export function useTicketMessages(ticketId) {
     queryKey: ['ticket-messages', ticketId],
     queryFn: () => api.getTicketMessages(ticketId),
     enabled: !!ticketId,
-    refetchInterval: 5000,
+    refetchInterval: 300000,
   });
 }
 

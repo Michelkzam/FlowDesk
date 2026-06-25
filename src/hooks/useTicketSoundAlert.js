@@ -28,7 +28,7 @@ export function useTicketSoundAlert() {
   const { data: tickets = [] } = useQuery({
     queryKey: ["tickets-sound-watch"],
     queryFn: () => db.entities.Ticket.list("-created_date", 50),
-    refetchInterval: 15000,
+    refetchInterval: 300000,
   });
 
   useEffect(() => {

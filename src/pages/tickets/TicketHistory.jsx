@@ -56,7 +56,7 @@ export default function TicketHistory() {
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 500),
     refetchOnWindowFocus: true,
-    refetchInterval: 5000,
+    refetchInterval: 300000,
   });
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery({

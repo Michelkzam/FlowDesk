@@ -71,7 +71,7 @@ export default function TicketDetail({ isPopup = false }) {
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
     queryKey: ["ticket-messages", id],
     queryFn: () => db.entities.TicketMessage.filter({ ticket_id: id }, "-created_date", 100),
-    refetchInterval: 10000,
+    refetchInterval: 300000,
   });
 
   const { data: cannedResponses = [] } = useQuery({
@@ -82,7 +82,7 @@ export default function TicketDetail({ isPopup = false }) {
   const { data: allTickets = [] } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 300),
-    refetchInterval: 15000,
+    refetchInterval: 300000,
     refetchOnWindowFocus: true,
   });
 

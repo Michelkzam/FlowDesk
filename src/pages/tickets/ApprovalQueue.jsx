@@ -25,7 +25,7 @@ export default function ApprovalQueue() {
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets-pending-approval"],
     queryFn: () => db.entities.Ticket.filter({ status: "pending_approval" }, "-created_date", 100),
-    refetchInterval: 30000,
+    refetchInterval: 300000,
   });
 
   const updateMutation = useMutation({

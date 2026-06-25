@@ -16,7 +16,7 @@ export default function SLAAlertBanner() {
   const { data: tickets = [] } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list(),
-    refetchInterval: 60000, // refresh every minute
+    refetchInterval: 300000, // refresh every 5 minutes
   });
 
   const now = new Date();

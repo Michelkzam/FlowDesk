@@ -37,7 +37,7 @@ export default function AuditLogPage() {
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["audit-logs"],
     queryFn: () => db.entities.AuditLog.list("-created_date", 500),
-    refetchInterval: 30000,
+    refetchInterval: 300000,
   });
 
   const entityTypes = useMemo(() => [...new Set(logs.map(l => l.entity_type).filter(Boolean))], [logs]);

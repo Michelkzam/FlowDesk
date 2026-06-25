@@ -77,7 +77,7 @@ export default function TicketList({ myTickets = false }) {
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 300),
     refetchOnWindowFocus: true,
-    refetchInterval: 5000,
+    refetchInterval: 300000,
   });
 
   const filtered = tickets.filter(t => {

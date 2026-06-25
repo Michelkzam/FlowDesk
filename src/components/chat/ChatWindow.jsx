@@ -38,7 +38,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["chat-messages", ticket.id],
     queryFn: () => db.entities.ChatMessage.filter({ ticket_id: ticket.id }),
-    refetchInterval: 5000,
+    refetchInterval: 300000,
   });
 
   const sendMutation = useMutation({

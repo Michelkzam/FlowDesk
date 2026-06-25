@@ -10,21 +10,33 @@ class EntityClient {
     this.tableName = tableName;
   }
 
+  mapField(field) {
+    if (field === 'created_date') return 'created_at';
+    if (field === '-created_date') return '-created_at';
+    return field;
+  }
+
   async list(orderBy = '-created_date', limit = 100) {
     const descending = orderBy.startsWith('-');
-    const field = orderBy.replace('-', '');
+    const rawField = orderBy.replace('-', '');
+    const field = this.mapField(rawField);
     const { data, error } = await supabase
       .from(this.tableName)
       .select('*')
       .order(field, { ascending: !descending })
       .limit(limit);
     if (error) throw error;
-    return data || [];
+    return (data || []).map(row => {
+      if (row.created_at && !row.created_date) row.created_date = row.created_at;
+      if (row.updated_at && !row.updated_date) row.updated_date = row.updated_at;
+      return row;
+    });
   }
 
   async filter(filters = {}, orderBy = '-created_date', limit = 100) {
     const descending = orderBy.startsWith('-');
-    const field = orderBy.replace('-', '');
+    const rawField = orderBy.replace('-', '');
+    const field = this.mapField(rawField);
     let query = supabase.from(this.tableName).select('*');
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -33,7 +45,11 @@ class EntityClient {
     });
     const { data, error } = await query.order(field, { ascending: !descending }).limit(limit);
     if (error) throw error;
-    return data || [];
+    return (data || []).map(row => {
+      if (row.created_at && !row.created_date) row.created_date = row.created_at;
+      if (row.updated_at && !row.updated_date) row.updated_date = row.updated_at;
+      return row;
+    });
   }
 
   async get(id) {

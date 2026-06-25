@@ -106,7 +106,7 @@ export default function UserPortal() {
     queryKey: ["ticket-messages", selectedTicket?.id],
     queryFn: () => db.entities.TicketMessage.filter({ ticket_id: selectedTicket?.id }, "created_date", 200),
     enabled: !!selectedTicket?.id,
-    refetchInterval: 6000,
+    refetchInterval: 300000,
   });
 
   useEffect(() => {
