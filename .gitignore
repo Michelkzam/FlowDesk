@@ -36,3 +36,5 @@ server/*.db
 *.sw?
 
 .vite
+
+.vercel
