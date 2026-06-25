@@ -5,7 +5,7 @@ Backend completo para o sistema de tickets FlowDesk.
 ## Pré-requisitos
 
 - Node.js 18+
-- PostgreSQL 14+
+- Conta no Supabase (https://supabase.com)
 
 ## Instalação
 
@@ -14,45 +14,86 @@ cd server
 npm install
 ```
 
-## Configuração
+## Configuração do Supabase
 
-Copie o arquivo `.env.example` para `.env` e configure:
+### 1. Criar projeto no Supabase
+
+1. Acesse https://supabase.com
+2. Clique em "New Project"
+3. Preencha:
+   - Project name: `flowdesk`
+   - Database Password: (gere uma senha forte)
+4. Aguarde a criação do projeto
+
+### 2. Configurar variáveis de ambiente
 
 ```bash
 cp .env.example .env
 ```
 
-Variáveis obrigatórias:
-- `DATABASE_URL` - URL de conexão com PostgreSQL
-- `JWT_SECRET` - Segredo para tokens JWT
-- `CORS_ORIGIN` - URL do frontend (http://localhost:5173)
+Edite o arquivo `.env` com suas credenciais do Supabase:
 
-## Banco de Dados
-
-### Criar banco no PostgreSQL
-
-```sql
-CREATE DATABASE flowdesk;
-CREATE USER flowdesk WITH PASSWORD 'flowdesk123';
-GRANT ALL PRIVILEGES ON DATABASE flowdesk TO flowdesk;
+```env
+DATABASE_URL=postgresql://postgres:[SUA_SENHA]@db.[SEU_PROJETO].supabase.co:5432/postgres
+SUPABASE_URL=https://[SEU_PROJETO].supabase.co
+SUPABASE_ANON_KEY=[SUA_ANON_KEY]
+SUPABASE_SERVICE_KEY=[SUA_SERVICE_KEY]
 ```
 
-### Executar migrações
+**Onde encontrar:**
+- **DATABASE_URL**: Settings > Database > Connection string > URI
+- **SUPABASE_URL**: Settings > API > Project URL
+- **SUPABASE_ANON_KEY**: Settings > API > anon public
+- **SUPABASE_SERVICE_KEY**: Settings > API > service_role
+
+### 3. Criar tabelas no Supabase
+
+1. Vá em **SQL Editor** no painel do Supabase
+2. Clique em "New query"
+3. Cole o conteúdo do arquivo `src/db/supabase-schema.sql`
+4. Clique em "Run"
+
+### 4. Executar setup
+
+```bash
+npm run setup
+```
+
+Ou manualmente:
 
 ```bash
 npm run migrate
+npm run seed
 ```
 
-### Popular dados iniciais
+### 5. Configurar Row Level Security (RLS)
 
-```bash
-npm run seed
+No painel do Supabase:
+1. Vá em **Authentication > Policies**
+2. Para cada tabela, adicione políticas de acesso:
+
+**Exemplo para tabela "tickets":**
+```sql
+-- Ver tickets (usuários autenticados)
+CREATE POLICY "Authenticated users can view tickets" 
+ON tickets FOR SELECT 
+USING (auth.role() = 'authenticated');
+
+-- Criar tickets
+CREATE POLICY "Authenticated users can create tickets" 
+ON tickets FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+-- Atualizar tickets
+CREATE POLICY "Authenticated users can update tickets" 
+ON tickets FOR UPDATE 
+USING (auth.role() = 'authenticated');
 ```
 
 ## Iniciar Servidor
 
 ```bash
-# Desenvolvimento (com hot reload)
+# Desenvolvimento
 npm run dev
 
 # Produção
@@ -66,6 +107,45 @@ npm start
 | admin@flowdesk.com | admin123 | Admin |
 | tecnico@flowdesk.com | tecnico123 | Técnico |
 | usuario@exemplo.com | usuario123 | Usuário |
+
+## Estrutura de Tabelas
+
+```
+users
+  ├── tickets (agent_id, user_id)
+  ├── ticket_messages (sender_id)
+  ├── audit_logs (user_id)
+  ├── departments (manager_id)
+  ├── teams (lead_id)
+  └── kb_articles (author_id)
+
+categories
+  ├── tickets (category_id)
+  ├── help_topics (category_id)
+  └── kb_categories (category_id)
+
+departments
+  ├── tickets (department_id)
+  ├── teams (department_id)
+  └── help_topics (department_id)
+
+sla_plans
+  ├── tickets (sla_plan_id)
+  └── help_topics (sla_plan_id)
+
+tickets
+  ├── ticket_messages (ticket_id)
+  └── tickets (team_id)
+
+organizations
+  └── (relacionamento com users)
+
+help_topics
+  └── tickets (help_topic_id)
+
+teams
+  └── tickets (team_id)
+```
 
 ## Endpoints
 

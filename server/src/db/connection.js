@@ -1,18 +1,15 @@
 import knex from 'knex';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const dbPath = path.join(__dirname, '../../flowdesk.db');
+dotenv.config();
 
 const db = knex({
-  client: 'better-sqlite3',
-  connection: {
-    filename: dbPath
-  },
-  useNullAsDefault: true
+  client: 'pg',
+  connection: process.env.DATABASE_URL || process.env.SUPABASE_URL,
+  pool: {
+    min: 2,
+    max: 10
+  }
 });
 
 export default db;
