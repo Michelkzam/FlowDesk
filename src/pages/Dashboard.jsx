@@ -1,10 +1,8 @@
-import { db } from '@/api/flowdeskClient';
-
+import { supabase } from '@/lib/supabase';
 import React from "react";
-
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { Ticket, Users, Clock, AlertTriangle, CheckCircle, TrendingUp, UserCog, BookOpen, ShieldCheck } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Ticket, Users, Clock, AlertTriangle, CheckCircle, TrendingUp, UserCog, BookOpen, ShieldCheck, MessageSquare, Settings, FolderOpen, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,11 +10,10 @@ import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { subDays, isAfter, differenceInMinutes } from "date-fns";
-import { openTicketWindow } from "@/lib/ticketWindow";
+import { subDays, differenceInMinutes } from "date-fns";
 import SLADashboard from "@/components/dashboard/SLADashboard";
 
-const sourceMap = { web: "Web", email: "Email", api: "API", phone: "Telefone", whatsapp: "WhatsApp" };
+const COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#f97316", "#10b981", "#6b7280"];
 
 function StatCard({ title, value, icon: IconComponent, color, subtitle, to }) {
   const Icon = IconComponent;
@@ -26,12 +23,13 @@ function StatCard({ title, value, icon: IconComponent, color, subtitle, to }) {
     red: "bg-red-50 text-red-600 border-red-100",
     emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
     purple: "bg-purple-50 text-purple-600 border-purple-100",
+    orange: "bg-orange-50 text-orange-600 border-orange-100",
     gray: "bg-muted text-muted-foreground border-border",
   };
   const Wrapper = to ? Link : "div";
   return (
     <Wrapper to={to} className="block">
-      <Card className={`hover:shadow-md transition-shadow ${to ? "cursor-pointer" : ""}`}>
+      <Card className={`hover:shadow-md transition-all ${to ? "cursor-pointer hover:scale-[1.02]" : ""}`}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div>
@@ -49,47 +47,67 @@ function StatCard({ title, value, icon: IconComponent, color, subtitle, to }) {
   );
 }
 
-const COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#f97316", "#10b981", "#6b7280"];
+function QuickLink({ icon: Icon, label, to, color }) {
+  return (
+    <Link to={to} className="block">
+      <Card className={`hover:shadow-md transition-all cursor-pointer hover:scale-[1.02] border-l-4 border-l-${color}-500`}>
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-lg bg-${color}-100 flex items-center justify-center`}>
+            <Icon className={`w-5 h-5 text-${color}-600`} />
+          </div>
+          <span className="text-sm font-medium text-foreground">{label}</span>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
 
 export default function Dashboard() {
-  const { data: tickets = [], isLoading } = useQuery({
+  const navigate = useNavigate();
+
+  const { data: tickets = [], isLoading: loadingTickets } = useQuery({
     queryKey: ["tickets"],
-    queryFn: () => db.entities.Ticket.list("-created_date", 200),
+    queryFn: async () => {
+      const { data } = await supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(200);
+      return data || [];
+    },
   });
-  const { data: agents = [] } = useQuery({
+
+  const { data: agents = [], isLoading: loadingAgents } = useQuery({
     queryKey: ["agents"],
-    queryFn: () => db.entities.Agent.list(),
-  });
-  const { data: users = [] } = useQuery({
-    queryKey: ["user-accounts"],
-    queryFn: () => db.entities.UserAccount.list(),
+    queryFn: async () => {
+      const { data } = await supabase.from("users").select("*").in("role", ["admin", "agent"]);
+      return data || [];
+    },
   });
 
   const open = tickets.filter(t => t.status === "open").length;
   const inProgress = tickets.filter(t => t.status === "in_progress").length;
   const waiting = tickets.filter(t => t.status === "waiting").length;
   const pendingApproval = tickets.filter(t => t.status === "pending_approval").length;
-  const resolved = tickets.filter(t => t.status === "resolved" || t.status === "closed").length;
-  const emergency = tickets.filter(t => t.priority === "emergency" && !["resolved","closed"].includes(t.status)).length;
+  const resolved = tickets.filter(t => t.status === "resolved").length;
+  const closed = tickets.filter(t => t.status === "closed").length;
+  const emergency = tickets.filter(t => t.priority === "emergency" && !["resolved", "closed"].includes(t.status)).length;
+  const totalActive = open + inProgress + waiting + pendingApproval;
 
   const statusData = [
-    { name: "Aberto", value: open },
-    { name: "Em Andamento", value: inProgress },
+    { name: "Pendente", value: open },
+    { name: "Em Atendimento", value: inProgress },
     { name: "Aguardando", value: waiting },
     { name: "Aguard. Aprovação", value: pendingApproval },
     { name: "Resolvido", value: resolved },
+    { name: "Finalizado", value: closed },
   ].filter(d => d.value > 0);
 
   const priorityData = [
     { name: "Baixa", value: tickets.filter(t => t.priority === "low").length },
-    { name: "Normal", value: tickets.filter(t => t.priority === "normal").length },
+    { name: "Média", value: tickets.filter(t => t.priority === "normal").length },
     { name: "Alta", value: tickets.filter(t => t.priority === "high").length },
-    { name: "Emergência", value: tickets.filter(t => t.priority === "emergency").length },
+    { name: "Crítica", value: tickets.filter(t => t.priority === "emergency").length },
   ];
 
   const recent = tickets.slice(0, 8);
 
-  // Tickets finalizados por dia (últimos 7 dias)
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const day = subDays(new Date(), 6 - i);
     const label = format(day, "dd/MM", { locale: ptBR });
@@ -102,13 +120,12 @@ export default function Dashboard() {
     return { label, count };
   });
 
-  // Tempo médio de resposta em minutos (tickets com closed_date e created_date)
   const closedWithDates = tickets.filter(t =>
-    ["resolved", "closed"].includes(t.status) && t.closed_date && t.created_date
+    ["resolved", "closed"].includes(t.status) && t.closed_date && t.created_at
   );
   const avgMinutes = closedWithDates.length > 0
     ? Math.round(closedWithDates.reduce((sum, t) =>
-        sum + differenceInMinutes(new Date(t.closed_date), new Date(t.created_date)), 0
+        sum + differenceInMinutes(new Date(t.closed_date), new Date(t.created_at)), 0
       ) / closedWithDates.length)
     : null;
 
@@ -116,12 +133,18 @@ export default function Dashboard() {
     : avgMinutes < 60 ? `${avgMinutes}min`
     : `${Math.floor(avgMinutes / 60)}h ${avgMinutes % 60}min`;
 
+  const isLoading = loadingTickets || loadingAgents;
+
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
         </div>
       </div>
     );
@@ -132,23 +155,40 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Visão geral do helpdesk</p>
+          <p className="text-sm text-muted-foreground">Visão geral do FlowDesk</p>
         </div>
         <Badge variant="outline" className="text-xs">{format(new Date(), "dd 'de' MMMM, yyyy", { locale: ptBR })}</Badge>
       </div>
 
-      {/* Stats */}
+      {/* Stats principais */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard title="Abertos" value={open} icon={Ticket} color="blue" to="/tickets/todos" />
-        <StatCard title="Em Andamento" value={inProgress} icon={Clock} color="amber" to="/tickets/todos" />
+        <StatCard title="Em Atendimento" value={inProgress} icon={Clock} color="amber" to="/tickets/meus" />
         <StatCard title="Aguardando" value={waiting} icon={Clock} color="purple" to="/tickets/todos" />
-        <StatCard title="Aguard. Aprovação" value={pendingApproval} icon={ShieldCheck} color="red" to="/tickets/todos?status=pending_approval" />
-        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" to="/tickets/todos" />
-        <StatCard title="Emergência" value={emergency} icon={AlertTriangle} color="red" to="/tickets/todos" />
+        <StatCard title="Aprovação" value={pendingApproval} icon={ShieldCheck} color="orange" to="/tickets/aprovacao" />
+        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" to="/tickets/historico" />
+        <StatCard title="Críticos" value={emergency} icon={AlertTriangle} color="red" to="/tickets/todos" />
       </div>
 
       {/* SLA Metrics */}
       <SLADashboard />
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Acesso Rápido</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <QuickLink icon={Ticket} label="Todos os Tickets" to="/tickets/todos" color="blue" />
+          <QuickLink icon={MessageSquare} label="Meus Atendimentos" to="/tickets/meus" color="amber" />
+          <QuickLink icon={ShieldCheck} label="Fila de Aprovação" to="/tickets/aprovacao" color="orange" />
+          <QuickLink icon={CheckCircle} label="Histórico" to="/tickets/historico" color="emerald" />
+          <QuickLink icon={UserCog} label="Agentes" to="/agentes" color="purple" />
+          <QuickLink icon={BarChart3} label="Relatórios" to="/relatorios" color="red" />
+          <QuickLink icon={FolderOpen} label="Categorias" to="/admin/categorias" color="blue" />
+          <QuickLink icon={Settings} label="Configurações" to="/admin/configuracoes" color="gray" />
+          <QuickLink icon={BookOpen} label="Base de Conhecimento" to="/kb/artigos" color="green" />
+          <QuickLink icon={Users} label="Usuários" to="/usuarios" color="cyan" />
+        </div>
+      </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -160,9 +200,11 @@ export default function Dashboard() {
             {statusData.length === 0 ? (
               <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Sem dados</div>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                  <Pie data={statusData} cx="50%" cy="50%" outerRadius={85} dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false} fontSize={11}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip />
@@ -177,7 +219,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-semibold">Tickets por Prioridade</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={priorityData} margin={{ top: 4, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -190,10 +232,9 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Novos indicadores: Tempo Médio + Volume por dia */}
+      {/* Tempo Médio + Volume */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tempo médio de resolução */}
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/tickets/historico")}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" /> Tempo Médio de Resolução
@@ -207,7 +248,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Volume de finalizados por dia */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -228,11 +268,10 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Summary cards + Recent tickets */}
+      {/* Resumo + Tickets Recentes */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick stats */}
         <div className="space-y-3">
-          <Card className="p-4">
+          <Card className="p-4 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/agentes")}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
                 <UserCog className="w-5 h-5 text-blue-600" />
@@ -243,36 +282,46 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/usuarios")}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <Users className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Usuários Cadastrados</p>
-                <p className="text-xl font-bold">{users.length}</p>
+                <p className="text-xs text-muted-foreground">Total de Usuários</p>
+                <p className="text-xl font-bold">{agents.length}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4">
+          <Card className="p-4 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/tickets/todos")}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total de Tickets</p>
-                <p className="text-xl font-bold">{tickets.length}</p>
+                <p className="text-xs text-muted-foreground">Tickets Ativos</p>
+                <p className="text-xl font-bold">{totalActive}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/tickets/historico")}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Finalizados Hoje</p>
+                <p className="text-xl font-bold">{closed}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Recent tickets */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-semibold">Tickets Recentes</CardTitle>
-              <Link to="/tickets/todos" className="text-xs text-primary hover:underline">Ver todos</Link>
+              <Link to="/tickets/todos" className="text-xs text-primary hover:underline font-medium">Ver todos →</Link>
             </CardHeader>
             <CardContent className="p-0">
               {recent.length === 0 ? (
@@ -280,7 +329,7 @@ export default function Dashboard() {
               ) : (
                 <div className="divide-y divide-border">
                   {recent.map(t => (
-                    <button key={t.id} onClick={() => openTicketWindow(t.id)} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors w-full text-left">
+                    <button key={t.id} onClick={() => navigate(`/tickets/${t.id}`)} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors w-full text-left">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{t.title}</p>
                         <p className="text-xs text-muted-foreground">{t.user_name || "—"} · {t.department_name || "Sem departamento"}</p>
