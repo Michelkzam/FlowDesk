@@ -1,16 +1,21 @@
 import { db } from '@/api/flowdeskClient';
 
-import React from "react";
-import { Bell, LogOut, User, Sun, Moon, Search } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bell, LogOut, User, Sun, Moon, RefreshCw, Clock } from "lucide-react";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "@/lib/ThemeContext";
 import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 
+const REFRESH_INTERVAL = 300; // 5 minutos em segundos
+
 export default function TopBar() {
+  const queryClient = useQueryClient();
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+
   const { data: user } = useQuery({
     queryKey: ["me"],
     queryFn: () => db.auth.me(),
@@ -19,8 +24,26 @@ export default function TopBar() {
   const { data: tickets = [] } = useQuery({
     queryKey: ["tickets-open-count"],
     queryFn: () => db.entities.Ticket.filter({ status: "open" }, "-created_date", 500),
-    refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+          queryClient.invalidateQueries({ queryKey: ["tickets-open-count"] });
+          return REFRESH_INTERVAL;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [queryClient]);
+
+  const minutes = Math.floor(countdown / 60);
+  const seconds = countdown % 60;
+  const progress = ((REFRESH_INTERVAL - countdown) / REFRESH_INTERVAL) * 100;
 
   const openCount = tickets.length;
   const { theme, toggle } = useTheme();
@@ -28,7 +51,7 @@ export default function TopBar() {
   const today = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
 
-  const roleLabel = user?.role === "admin" ? "Administrador" : "Tecnico";
+  const roleLabel = user?.role === "admin" ? "Administrador" : "Técnico";
 
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-border dark:border-zinc-700 h-14 flex items-center justify-between px-4 gap-3">
@@ -41,6 +64,26 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-1">
+        {/* Countdown Timer */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 dark:bg-zinc-800/50 border border-border dark:border-zinc-700" title="Próxima atualização automática">
+          <div className="relative w-8 h-8">
+            <svg className="w-8 h-8 -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted dark:text-zinc-700" />
+              <circle
+                cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeDasharray="94.25"
+                strokeDashoffset={94.25 - (94.25 * progress) / 100}
+                strokeLinecap="round"
+                className="text-primary transition-all duration-1000"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-muted-foreground dark:text-zinc-400">
+              {minutes}:{seconds.toString().padStart(2, '0')}
+            </span>
+          </div>
+          <RefreshCw className="w-3 h-3 text-muted-foreground dark:text-zinc-400" />
+        </div>
+
         <button
           onClick={toggle}
           className="p-2 rounded-lg hover:bg-muted dark:hover:bg-zinc-800 text-muted-foreground dark:text-zinc-400 transition-colors"
