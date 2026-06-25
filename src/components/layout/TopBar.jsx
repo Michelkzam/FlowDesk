@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 
 import React, { useState, useEffect } from "react";
-import { Bell, LogOut, User, Sun, Moon, RefreshCw, Clock } from "lucide-react";
+import { Bell, LogOut, User, Sun, Moon } from "lucide-react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -65,23 +65,20 @@ export default function TopBar() {
 
       <div className="flex items-center gap-1">
         {/* Countdown Timer */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 dark:bg-zinc-800/50 border border-border dark:border-zinc-700" title="Próxima atualização automática">
-          <div className="relative w-8 h-8">
-            <svg className="w-8 h-8 -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted dark:text-zinc-700" />
-              <circle
-                cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2"
-                strokeDasharray="94.25"
-                strokeDashoffset={94.25 - (94.25 * progress) / 100}
-                strokeLinecap="round"
-                className="text-primary transition-all duration-1000"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-muted-foreground dark:text-zinc-400">
-              {minutes}:{seconds.toString().padStart(2, '0')}
-            </span>
-          </div>
-          <RefreshCw className="w-3 h-3 text-muted-foreground dark:text-zinc-400" />
+        <div className="relative w-9 h-9 flex items-center justify-center cursor-default" title="Próxima atualização automática">
+          <svg className="w-9 h-9 -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/50 dark:text-zinc-700" />
+            <circle
+              cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeDasharray="94.25"
+              strokeDashoffset={94.25 - (94.25 * progress) / 100}
+              strokeLinecap="round"
+              className="text-primary transition-all duration-1000"
+            />
+          </svg>
+          <span className="absolute text-[10px] font-bold text-muted-foreground dark:text-zinc-400">
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </span>
         </div>
 
         <button
