@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =====================================================
--- 1. TABELA: users (Usuários do sistema)
+-- 1. TABELA: users
 -- =====================================================
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -23,13 +23,11 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Índices para users
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
 
 -- =====================================================
--- 2. TABELA: categories (Categorias de atendimento)
+-- 2. TABELA: categories
 -- =====================================================
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -42,7 +40,7 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 -- =====================================================
--- 3. TABELA: departments (Departamentos)
+-- 3. TABELA: departments
 -- =====================================================
 CREATE TABLE IF NOT EXISTS departments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -55,7 +53,7 @@ CREATE TABLE IF NOT EXISTS departments (
 );
 
 -- =====================================================
--- 4. TABELA: teams (Equipes)
+-- 4. TABELA: teams
 -- =====================================================
 CREATE TABLE IF NOT EXISTS teams (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -69,7 +67,7 @@ CREATE TABLE IF NOT EXISTS teams (
 );
 
 -- =====================================================
--- 5. TABELA: sla_plans (Planos de SLA)
+-- 5. TABELA: sla_plans
 -- =====================================================
 CREATE TABLE IF NOT EXISTS sla_plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -88,7 +86,7 @@ CREATE TABLE IF NOT EXISTS sla_plans (
 );
 
 -- =====================================================
--- 6. TABELA: help_topics (Tópicos de ajuda)
+-- 6. TABELA: help_topics
 -- =====================================================
 CREATE TABLE IF NOT EXISTS help_topics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -103,7 +101,7 @@ CREATE TABLE IF NOT EXISTS help_topics (
 );
 
 -- =====================================================
--- 7. TABELA: tickets (Chamados)
+-- 7. TABELA: tickets
 -- =====================================================
 CREATE TABLE IF NOT EXISTS tickets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -112,62 +110,39 @@ CREATE TABLE IF NOT EXISTS tickets (
   description TEXT,
   status VARCHAR(50) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'waiting', 'pending_approval', 'resolved', 'closed')),
   priority VARCHAR(50) DEFAULT 'normal' CHECK (priority IN ('emergency', 'high', 'normal', 'low')),
-  
-  -- Relacionamento com técnico
   agent_id UUID REFERENCES users(id) ON DELETE SET NULL,
   agent_name VARCHAR(255),
-  
-  -- Relacionamento com usuário/cliente
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   user_name VARCHAR(255),
   user_email VARCHAR(255),
   user_phone VARCHAR(20),
-  
-  -- Relacionamento com departamento
   department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
   department_name VARCHAR(255),
-  
-  -- Relacionamento com categoria
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   category_name VARCHAR(255),
-  
-  -- Relacionamento com tópico de ajuda
   help_topic_id UUID REFERENCES help_topics(id) ON DELETE SET NULL,
   help_topic_name VARCHAR(255),
-  
-  -- Relacionamento com plano SLA
   sla_plan_id UUID REFERENCES sla_plans(id) ON DELETE SET NULL,
   sla_name VARCHAR(255),
-  
-  -- Relacionamento com equipe
   team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
   team_name VARCHAR(255),
-  
-  -- Datas
   due_date TIMESTAMP WITH TIME ZONE,
   closed_date TIMESTAMP WITH TIME ZONE,
   last_response_date TIMESTAMP WITH TIME ZONE,
   last_user_response_date TIMESTAMP WITH TIME ZONE,
-  
-  -- Outros campos
   source VARCHAR(50) DEFAULT 'web' CHECK (source IN ('web', 'email', 'api', 'phone', 'whatsapp', 'telegram')),
   is_overdue BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Índices para tickets
 CREATE INDEX idx_tickets_status ON tickets(status);
 CREATE INDEX idx_tickets_priority ON tickets(priority);
 CREATE INDEX idx_tickets_agent_id ON tickets(agent_id);
-CREATE INDEX idx_tickets_user_id ON tickets(user_id);
-CREATE INDEX idx_tickets_department_id ON tickets(department_id);
-CREATE INDEX idx_tickets_category_id ON tickets(category_id);
 CREATE INDEX idx_tickets_created_at ON tickets(created_at DESC);
-CREATE INDEX idx_tickets_number ON tickets(number);
 
 -- =====================================================
--- 8. TABELA: ticket_messages (Mensagens dos tickets)
+-- 8. TABELA: ticket_messages
 -- =====================================================
 CREATE TABLE IF NOT EXISTS ticket_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -181,13 +156,10 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Índices para ticket_messages
 CREATE INDEX idx_ticket_messages_ticket_id ON ticket_messages(ticket_id);
-CREATE INDEX idx_ticket_messages_created_at ON ticket_messages(created_at DESC);
-CREATE INDEX idx_ticket_messages_sender_type ON ticket_messages(sender_type);
 
 -- =====================================================
--- 9. TABELA: audit_logs (Log de auditoria)
+-- 9. TABELA: audit_logs
 -- =====================================================
 CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -204,14 +176,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Índices para audit_logs
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
-
 -- =====================================================
--- 10. TABELA: canned_responses (Respostas predefinidas)
+-- 10. TABELA: canned_responses
 -- =====================================================
 CREATE TABLE IF NOT EXISTS canned_responses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -225,7 +191,7 @@ CREATE TABLE IF NOT EXISTS canned_responses (
 );
 
 -- =====================================================
--- 11. TABELA: organizations (Organizações)
+-- 11. TABELA: organizations
 -- =====================================================
 CREATE TABLE IF NOT EXISTS organizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -240,7 +206,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 );
 
 -- =====================================================
--- 12. TABELA: kb_categories (Categorias da base de conhecimento)
+-- 12. TABELA: kb_categories
 -- =====================================================
 CREATE TABLE IF NOT EXISTS kb_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -252,7 +218,7 @@ CREATE TABLE IF NOT EXISTS kb_categories (
 );
 
 -- =====================================================
--- 13. TABELA: kb_articles (Artigos da base de conhecimento)
+-- 13. TABELA: kb_articles
 -- =====================================================
 CREATE TABLE IF NOT EXISTS kb_articles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -267,10 +233,9 @@ CREATE TABLE IF NOT EXISTS kb_articles (
 );
 
 -- =====================================================
--- FUNÇÕES E TRIGGERS
+-- TRIGGERS
 -- =====================================================
 
--- Função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -279,7 +244,6 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers para atualizar updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_departments_updated_at BEFORE UPDATE ON departments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -292,72 +256,22 @@ CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FO
 CREATE TRIGGER update_kb_categories_updated_at BEFORE UPDATE ON kb_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_kb_articles_updated_at BEFORE UPDATE ON kb_articles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Função para gerar número do ticket automaticamente
-CREATE OR REPLACE FUNCTION generate_ticket_number()
-RETURNS TRIGGER AS $$
-DECLARE
-  next_number INTEGER;
-BEGIN
-  SELECT COALESCE(MAX(CAST(SUBSTRING(number FROM 2) AS INTEGER)), 0) + 1
-  INTO next_number
-  FROM tickets;
-  
-  NEW.number := '#' || LPAD(next_number::TEXT, 6, '0');
-  RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Trigger para gerar número do ticket
-CREATE TRIGGER generate_ticket_number_trigger
-  BEFORE INSERT ON tickets
-  FOR EACH ROW
-  WHEN (NEW.number IS NULL)
-  EXECUTE FUNCTION generate_ticket_number();
-
--- =====================================================
--- POLÍTICAS RLS (Row Level Security)
--- =====================================================
-
--- Habilitar RLS nas tabelas
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ticket_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-
--- Políticas para users (usuários autenticados podem ver todos)
-CREATE POLICY "Users can view all users" ON users FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage users" ON users FOR ALL USING (auth.role() = 'authenticated');
-
--- Políticas para tickets
-CREATE POLICY "Authenticated users can view tickets" ON tickets FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can create tickets" ON tickets FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can update tickets" ON tickets FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Políticas para ticket_messages
-CREATE POLICY "Authenticated users can view messages" ON ticket_messages FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can create messages" ON ticket_messages FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- Políticas para audit_logs
-CREATE POLICY "Authenticated users can view audit logs" ON audit_logs FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can create audit logs" ON audit_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
 -- =====================================================
 -- DADOS INICIAIS
 -- =====================================================
 
--- Inserir categorias padrão (somente se não existirem)
-INSERT INTO categories (name, description, color) 
-SELECT * FROM (VALUES
-  ('TI / Infraestrutura', 'Redes, servidores, hardware, infraestrutura', '#3b82f6'),
-  ('Sistemas / Software', 'Instalação, configuração e suporte a software', '#8b5cf6'),
-  ('Financeiro', 'Financeiro, faturamento, pagamentos', '#10b981'),
-  ('RH / Departamento Pessoal', 'Recursos humanos, ponto, benefícios', '#f59e0b')
-) AS v(name, description, color)
-WHERE NOT EXISTS (SELECT 1 FROM categories WHERE categories.name = v.name);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM categories WHERE name = 'TI / Infraestrutura') THEN
+    INSERT INTO categories (name, description, color) VALUES
+      ('TI / Infraestrutura', 'Redes, servidores, hardware', '#3b82f6'),
+      ('Sistemas / Software', 'Instalação e suporte a software', '#8b5cf6'),
+      ('Financeiro', 'Financeiro, faturamento', '#10b981'),
+      ('RH / Departamento Pessoal', 'Recursos humanos, ponto', '#f59e0b');
+  END IF;
 
--- Inserir plano SLA padrão (somente se não existir)
-INSERT INTO sla_plans (name, description, emergency_hours, high_hours, normal_hours, low_hours, is_default) 
-SELECT * FROM (VALUES
-  ('SLA Padrão', 'Plano de SLA padrão do sistema', 2, 8, 24, 48, true)
-) AS v(name, description, emergency_hours, high_hours, normal_hours, low_hours, is_default)
-WHERE NOT EXISTS (SELECT 1 FROM sla_plans WHERE sla_plans.name = v.name);
+  IF NOT EXISTS (SELECT 1 FROM sla_plans WHERE name = 'SLA Padrão') THEN
+    INSERT INTO sla_plans (name, description, emergency_hours, high_hours, normal_hours, low_hours, is_default) VALUES
+      ('SLA Padrão', 'Plano de SLA padrão do sistema', 2, 8, 24, 48, true);
+  END IF;
+END $$;
