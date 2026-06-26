@@ -1,10 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-function formatDate(date) {
-  if (!date) return null;
-  return new Date(date).toISOString();
-}
-
 class EntityClient {
   constructor(tableName) {
     this.tableName = tableName;
@@ -26,7 +21,7 @@ class EntityClient {
     if (error) throw error;
     return (data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
-      if (row.updated_at && !row.updated_date) row.updated_date = row.updated_at;
+      if (row.full_name && !row.name) row.name = row.full_name;
       return row;
     });
   }
@@ -45,7 +40,7 @@ class EntityClient {
     if (error) throw error;
     return (data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
-      if (row.updated_at && !row.updated_date) row.updated_date = row.updated_at;
+      if (row.full_name && !row.name) row.name = row.full_name;
       return row;
     });
   }
@@ -67,6 +62,14 @@ class EntityClient {
     }
     delete insertData.created_at;
     delete insertData.updated_at;
+
+    if (this.tableName === 'users' && insertData.name && !insertData.full_name) {
+      insertData.full_name = insertData.name;
+    }
+    if (this.tableName === 'users' && !insertData.password_hash) {
+      insertData.password_hash = 'supabase_auth';
+    }
+
     const { data: result, error } = await supabase
       .from(this.tableName)
       .insert(insertData)
@@ -82,6 +85,11 @@ class EntityClient {
     delete updateData.created_date;
     delete updateData.created_at;
     delete updateData.updated_at;
+
+    if (this.tableName === 'users' && updateData.name && !updateData.full_name) {
+      updateData.full_name = updateData.name;
+    }
+
     const { data: result, error } = await supabase
       .from(this.tableName)
       .update(updateData)
@@ -101,12 +109,56 @@ class EntityClient {
   }
 }
 
-class AuthClient {
-  async me() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Não autenticado');
-    const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
-    return data || { id: user.id, email: user.email, full_name: user.user_metadata?.full_name, role: user.user_metadata?.role || 'user' };
+class AgentEntityClient extends EntityClient {
+  constructor() {
+    super('users');
+  }
+
+  async list(orderBy = '-created_date', limit = 100) {
+    const descending = orderBy.startsWith('-');
+    const rawField = orderBy.replace('-', '');
+    const field = this.mapField(rawField);
+    const { data, error } = await supabase
+      .from(this.tableName)
+      .select('*')
+      .in('role', ['admin', 'agent'])
+      .order(field, { ascending: !descending })
+      .limit(limit);
+    if (error) throw error;
+    return (data || []).map(row => {
+      if (row.created_at && !row.created_date) row.created_date = row.created_at;
+      if (row.full_name && !row.name) row.name = row.full_name;
+      return row;
+    });
+  }
+}
+
+class UserAccountEntityClient extends EntityClient {
+  constructor() {
+    super('users');
+  }
+
+  async list(orderBy = '-created_date', limit = 100) {
+    const descending = orderBy.startsWith('-');
+    const rawField = orderBy.replace('-', '');
+    const field = this.mapField(rawField);
+    const { data, error } = await supabase
+      .from(this.tableName)
+      .select('*')
+      .order(field, { ascending: !descending })
+      .limit(limit);
+    if (error) throw error;
+    return (data || []).map(row => {
+      if (row.created_at && !row.created_date) row.created_date = row.created_at;
+      if (row.full_name && !row.name) row.name = row.full_name;
+      return row;
+    });
+  }
+}
+
+class TicketMessageClient extends EntityClient {
+  constructor() {
+    super('ticket_messages');
   }
 }
 
@@ -116,9 +168,12 @@ class CannedResponseClient extends EntityClient {
   }
 }
 
-class TicketMessageClient extends EntityClient {
-  constructor() {
-    super('ticket_messages');
+class AuthClient {
+  async me() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Não autenticado');
+    const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
+    return data || { id: user.id, email: user.email, full_name: user.user_metadata?.full_name, role: user.user_metadata?.role || 'user' };
   }
 }
 
@@ -137,8 +192,8 @@ const entities = {
   Department: new EntityClient('departments'),
   Team: new EntityClient('teams'),
   HelpTopic: new EntityClient('help_topics'),
-  Agent: new EntityClient('users'),
-  UserAccount: new EntityClient('users'),
+  Agent: new AgentEntityClient(),
+  UserAccount: new UserAccountEntityClient(),
   UserProfile: new EntityClient('users'),
   Organization: new EntityClient('organizations'),
   KBCategory: new EntityClient('kb_categories'),
