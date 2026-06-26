@@ -1,6 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function Chats() {
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [formData, setFormData] = useState({ title: "", priority: "medium", status: "open", channel: "portal" });
   const queryClient = useQueryClient();
+  const initialStatusRef = useRef(null);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets"],
@@ -148,7 +149,11 @@ export default function Chats() {
               filtered.map(ticket => (
                 <button
                   key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
+                  onClick={() => {
+                    initialStatusRef.current = ticket.status;
+                    setSelectedTicket(ticket);
+                    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                  }}
                   className={`w-full text-left px-4 py-3 border-b border-border hover:bg-muted/50 transition-colors ${selectedTicket?.id === ticket.id ? "bg-primary/10 border-l-2 border-l-primary" : ""}`}
                 >
                   <div className="flex items-start gap-3">
@@ -188,7 +193,12 @@ export default function Chats() {
         {/* Chat window */}
         {selectedTicket ? (
           <div className="flex-1 flex flex-col min-w-0">
-            <ChatWindow ticket={selectedTicket} onClose={() => setSelectedTicket(null)} onUpdate={(updated) => {
+            <ChatWindow ticket={selectedTicket} onClose={() => {
+              const statusChanged = initialStatusRef.current !== null && selectedTicket.status !== initialStatusRef.current;
+              setSelectedTicket(null);
+              initialStatusRef.current = null;
+              if (statusChanged) window.location.reload();
+            }} onUpdate={(updated) => {
               setSelectedTicket(updated);
               queryClient.invalidateQueries({ queryKey: ["tickets"] });
             }} />

@@ -35,8 +35,7 @@ export default function TopBar() {
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          queryClient.invalidateQueries({ queryKey: ["tickets"] });
-          queryClient.invalidateQueries({ queryKey: ["tickets-open-count"] });
+          window.location.reload();
           return REFRESH_INTERVAL;
         }
         return prev - 1;

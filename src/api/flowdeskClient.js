@@ -6,6 +6,8 @@ class EntityClient {
   }
 
   mapField(field) {
+    if (field === 'created_date') return 'created_at';
+    if (field === 'updated_date') return 'updated_at';
     return field;
   }
 
@@ -57,10 +59,10 @@ class EntityClient {
 
   async create(data) {
     const insertData = { ...data };
-    if (!insertData.created_date && !insertData.created_at) {
-      insertData.created_date = new Date().toISOString();
+    if (!insertData.created_at && !insertData.created_date) {
+      insertData.created_at = new Date().toISOString();
     }
-    delete insertData.created_at;
+    delete insertData.created_date;
     delete insertData.updated_at;
 
     if (this.tableName === 'users' && insertData.name && !insertData.full_name) {
@@ -80,11 +82,10 @@ class EntityClient {
   }
 
   async update(id, data) {
-    const updateData = { ...data, updated_date: new Date().toISOString() };
+    const updateData = { ...data };
     delete updateData.id;
-    delete updateData.created_date;
     delete updateData.created_at;
-    delete updateData.updated_at;
+    delete updateData.created_date;
 
     if (this.tableName === 'users' && updateData.name && !updateData.full_name) {
       updateData.full_name = updateData.name;
