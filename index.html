@@ -25,24 +25,12 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('[PWA] Service Worker registrado:', registration.scope);
-
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'activated') {
-                    console.log('[PWA] Nova versão disponível');
-                  }
-                });
-              });
-            })
-            .catch(error => {
-              console.log('[PWA] Falha ao registrar Service Worker:', error);
-            });
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (const registration of registrations) {
+            registration.unregister();
+          }
         });
+        caches.keys().then(names => names.forEach(name => caches.delete(name)));
       }
     </script>
   </body>
