@@ -20,7 +20,7 @@ export default function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ email: "", phone: "" });
+  const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 " });
   const [editForm, setEditForm] = useState({});
   const [inviting, setInviting] = useState(false);
   const queryClient = useQueryClient();
@@ -59,7 +59,7 @@ export default function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ["system-users"] });
       toast({ title: "Convite enviado!", description: `Convite enviado por email para ${inviteForm.email}${inviteForm.phone ? " e notificação via WhatsApp" : ""}` });
       setInviteOpen(false);
-      setInviteForm({ email: "", phone: "" });
+      setInviteForm({ email: "", phone: "+55 " });
     } catch (err) {
       toast({ title: "Erro ao enviar convite", description: err.message || "Tente novamente", variant: "destructive" });
     } finally {
