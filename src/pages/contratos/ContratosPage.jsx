@@ -48,7 +48,12 @@ export default function ContratosPage() {
 
   const createM = useMutation({
     mutationFn: async (d) => {
-      const { data, error } = await supabase.from('contracts').insert(d).select().single();
+      const payload = { ...d };
+      if (!payload.start_date) delete payload.start_date;
+      if (!payload.end_date) delete payload.end_date;
+      if (!payload.value) delete payload.value;
+      if (!payload.sla_hours) delete payload.sla_hours;
+      const { data, error } = await supabase.from('contracts').insert(payload).select().single();
       if (error) throw error;
       return data;
     },
@@ -57,7 +62,14 @@ export default function ContratosPage() {
   });
   const updateM = useMutation({
     mutationFn: async ({ id, data }) => {
-      const { data: result, error } = await supabase.from('contracts').update(data).eq('id', id).select().single();
+      const payload = { ...data };
+      if (!payload.start_date) payload.start_date = null;
+      if (!payload.end_date) payload.end_date = null;
+      if (!payload.value) payload.value = null;
+      if (!payload.sla_hours) payload.sla_hours = null;
+      delete payload.id;
+      delete payload.created_at;
+      const { data: result, error } = await supabase.from('contracts').update(payload).eq('id', id).select().single();
       if (error) throw error;
       return result;
     },
