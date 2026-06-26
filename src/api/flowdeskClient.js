@@ -65,8 +65,10 @@ class EntityClient {
   async create(data) {
     const insertData = { ...data };
     if (!insertData.created_date && !insertData.created_at) {
-      insertData.created_at = new Date().toISOString();
+      insertData.created_date = new Date().toISOString();
     }
+    delete insertData.created_at;
+    delete insertData.updated_at;
     const { data: result, error } = await supabase
       .from(this.tableName)
       .insert(insertData)
@@ -77,10 +79,11 @@ class EntityClient {
   }
 
   async update(id, data) {
-    const updateData = { ...data, updated_at: new Date().toISOString() };
+    const updateData = { ...data, updated_date: new Date().toISOString() };
     delete updateData.id;
     delete updateData.created_date;
     delete updateData.created_at;
+    delete updateData.updated_at;
     const { data: result, error } = await supabase
       .from(this.tableName)
       .update(updateData)
