@@ -83,9 +83,6 @@ class EntityClient {
 
   async create(data) {
     const insertData = this._cleanData(data);
-    if (!insertData.created_at) {
-      insertData.created_at = new Date().toISOString();
-    }
     const { data: result, error } = await supabase
       .from(this.tableName)
       .insert(insertData)
