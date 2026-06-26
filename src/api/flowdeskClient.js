@@ -255,6 +255,8 @@ const entities = {
   OperatorProfile: new EntityClient('operator_profiles'),
   Document: new EntityClient('documents'),
   TicketFilter: new EntityClient('ticket_filters'),
+  WorkSchedule: new EntityClient('work_schedules'),
+  OnCallRule: new EntityClient('on_call_rules'),
 };
 
 const integrations = {
