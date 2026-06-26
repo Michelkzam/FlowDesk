@@ -15,13 +15,19 @@ class EntityClient {
     const descending = orderBy.startsWith('-');
     const rawField = orderBy.replace('-', '');
     const field = this.mapField(rawField);
-    const { data, error } = await supabase
+    let result = await supabase
       .from(this.tableName)
       .select('*')
       .order(field, { ascending: !descending })
       .limit(limit);
-    if (error) throw error;
-    return (data || []).map(row => {
+    if (result.error) {
+      result = await supabase
+        .from(this.tableName)
+        .select('*')
+        .limit(limit);
+    }
+    if (result.error) throw result.error;
+    return (result.data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
       if (row.full_name && !row.name) row.name = row.full_name;
       return row;
@@ -38,9 +44,18 @@ class EntityClient {
         query = query.eq(key, value);
       }
     });
-    const { data, error } = await query.order(field, { ascending: !descending }).limit(limit);
-    if (error) throw error;
-    return (data || []).map(row => {
+    let result = await query.order(field, { ascending: !descending }).limit(limit);
+    if (result.error) {
+      query = supabase.from(this.tableName).select('*');
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          query = query.eq(key, value);
+        }
+      });
+      result = await query.limit(limit);
+    }
+    if (result.error) throw result.error;
+    return (result.data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
       if (row.full_name && !row.name) row.name = row.full_name;
       return row;
