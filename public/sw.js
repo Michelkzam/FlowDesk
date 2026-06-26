@@ -1,24 +1,6 @@
-const CACHE_NAME = 'flowdesk-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/offline.html',
-];
-
-const CACHE_STRATEGIES = {
-  static: 'cache-first',
-  dynamic: 'network-first',
-  images: 'cache-first',
-};
+const CACHE_NAME = 'flowdesk-v2';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Cacheando assets estáticos');
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -40,21 +22,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/')) return;
-  if (url.pathname.startsWith('/auth/')) return;
+  if (url.origin !== location.origin) return;
 
   if (url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/)) {
     event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  if (url.pathname.match(/\.(js|css)$/)) {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
-    event.respondWith(networkFirst(request));
     return;
   }
 
@@ -88,12 +59,6 @@ async function networkFirst(request) {
   } catch (error) {
     const cached = await caches.match(request);
     if (cached) return cached;
-
-    if (request.destination === 'document') {
-      const offlinePage = await caches.match('/offline.html');
-      if (offlinePage) return offlinePage;
-    }
-
     return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
   }
 }
