@@ -100,7 +100,7 @@ export default function TopBar() {
               className={cn("transition-all duration-1000", paused ? "text-muted-foreground dark:text-zinc-500" : "text-primary")}
             />
           </svg>
-          <span className="absolute text-[10px] font-bold text-muted-foreground dark:text-zinc-400">
+          <span className={cn("absolute text-[10px] font-bold", paused ? "text-muted-foreground dark:text-zinc-500" : "text-green-600 dark:text-green-400")}>
             {paused ? <Pause className="w-3 h-3" /> : `${minutes}:${seconds.toString().padStart(2, '0')}`}
           </span>
         </button>
