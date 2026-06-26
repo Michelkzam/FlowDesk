@@ -47,7 +47,7 @@ export default function UsersPage() {
     e.preventDefault();
     setInviting(true);
     try {
-      await db.users.inviteUser(inviteForm.email, "user");
+      await db.auth.inviteUser(inviteForm.email, "user");
       // Send email notification
       try {
         await db.integrations.Core.SendEmail({

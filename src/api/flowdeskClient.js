@@ -76,6 +76,8 @@ class EntityClient {
     const clean = { ...data };
     if (isUpdate) {
       delete clean.id;
+    } else {
+      if (!clean.id) delete clean.id;
     }
     delete clean.created_at;
     delete clean.created_date;
@@ -193,6 +195,27 @@ class AuthClient {
     if (!user) throw new Error('Não autenticado');
     const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
     return data || { id: user.id, email: user.email, full_name: user.user_metadata?.full_name, role: user.user_metadata?.role || 'user' };
+  }
+
+  async inviteUser(email, role = 'user') {
+    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: tempPassword,
+      options: { data: { full_name: email.split('@')[0], role } }
+    });
+    if (error) throw error;
+    if (data.user) {
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email,
+        password_hash: 'supabase_auth',
+        full_name: email.split('@')[0],
+        role,
+        status: 'active'
+      });
+    }
+    return data;
   }
 }
 
