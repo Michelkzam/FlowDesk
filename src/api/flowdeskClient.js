@@ -248,6 +248,12 @@ const entities = {
   ChannelLink: new EntityClient('organizations'),
   Role: new EntityClient('roles'),
   Contract: new EntityClient('contracts'),
+  Schedule: new EntityClient('schedules'),
+  BusinessHours: new EntityClient('business_hours'),
+  Asset: new EntityClient('assets'),
+  QuickReply: new EntityClient('quick_replies'),
+  OperatorProfile: new EntityClient('operator_profiles'),
+  Document: new EntityClient('documents'),
 };
 
 const integrations = {
