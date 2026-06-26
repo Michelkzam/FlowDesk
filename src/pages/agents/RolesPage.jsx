@@ -25,9 +25,21 @@ export default function RolesPage() {
   const queryClient = useQueryClient();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
-  const createM = useMutation({ mutationFn: d => db.entities.Role.create(d), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); } });
-  const updateM = useMutation({ mutationFn: ({ id, data }) => db.entities.Role.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); } });
-  const deleteM = useMutation({ mutationFn: id => db.entities.Role.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["roles"] }) });
+  const createM = useMutation({
+    mutationFn: d => db.entities.Role.create(d),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); },
+    onError: (e) => { console.error('Erro ao criar função:', e); alert('Erro: ' + e.message); }
+  });
+  const updateM = useMutation({
+    mutationFn: ({ id, data }) => db.entities.Role.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); },
+    onError: (e) => { console.error('Erro ao atualizar função:', e); alert('Erro: ' + e.message); }
+  });
+  const deleteM = useMutation({
+    mutationFn: id => db.entities.Role.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["roles"] }),
+    onError: (e) => { console.error('Erro ao excluir função:', e); alert('Erro: ' + e.message); }
+  });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); setSelectedPerms([]); };
   const openCreate = () => { setForm(defaultForm); setEditing(null); setSelectedPerms([]); setDialogOpen(true); };
