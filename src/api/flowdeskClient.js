@@ -254,6 +254,7 @@ const entities = {
   QuickReply: new EntityClient('quick_replies'),
   OperatorProfile: new EntityClient('operator_profiles'),
   Document: new EntityClient('documents'),
+  TicketFilter: new EntityClient('ticket_filters'),
 };
 
 const integrations = {
