@@ -11,6 +11,7 @@ import {
   Monitor, FileSignature, BarChart3, DollarSign, RefreshCw, Video, History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -224,6 +225,7 @@ function NavItem({ item, depth = 0, collapsed }) {
 
 export default function Sidebar({ collapsed, onToggleCollapse }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <>
@@ -295,7 +297,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
         {/* Footer */}
         <div className={cn("p-2 border-t border-sidebar-border")}>
           <button
-            onClick={() => db.auth.logout("/")}
+            onClick={() => logout()}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-red-400 hover:text-red-300 hover:bg-red-500/10",
               collapsed && "justify-center px-2"

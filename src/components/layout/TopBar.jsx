@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "@/lib/ThemeContext";
+import { useAuth } from "@/lib/AuthContext";
 import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 
@@ -16,6 +17,7 @@ export default function TopBar() {
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [paused, setPaused] = useState(false);
+  const { logout } = useAuth();
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -118,7 +120,7 @@ export default function TopBar() {
         <button
           className="p-2 rounded-lg hover:bg-muted dark:hover:bg-zinc-800 text-muted-foreground dark:text-zinc-400 hover:text-red-500 transition-colors ml-1"
           title="Sair do sistema"
-          onClick={() => db.auth.logout("/")}
+          onClick={() => logout()}
         >
           <LogOut className="w-4 h-4" />
         </button>
