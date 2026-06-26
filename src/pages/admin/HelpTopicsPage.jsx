@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { supabase } from '@/lib/supabase';
 
 import React, { useState } from "react";
 
@@ -16,14 +17,47 @@ export default function HelpTopicsPage() {
   const [form, setForm] = useState(defaultForm);
   const queryClient = useQueryClient();
 
-  const { data: items = [], isLoading } = useQuery({ queryKey: ["help-topics"], queryFn: () => db.entities.HelpTopic.list() });
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["help-topics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('help_topics').select('*').limit(200);
+      if (error) { console.error('[HelpTopics] Erro list:', error); return []; }
+      return data || [];
+    },
+  });
   const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list() });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
   const { data: slas = [] } = useQuery({ queryKey: ["sla-plans"], queryFn: () => db.entities.SLAPlan.list() });
 
-  const createM = useMutation({ mutationFn: d => db.entities.HelpTopic.create(d), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); } });
-  const updateM = useMutation({ mutationFn: ({ id, data }) => db.entities.HelpTopic.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); } });
-  const deleteM = useMutation({ mutationFn: id => db.entities.HelpTopic.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["help-topics"] }) });
+  const createM = useMutation({
+    mutationFn: async (d) => {
+      const { data, error } = await supabase.from('help_topics').insert(d).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); },
+    onError: (e) => console.error('[HelpTopics] Erro create:', e),
+  });
+  const updateM = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const payload = { ...data };
+      delete payload.id;
+      delete payload.created_at;
+      const { data: result, error } = await supabase.from('help_topics').update(payload).eq('id', id).select().single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); },
+    onError: (e) => console.error('[HelpTopics] Erro update:', e),
+  });
+  const deleteM = useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('help_topics').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["help-topics"] }),
+    onError: (e) => console.error('[HelpTopics] Erro delete:', e),
+  });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); };
   const openCreate = () => { setForm(defaultForm); setEditing(null); setDialogOpen(true); };
