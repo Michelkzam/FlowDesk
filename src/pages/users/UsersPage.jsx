@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Mail, Shield } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function UsersPage() {
   const [inviting, setInviting] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { can } = usePermissions();
 
   // System users
   const { data: systemUsers = [], isLoading } = useQuery({
@@ -90,6 +92,7 @@ export default function UsersPage() {
         action={() => setInviteOpen(true)}
         actionLabel="Convidar Usuário"
         actionIcon={UserPlus}
+        canCreate={can("users.manage")}
       />
 
       <DataTable
@@ -100,6 +103,8 @@ export default function UsersPage() {
         onDelete={item => deleteM.mutate(item.id)}
         searchKeys={["full_name", "email"]}
         emptyMessage="Nenhum usuário cadastrado"
+        canEdit={can("users.manage")}
+        canDelete={can("users.manage")}
       />
 
       {/* Invite Dialog */}

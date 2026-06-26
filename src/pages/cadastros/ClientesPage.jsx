@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Plus, Search, Download, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function exportCSV(clients) {
   const headers = ["Nome", "Email", "Telefone", "Empresa", "CPF/CNPJ", "Status", "Cadastrado em"];
@@ -37,6 +38,7 @@ export default function ClientesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const qc = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -88,9 +90,11 @@ export default function ClientesPage() {
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => exportCSV(filtered)}>
             <Download className="w-3.5 h-3.5" /> Exportar CSV
           </Button>
-          <Button size="sm" onClick={openNew} className="gap-1.5 h-8 text-xs">
-            <Plus className="w-3.5 h-3.5" /> Novo Cliente
-          </Button>
+          {can("users.manage") && (
+            <Button size="sm" onClick={openNew} className="gap-1.5 h-8 text-xs">
+              <Plus className="w-3.5 h-3.5" /> Novo Cliente
+            </Button>
+          )}
         </div>
       </div>
 
@@ -128,8 +132,12 @@ export default function ClientesPage() {
                   <TableCell className="py-2.5"><StatusBadge value={c.status} /></TableCell>
                   <TableCell className="py-2.5">
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => { if (confirm("Excluir este cliente?")) deleteM.mutate(c.id); }} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                      {can("users.manage") && (
+                        <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
+                      )}
+                      {can("users.manage") && (
+                        <button onClick={() => { if (confirm("Excluir este cliente?")) deleteM.mutate(c.id); }} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

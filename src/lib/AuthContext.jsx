@@ -3,9 +3,16 @@ import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext(null);
 
+const ALL_PERMISSIONS = [
+  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
+  "kb.create", "kb.edit", "kb.delete", "kb.publish",
+  "users.manage", "reports.view", "admin.access",
+];
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -33,6 +40,18 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  const fetchPermissions = useCallback(async (profileData) => {
+    if (!profileData) { setPermissions([]); return; }
+    if (profileData.role === 'admin') { setPermissions(ALL_PERMISSIONS); return; }
+    if (!profileData.role_id) { setPermissions([]); return; }
+    const { data } = await supabase
+      .from('roles')
+      .select('permissions')
+      .eq('id', profileData.role_id)
+      .single();
+    setPermissions(data?.permissions || []);
+  }, []);
+
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -41,6 +60,7 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(true);
         const p = await fetchProfile(session.user.id);
         setProfile(p);
+        await fetchPermissions(p);
       }
       setLoading(false);
     };
@@ -54,16 +74,26 @@ export function AuthProvider({ children }) {
           setIsAuthenticated(true);
           const p = await fetchProfile(session.user.id);
           setProfile(p);
+          await fetchPermissions(p);
         } else {
           setUser(null);
           setProfile(null);
+          setPermissions([]);
           setIsAuthenticated(false);
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [fetchProfile, fetchPermissions]);
+
+  const can = useCallback((permission) => {
+    if (profile?.role === 'admin') return true;
+    return permissions.includes(permission);
+  }, [profile?.role, permissions]);
+
+  const canAny = useCallback((...perms) => perms.some(p => can(p)), [can]);
+  const canAll = useCallback((...perms) => perms.every(p => can(p)), [can]);
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -72,6 +102,7 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
     const p = await fetchProfile(data.user.id);
     setProfile(p);
+    await fetchPermissions(p);
     return { user: data.user, profile: p };
   };
 
@@ -96,6 +127,7 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       const p = await fetchProfile(data.user.id);
       setProfile(p);
+      await fetchPermissions(p);
       return { user: data.user, profile: p };
     }
   };
@@ -104,6 +136,7 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setPermissions([]);
     setIsAuthenticated(false);
   };
 
@@ -111,8 +144,12 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       profile,
+      permissions,
       loading,
       isAuthenticated,
+      can,
+      canAny,
+      canAll,
       login,
       register,
       logout,

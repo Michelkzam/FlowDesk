@@ -7,6 +7,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import DataTable from "@/components/shared/DataTable";
 import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const defaultForm = { name: "", website: "", phone: "", address: "", account_manager_name: "", status: "active", notes: "" };
 
@@ -15,6 +16,7 @@ export default function OrganizationsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["organizations"], queryFn: () => db.entities.Organization.list("-created_date") });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
@@ -49,8 +51,8 @@ export default function OrganizationsPage() {
 
   return (
     <div>
-      <PageHeader title="Organizações" subtitle="Empresas e organizações clientes" action={openCreate} actionLabel="Nova Organização" />
-      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "website", "phone"]} />
+      <PageHeader title="Organizações" subtitle="Empresas e organizações clientes" action={openCreate} actionLabel="Nova Organização" canCreate={can("users.manage")} />
+      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "website", "phone"]} canEdit={can("users.manage")} canDelete={can("users.manage")} />
       <FormDialog open={dialogOpen} onClose={close} title={editing ? "Editar Organização" : "Nova Organização"} fields={fields} data={form} onChange={set} onSubmit={handleSubmit} isLoading={createM.isPending || updateM.isPending} />
     </div>
   );

@@ -7,6 +7,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import DataTable from "@/components/shared/DataTable";
 import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const defaultForm = { name: "", leader_name: "", status: "active", assignment_alert: true, notes: "" };
 
@@ -15,6 +16,7 @@ export default function TeamsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["teams"], queryFn: () => db.entities.Team.list("-created_date") });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
@@ -46,8 +48,8 @@ export default function TeamsPage() {
 
   return (
     <div>
-      <PageHeader title="Equipes" subtitle="Grupos de agentes para atendimento" action={openCreate} actionLabel="Nova Equipe" />
-      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "leader_name"]} />
+      <PageHeader title="Equipes" subtitle="Grupos de agentes para atendimento" action={openCreate} actionLabel="Nova Equipe" canCreate={can("users.manage")} />
+      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "leader_name"]} canEdit={can("users.manage")} canDelete={can("users.manage")} />
       <FormDialog open={dialogOpen} onClose={close} title={editing ? "Editar Equipe" : "Nova Equipe"} fields={fields} data={form} onChange={set} onSubmit={handleSubmit} isLoading={createM.isPending || updateM.isPending} />
     </div>
   );

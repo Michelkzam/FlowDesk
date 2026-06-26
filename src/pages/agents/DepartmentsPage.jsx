@@ -7,6 +7,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import DataTable from "@/components/shared/DataTable";
 import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const defaultForm = { name: "", signature: "", type: "public", status: "active", auto_response_new_ticket: false, auto_response_new_message: false, alert_recipients: "all_members", notes: "" };
 
@@ -15,6 +16,7 @@ export default function DepartmentsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list("-created_date") });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
@@ -55,8 +57,8 @@ export default function DepartmentsPage() {
 
   return (
     <div>
-      <PageHeader title="Departamentos" subtitle="Gerenciar departamentos de atendimento" action={openCreate} actionLabel="Novo Departamento" />
-      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "manager_name"]} />
+      <PageHeader title="Departamentos" subtitle="Gerenciar departamentos de atendimento" action={openCreate} actionLabel="Novo Departamento" canCreate={can("users.manage")} />
+      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name", "manager_name"]} canEdit={can("users.manage")} canDelete={can("users.manage")} />
       <FormDialog open={dialogOpen} onClose={close} title={editing ? "Editar Departamento" : "Novo Departamento"} fields={fields} data={form} onChange={set} onSubmit={handleSubmit} isLoading={createM.isPending || updateM.isPending} />
     </div>
   );

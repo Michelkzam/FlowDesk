@@ -18,6 +18,7 @@ import NewTicketDialog from "./NewTicketDialog";
 import KanbanBoard from "@/components/tickets/KanbanBoard";
 import BulkActionsBar from "@/components/tickets/BulkActionsBar";
 import { openTicketWindow } from "@/lib/ticketWindow";
+import { usePermissions } from "@/hooks/usePermissions";
 import SLATimer, { SLATimerMini } from "@/components/tickets/SLATimer";
 
 const sourceEmoji = { web: "🌐", email: "📧", api: "⚙️", phone: "📞", whatsapp: "💬" };
@@ -53,6 +54,7 @@ export default function TicketList({ myTickets = false }) {
   const [newOpen, setNewOpen] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem(viewModeKey) || "list");
   const [selected, setSelected] = useState(new Set());
+  const { can } = usePermissions();
 
   useEffect(() => {
     const handler = (e) => {
@@ -136,9 +138,11 @@ export default function TicketList({ myTickets = false }) {
           <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => exportCSV(filtered)}>
             <Download className="w-3.5 h-3.5" /> Exportar CSV
           </Button>
-          <Button onClick={() => setNewOpen(true)} size="sm" className="bg-primary hover:bg-primary/90 gap-1.5 h-8 text-xs">
-            <Plus className="w-3.5 h-3.5" /> Novo Ticket
-          </Button>
+          {can("tickets.create") && (
+            <Button onClick={() => setNewOpen(true)} size="sm" className="bg-primary hover:bg-primary/90 gap-1.5 h-8 text-xs">
+              <Plus className="w-3.5 h-3.5" /> Novo Ticket
+            </Button>
+          )}
         </div>
       </div>
 

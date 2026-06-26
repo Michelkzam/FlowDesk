@@ -8,6 +8,7 @@ import DataTable from "@/components/shared/DataTable";
 import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const ALL_PERMISSIONS = [
   "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
@@ -23,6 +24,7 @@ export default function RolesPage() {
   const [form, setForm] = useState(defaultForm);
   const [selectedPerms, setSelectedPerms] = useState([]);
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
   const createM = useMutation({
@@ -61,8 +63,8 @@ export default function RolesPage() {
 
   return (
     <div>
-      <PageHeader title="Funções" subtitle="Perfis de permissão para agentes" action={openCreate} actionLabel="Nova Função" />
-      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name"]} />
+      <PageHeader title="Funções" subtitle="Perfis de permissão para agentes" action={openCreate} actionLabel="Nova Função" canCreate={can("users.manage")} />
+      <DataTable columns={columns} data={items} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["name"]} canEdit={can("users.manage")} canDelete={can("users.manage")} />
 
       {dialogOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

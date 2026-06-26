@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Pencil, Trash2 } from "lucide-react";
 
-export default function DataTable({ columns, data = [], isLoading, onEdit, onDelete, searchKeys = [], emptyMessage = "Nenhum registro encontrado" }) {
+export default function DataTable({ columns, data = [], isLoading, onEdit, onDelete, searchKeys = [], emptyMessage = "Nenhum registro encontrado", canEdit = true, canDelete = true }) {
   const [search, setSearch] = useState("");
 
   const filtered = data.filter(row => {
@@ -65,12 +65,12 @@ export default function DataTable({ columns, data = [], isLoading, onEdit, onDel
                   {(onEdit || onDelete) && (
                     <TableCell className="py-2.5">
                       <div className="flex items-center gap-1">
-                        {onEdit && (
+                        {onEdit && canEdit && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(row)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         )}
-                        {onDelete && (
+                        {onDelete && canDelete && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(row)}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>

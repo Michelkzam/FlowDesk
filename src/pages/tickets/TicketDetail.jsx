@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { openTicketWindow } from "@/lib/ticketWindow";
 import { broadcastTicketUpdate, broadcastMessageUpdate } from "@/hooks/useRealtimeSync";
+import { usePermissions } from "@/hooks/usePermissions";
 import SLATimer from "@/components/tickets/SLATimer";
 import ResolutionModal from "@/components/tickets/ResolutionModal";
 
@@ -52,6 +53,7 @@ export default function TicketDetail({ isPopup = false }) {
   const [transferData, setTransferData] = useState({ agentId: "", agentName: "", note: "" });
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const { can } = usePermissions();
 
   useEffect(() => {
     if (isPopup) {
@@ -227,9 +229,9 @@ export default function TicketDetail({ isPopup = false }) {
   const isAssignedToMe = ticket?.agent_id === currentUser?.id;
   const isUnassigned = !ticket?.agent_id;
   const isBlocked = !!blockedInfo;
-  const canReply = !isBlocked && (isAdmin || isAssignedToMe);
+  const canReply = !isBlocked && (isAdmin || isAssignedToMe) && can("tickets.edit");
   const canViewOnly = isBlocked || (isResolved && !isAdmin);
-  const needsStartService = !isBlocked && isUnassigned && !isResolved && !isAdmin;
+  const needsStartService = !isBlocked && isUnassigned && !isResolved && !isAdmin && can("tickets.assign");
 
   const handleStartService = () => {
     updateMutation.mutate({
@@ -450,7 +452,7 @@ export default function TicketDetail({ isPopup = false }) {
               <ShieldCheck className="w-3.5 h-3.5" /> Enviar p/ Aprovação
             </Button>
           )}
-          {!["resolved", "closed"].includes(ticket.status) && (isAdmin || isAssignedToMe) && (
+          {!["resolved", "closed"].includes(ticket.status) && (isAdmin || isAssignedToMe) && can("tickets.close") && (
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"

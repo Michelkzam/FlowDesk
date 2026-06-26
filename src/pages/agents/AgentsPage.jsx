@@ -12,6 +12,7 @@ import AgentStats from "@/components/agents/AgentStats";
 import { BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const defaultForm = { name: "", email: "", phone: "", department_name: "", role_name: "", status: "active", admin: false, perfil: "tecnico" };
 
@@ -21,6 +22,7 @@ export default function AgentsPage() {
   const [form, setForm] = useState(defaultForm);
   const [statsAgent, setStatsAgent] = useState(null);
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["agents"],
@@ -91,8 +93,8 @@ export default function AgentsPage() {
 
   return (
     <div>
-      <PageHeader title="Técnicos" subtitle="Gerencie os técnicos de suporte" action={openCreate} actionLabel="Novo Técnico" />
-      <DataTable columns={columns} data={agents} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteMutation.mutate(item.id)} searchKeys={["name", "email", "department_name"]} emptyMessage="Nenhum técnico cadastrado" />
+      <PageHeader title="Técnicos" subtitle="Gerencie os técnicos de suporte" action={openCreate} actionLabel="Novo Técnico" canCreate={can("users.manage")} />
+      <DataTable columns={columns} data={agents} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteMutation.mutate(item.id)} searchKeys={["name", "email", "department_name"]} emptyMessage="Nenhum técnico cadastrado" canEdit={can("users.manage")} canDelete={can("users.manage")} />
       <FormDialog open={dialogOpen} onClose={close} title={editing ? "Editar Técnico" : "Novo Técnico"} fields={fields} data={form} onChange={set} onSubmit={handleSubmit} isLoading={createMutation.isPending || updateMutation.isPending} />
 
       {/* Stats Modal */}
