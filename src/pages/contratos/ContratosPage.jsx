@@ -247,16 +247,17 @@ export default function ContratosPage() {
             <div className="space-y-1.5">
               <Label>Anexos (contrato, documentos, alterações)</Label>
               <div className="border border-dashed border-border rounded-lg p-3">
-                <input type="file" multiple id="contract-files" className="hidden" onChange={e => {
+                <input type="file" multiple id="contract-files" className="hidden" onChange={async (e) => {
                   const files = Array.from(e.target.files || []);
-                  const readFile = (file) => new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve({ name: file.name, size: file.size, type: file.type, data: reader.result });
-                    reader.readAsDataURL(file);
+                  const uploadPromises = files.map(async (file) => {
+                    const path = `contracts/${Date.now()}_${file.name}`;
+                    const { error } = await supabase.storage.from('contract-attachments').upload(path, file);
+                    if (error) { console.error('[Upload]', error); return null; }
+                    const { data: urlData } = supabase.storage.from('contract-attachments').getPublicUrl(path);
+                    return { name: file.name, size: file.size, type: file.type, url: urlData?.publicUrl || path, path };
                   });
-                  Promise.all(files.map(readFile)).then(newAttachments => {
-                    setForm(f => ({ ...f, attachments: [...(f.attachments || []), ...newAttachments] }));
-                  });
+                  const results = (await Promise.all(uploadPromises)).filter(Boolean);
+                  setForm(f => ({ ...f, attachments: [...(f.attachments || []), ...results] }));
                   e.target.value = "";
                 }} />
                 <Button type="button" variant="outline" size="sm" className="gap-1.5 w-full" onClick={() => document.getElementById("contract-files")?.click()}>
@@ -266,7 +267,7 @@ export default function ContratosPage() {
                   <div className="mt-2 space-y-1">
                     {form.attachments.map((att, i) => (
                       <div key={i} className="flex items-center justify-between bg-muted rounded-md px-2.5 py-1.5 text-xs">
-                        <span className="truncate flex-1">{att.name}</span>
+                        <a href={att.url || '#'} target="_blank" rel="noopener noreferrer" className="truncate flex-1 text-primary hover:underline">{att.name}</a>
                         <button type="button" onClick={() => setForm(f => ({ ...f, attachments: f.attachments.filter((_, j) => j !== i) }))} className="ml-2 text-muted-foreground hover:text-destructive">
                           <X className="w-3.5 h-3.5" />
                         </button>
