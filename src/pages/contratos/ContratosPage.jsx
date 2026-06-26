@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import React, { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calendar, Paperclip, X } from "lucide-react";
+import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calendar, Paperclip, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -35,6 +35,7 @@ export default function ContratosPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
+  const [viewingAttachments, setViewingAttachments] = useState(null);
   const qc = useQueryClient();
 
   const { data: contracts = [], isLoading } = useQuery({
@@ -180,9 +181,9 @@ export default function ContratosPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {(c.attachments || []).length > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Paperclip className="w-3 h-3" />{c.attachments.length}
-                    </span>
+                    <button onClick={() => setViewingAttachments(c)} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer" title="Ver anexos">
+                      <Paperclip className="w-3.5 h-3.5" />{c.attachments.length}
+                    </button>
                   )}
                   <Badge variant="outline" className={`text-xs ${statusColors[c.status] || ""}`}>{statusLabels[c.status] || c.status}</Badge>
                   <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -296,6 +297,35 @@ export default function ContratosPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Attachments Dialog */}
+      <Dialog open={!!viewingAttachments} onOpenChange={() => setViewingAttachments(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Anexos — {viewingAttachments?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {(!viewingAttachments?.attachments || viewingAttachments.attachments.length === 0) ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum anexo</p>
+            ) : viewingAttachments.attachments.map((att, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{att.name}</p>
+                  <p className="text-xs text-muted-foreground">{att.size ? `${(att.size / 1024).toFixed(1)} KB` : ""}</p>
+                </div>
+                {att.url && (
+                  <a href={att.url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-muted text-primary transition-colors">
+                    <Download className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
