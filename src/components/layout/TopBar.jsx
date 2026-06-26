@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 
 import React, { useState, useEffect } from "react";
-import { Bell, LogOut, User, Sun, Moon } from "lucide-react";
+import { Bell, LogOut, User, Sun, Moon, Pause, Play } from "lucide-react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -10,11 +10,12 @@ import { useTheme } from "@/lib/ThemeContext";
 import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 
-const REFRESH_INTERVAL = 300; // 5 minutos em segundos
+const REFRESH_INTERVAL = 300;
 
 export default function TopBar() {
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+  const [paused, setPaused] = useState(false);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -27,6 +28,8 @@ export default function TopBar() {
   });
 
   useEffect(() => {
+    if (paused) return;
+
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -39,7 +42,7 @@ export default function TopBar() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [queryClient]);
+  }, [queryClient, paused]);
 
   const minutes = Math.floor(countdown / 60);
   const seconds = countdown % 60;
@@ -64,23 +67,6 @@ export default function TopBar() {
       </div>
 
       <div className="flex items-center gap-1">
-        {/* Countdown Timer */}
-        <div className="relative w-9 h-9 flex items-center justify-center cursor-default" title="Próxima atualização automática">
-          <svg className="w-9 h-9 -rotate-90" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/50 dark:text-zinc-700" />
-            <circle
-              cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeDasharray="94.25"
-              strokeDashoffset={94.25 - (94.25 * progress) / 100}
-              strokeLinecap="round"
-              className="text-primary transition-all duration-1000"
-            />
-          </svg>
-          <span className="absolute text-[10px] font-bold text-muted-foreground dark:text-zinc-400">
-            {minutes}:{seconds.toString().padStart(2, '0')}
-          </span>
-        </div>
-
         <button
           onClick={toggle}
           className="p-2 rounded-lg hover:bg-muted dark:hover:bg-zinc-800 text-muted-foreground dark:text-zinc-400 transition-colors"
@@ -97,6 +83,27 @@ export default function TopBar() {
             </span>
           )}
         </Link>
+
+        {/* Countdown Timer */}
+        <button
+          onClick={() => setPaused(p => !p)}
+          className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          title={paused ? "Retomar atualização automática" : "Pausar atualização automática"}
+        >
+          <svg className="w-9 h-9 -rotate-90" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted/50 dark:text-zinc-700" />
+            <circle
+              cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5"
+              strokeDasharray="94.25"
+              strokeDashoffset={paused ? 94.25 : 94.25 - (94.25 * progress) / 100}
+              strokeLinecap="round"
+              className={cn("transition-all duration-1000", paused ? "text-muted-foreground dark:text-zinc-500" : "text-primary")}
+            />
+          </svg>
+          <span className="absolute text-[10px] font-bold text-muted-foreground dark:text-zinc-400">
+            {paused ? <Pause className="w-3 h-3" /> : `${minutes}:${seconds.toString().padStart(2, '0')}`}
+          </span>
+        </button>
 
         <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border dark:border-zinc-700">
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
@@ -118,4 +125,8 @@ export default function TopBar() {
       </div>
     </header>
   );
+}
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(' ');
 }
