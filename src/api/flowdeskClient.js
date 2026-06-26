@@ -146,7 +146,7 @@ const entities = {
   AuditLog: new EntityClient('audit_logs'),
   ChatMessage: new EntityClient('ticket_messages'),
   ChannelLink: new EntityClient('organizations'),
-  Role: new EntityClient('users'),
+  Role: new EntityClient('roles'),
 };
 
 const integrations = {
