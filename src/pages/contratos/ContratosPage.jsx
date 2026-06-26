@@ -3,7 +3,7 @@ import { db } from '@/api/flowdeskClient';
 import React, { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calendar } from "lucide-react";
+import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calendar, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -25,7 +25,7 @@ const statusLabels = { active: "Ativo", inactive: "Inativo", expired: "Vencido",
 
 const defaultForm = {
   title: "", client_name: "", type: "support", status: "active",
-  start_date: "", end_date: "", value: "", sla_hours: "", notes: "", clauses: ""
+  start_date: "", end_date: "", value: "", sla_hours: "", notes: "", clauses: "", attachments: []
 };
 
 export default function ContratosPage() {
@@ -152,6 +152,11 @@ export default function ContratosPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {(c.attachments || []).length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Paperclip className="w-3 h-3" />{c.attachments.length}
+                    </span>
+                  )}
                   <Badge variant="outline" className={`text-xs ${statusColors[c.status] || ""}`}>{statusLabels[c.status] || c.status}</Badge>
                   <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
@@ -223,6 +228,32 @@ export default function ContratosPage() {
               <Label>Observações</Label>
               <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px] focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                 value={form.notes || ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Observações adicionais..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Anexos (contrato, documentos, alterações)</Label>
+              <div className="border border-dashed border-border rounded-lg p-3">
+                <input type="file" multiple id="contract-files" className="hidden" onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  const newAttachments = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+                  setForm(f => ({ ...f, attachments: [...(f.attachments || []), ...newAttachments] }));
+                  e.target.value = "";
+                }} />
+                <Button type="button" variant="outline" size="sm" className="gap-1.5 w-full" onClick={() => document.getElementById("contract-files")?.click()}>
+                  <Paperclip className="w-3.5 h-3.5" /> Adicionar arquivo
+                </Button>
+                {(form.attachments || []).length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {form.attachments.map((att, i) => (
+                      <div key={i} className="flex items-center justify-between bg-muted rounded-md px-2.5 py-1.5 text-xs">
+                        <span className="truncate flex-1">{att.name}</span>
+                        <button type="button" onClick={() => setForm(f => ({ ...f, attachments: f.attachments.filter((_, j) => j !== i) }))} className="ml-2 text-muted-foreground hover:text-destructive">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={close_}>Cancelar</Button>

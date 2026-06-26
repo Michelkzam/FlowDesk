@@ -247,6 +247,7 @@ const entities = {
   ChatMessage: new EntityClient('ticket_messages'),
   ChannelLink: new EntityClient('organizations'),
   Role: new EntityClient('roles'),
+  Contract: new EntityClient('contracts'),
 };
 
 const integrations = {
