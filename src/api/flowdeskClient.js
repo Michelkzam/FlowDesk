@@ -11,8 +11,6 @@ class EntityClient {
   }
 
   mapField(field) {
-    if (field === 'created_date') return 'created_at';
-    if (field === '-created_date') return '-created_at';
     return field;
   }
 
