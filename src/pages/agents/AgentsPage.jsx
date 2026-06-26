@@ -29,9 +29,21 @@ export default function AgentsPage() {
   const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list() });
   const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
 
-  const createMutation = useMutation({ mutationFn: d => db.entities.Agent.create(d), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); } });
-  const updateMutation = useMutation({ mutationFn: ({ id, data }) => db.entities.Agent.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); } });
-  const deleteMutation = useMutation({ mutationFn: id => db.entities.Agent.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agents"] }) });
+  const createMutation = useMutation({
+    mutationFn: d => db.entities.Agent.create(d),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); },
+    onError: (e) => { console.error('Erro ao criar técnico:', e); alert('Erro: ' + e.message); }
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => db.entities.Agent.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); },
+    onError: (e) => { console.error('Erro ao atualizar técnico:', e); alert('Erro: ' + e.message); }
+  });
+  const deleteMutation = useMutation({
+    mutationFn: id => db.entities.Agent.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agents"] }),
+    onError: (e) => { console.error('Erro ao excluir técnico:', e); alert('Erro: ' + e.message); }
+  });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); };
   const openCreate = () => { setForm(defaultForm); setEditing(null); setDialogOpen(true); };
