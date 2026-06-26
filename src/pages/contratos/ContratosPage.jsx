@@ -249,8 +249,14 @@ export default function ContratosPage() {
               <div className="border border-dashed border-border rounded-lg p-3">
                 <input type="file" multiple id="contract-files" className="hidden" onChange={e => {
                   const files = Array.from(e.target.files || []);
-                  const newAttachments = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
-                  setForm(f => ({ ...f, attachments: [...(f.attachments || []), ...newAttachments] }));
+                  const readFile = (file) => new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve({ name: file.name, size: file.size, type: file.type, data: reader.result });
+                    reader.readAsDataURL(file);
+                  });
+                  Promise.all(files.map(readFile)).then(newAttachments => {
+                    setForm(f => ({ ...f, attachments: [...(f.attachments || []), ...newAttachments] }));
+                  });
                   e.target.value = "";
                 }} />
                 <Button type="button" variant="outline" size="sm" className="gap-1.5 w-full" onClick={() => document.getElementById("contract-files")?.click()}>
