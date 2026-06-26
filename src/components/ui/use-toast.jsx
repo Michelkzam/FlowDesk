@@ -110,8 +110,9 @@ function dispatch(action) {
   });
 }
 
-function toast({ ...props }) {
+function toast({ duration, ...props }) {
   const id = genId();
+  const dismissDuration = duration || TOAST_REMOVE_DELAY;
 
   const update = (props) =>
     dispatch({
@@ -133,6 +134,10 @@ function toast({ ...props }) {
       },
     },
   });
+
+  setTimeout(() => {
+    dismiss();
+  }, dismissDuration);
 
   return {
     id,
