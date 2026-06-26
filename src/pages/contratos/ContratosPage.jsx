@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { supabase } from '@/lib/supabase';
 
 import React, { useState } from "react";
 
@@ -38,16 +39,30 @@ export default function ContratosPage() {
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ["contracts"],
-    queryFn: () => db.entities.Contract.list("-created_date", 200),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('contracts').select('*').limit(200);
+      if (error) { console.error('[Contratos] Erro:', error); return []; }
+      return data || [];
+    },
   });
 
   const createM = useMutation({
-    mutationFn: d => db.entities.Contract.create(d),
+    mutationFn: async (d) => {
+      const { data, error } = await supabase.from('contracts').insert(d).select().single();
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); },
+    onError: (e) => console.error('[Contratos] Erro ao criar:', e),
   });
   const updateM = useMutation({
-    mutationFn: ({ id, data }) => db.entities.Contract.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { data: result, error } = await supabase.from('contracts').update(data).eq('id', id).select().single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); },
+    onError: (e) => console.error('[Contratos] Erro ao atualizar:', e),
   });
   const deleteM = useMutation({
     mutationFn: id => db.entities.Contract.delete(id),
