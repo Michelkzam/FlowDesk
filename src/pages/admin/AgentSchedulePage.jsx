@@ -11,28 +11,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, CalendarDays, User, UserPlus, Trash2, Pencil, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, startOfWeek, endOfWeek, isSameMonth, differenceInWeeks, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const DAYS_PT = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const DAY_TYPES = [
-  { value: "saturday", label: "Sábado" },
-  { value: "sunday", label: "Domingo" },
-  { value: "holiday", label: "Feriado" },
-];
-const RECURRENCES = [
-  { value: 1, label: "1º" }, { value: 2, label: "2º" }, { value: 3, label: "3º" },
-  { value: 4, label: "4º" }, { value: 5, label: "5º" },
+const DAY_NAMES = { 0: "Domingo", 1: "Segunda", 2: "Terça", 3: "Quarta", 4: "Quinta", 5: "Sexta", 6: "Sábado" };
+const DAY_NUMBERS = [
+  { value: 0, label: "Domingo" }, { value: 1, label: "Segunda" }, { value: 2, label: "Terça" },
+  { value: 3, label: "Quarta" }, { value: 4, label: "Quinta" }, { value: 5, label: "Sexta" },
+  { value: 6, label: "Sábado" },
 ];
 
-function getOccurrenceInMonth(year, month, dayType, weekNum) {
-  const dayMap = { saturday: 6, sunday: 0, holiday: 6 };
-  const targetDay = dayMap[dayType];
-  const monthStart = new Date(year, month, 1);
-  const monthEnd = new Date(year, month + 1, 0);
-  const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const matching = allDays.filter(d => getDay(d) === targetDay);
-  return matching[weekNum - 1] || null;
+function isOnDuty(targetDate, cycleStartDate, intervalWeeks, targetDayOfWeek) {
+  if (getDay(targetDate) !== targetDayOfWeek) return false;
+  if (new Date(targetDate) < new Date(cycleStartDate)) return false;
+  const weeksDiff = differenceInWeeks(new Date(targetDate), new Date(cycleStartDate));
+  return weeksDiff % intervalWeeks === 0;
 }
 
 export default function AgentSchedulePage() {
@@ -40,7 +33,10 @@ export default function AgentSchedulePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
-  const [ruleForm, setRuleForm] = useState({ agent_id: "", day_type: "saturday", recurrence_week: 1, start_time: "08:00", end_time: "18:00", notes: "" });
+  const [ruleForm, setRuleForm] = useState({
+    agent_id: "", day_of_week: 6, cycle_start_date: "", interval_weeks: 2,
+    start_time: "08:00", end_time: "18:00", notes: ""
+  });
   const queryClient = useQueryClient();
 
   const { data: schedules = [], isLoading: loadingSchedules } = useQuery({
@@ -55,7 +51,7 @@ export default function AgentSchedulePage() {
   const { data: onCallRules = [], isLoading: loadingRules } = useQuery({
     queryKey: ["on-call-rules"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('on_call_rules').select('*').order('day_type');
+      const { data, error } = await supabase.from('on_call_rules').select('*').order('cycle_start_date');
       if (error) { console.error(error); return []; }
       return data || [];
     },
@@ -122,18 +118,17 @@ export default function AgentSchedulePage() {
 
   const onCallByDate = useMemo(() => {
     const map = {};
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    onCallRules.filter(r => r.status === 'active').forEach(rule => {
-      const date = getOccurrenceInMonth(year, month, rule.day_type, rule.recurrence_week);
-      if (date) {
-        const key = format(date, 'yyyy-MM-dd');
-        if (!map[key]) map[key] = [];
-        map[key].push(rule);
-      }
+    onCallRules.filter(r => r.status === 'active' && r.cycle_start_date).forEach(rule => {
+      calendarDays.forEach(day => {
+        if (isOnDuty(day, rule.cycle_start_date, rule.interval_weeks || 2, rule.day_of_week)) {
+          const key = day.toISOString().split('T')[0];
+          if (!map[key]) map[key] = [];
+          map[key].push(rule);
+        }
+      });
     });
     return map;
-  }, [onCallRules, currentMonth]);
+  }, [onCallRules, calendarDays]);
 
   const toggleScheduleDay = (schedule) => {
     updateScheduleM.mutate({ id: schedule.id, data: { is_active: !schedule.is_active } });
@@ -145,19 +140,23 @@ export default function AgentSchedulePage() {
 
   const openEditRule = (rule) => {
     setEditingRule(rule);
-    setRuleForm({ agent_id: rule.agent_id || "", day_type: rule.day_type, recurrence_week: rule.recurrence_week, start_time: rule.start_time, end_time: rule.end_time, notes: rule.notes || "" });
+    setRuleForm({
+      agent_id: rule.agent_id || "", day_of_week: rule.day_of_week,
+      cycle_start_date: rule.cycle_start_date || "", interval_weeks: rule.interval_weeks || 2,
+      start_time: rule.start_time, end_time: rule.end_time, notes: rule.notes || ""
+    });
     setRuleDialogOpen(true);
   };
 
   const openNewRule = () => {
     setEditingRule(null);
-    setRuleForm({ agent_id: "", day_type: "saturday", recurrence_week: 1, start_time: "08:00", end_time: "18:00", notes: "" });
+    setRuleForm({ agent_id: "", day_of_week: 6, cycle_start_date: "", interval_weeks: 2, start_time: "08:00", end_time: "18:00", notes: "" });
     setRuleDialogOpen(true);
   };
 
   const handleSubmitRule = (e) => {
     e.preventDefault();
-    if (!ruleForm.agent_id) return;
+    if (!ruleForm.agent_id || !ruleForm.cycle_start_date) return;
     if (editingRule) updateRuleM.mutate({ id: editingRule.id, data: ruleForm });
     else createRuleM.mutate(ruleForm);
   };
@@ -181,7 +180,6 @@ export default function AgentSchedulePage() {
         </Button>
       </div>
 
-      {/* TAB: Dias e Horários */}
       {activeTab === "hours" && (
         <Card className="border border-border divide-y divide-border overflow-hidden">
           {loadingSchedules ? (
@@ -213,12 +211,20 @@ export default function AgentSchedulePage() {
         </Card>
       )}
 
-      {/* TAB: Plantão / Rodízio */}
       {activeTab === "oncall" && (
         <div className="space-y-4">
+          <Card className="p-4 border border-border bg-muted/30">
+            <p className="text-xs text-muted-foreground">
+              <strong>Como funciona:</strong> Defina a data de início do ciclo e o intervalo de semanas. 
+              Ex: João Silva começa no sábado 04/07/2026, a cada 2 semanas → plantão nos sábados 04/07, 18/07, 01/08, 15/08...
+              Se outro técnico começa no sábado 11/07, o rodízio fica: João (04, 18), outro (11, 25).
+            </p>
+          </Card>
+
           <div className="flex justify-end">
             <Button size="sm" onClick={openNewRule} className="gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Nova Regra</Button>
           </div>
+
           <Card className="border border-border overflow-hidden">
             {loadingRules ? (
               <div className="p-4"><Skeleton className="h-20 w-full" /></div>
@@ -237,12 +243,11 @@ export default function AgentSchedulePage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{rule.agent_name || "Sem agente"}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {DAY_TYPES.find(d => d.value === rule.day_type)?.label || rule.day_type}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {rule.recurrence_week}º do mês
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{DAY_NAMES[rule.day_of_week]}</Badge>
+                        <Badge variant="outline" className="text-xs">a cada {rule.interval_weeks || 2} sem</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {rule.cycle_start_date ? format(new Date(rule.cycle_start_date + 'T00:00:00'), "dd/MM/yyyy") : "—"}
+                        </span>
                         <span className="text-xs text-muted-foreground">{rule.start_time} - {rule.end_time}</span>
                       </div>
                     </div>
@@ -258,7 +263,6 @@ export default function AgentSchedulePage() {
         </div>
       )}
 
-      {/* TAB: Calendário */}
       {activeTab === "calendar" && (
         <Card className="border border-border p-4">
           <div className="flex items-center justify-between mb-4">
@@ -271,7 +275,7 @@ export default function AgentSchedulePage() {
           </div>
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, i) => {
-              const key = format(day, 'yyyy-MM-dd');
+              const key = day.toISOString().split('T')[0];
               const rules = onCallByDate[key] || [];
               const inMonth = isSameMonth(day, currentMonth);
               return (
@@ -289,7 +293,6 @@ export default function AgentSchedulePage() {
         </Card>
       )}
 
-      {/* Dialog Regra de Plantão */}
       <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -305,19 +308,28 @@ export default function AgentSchedulePage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Dia da Semana *</Label>
+              <Select value={String(ruleForm.day_of_week)} onValueChange={v => setRuleForm(p => ({ ...p, day_of_week: parseInt(v) }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{DAY_NUMBERS.map(d => <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Dia do Plantão *</Label>
-                <Select value={ruleForm.day_type} onValueChange={v => setRuleForm(p => ({ ...p, day_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{DAY_TYPES.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
-                </Select>
+                <Label>Data de Início do Ciclo *</Label>
+                <Input type="date" value={ruleForm.cycle_start_date} onChange={e => setRuleForm(p => ({ ...p, cycle_start_date: e.target.value }))} required />
               </div>
               <div className="space-y-1.5">
-                <Label>Ocorrência *</Label>
-                <Select value={String(ruleForm.recurrence_week)} onValueChange={v => setRuleForm(p => ({ ...p, recurrence_week: parseInt(v) }))}>
+                <Label>Repetir a cada</Label>
+                <Select value={String(ruleForm.interval_weeks)} onValueChange={v => setRuleForm(p => ({ ...p, interval_weeks: parseInt(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{RECURRENCES.map(r => <SelectItem key={r.value} value={String(r.value)}>{r.label} do mês</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="1">1 semana</SelectItem>
+                    <SelectItem value="2">2 semanas</SelectItem>
+                    <SelectItem value="3">3 semanas</SelectItem>
+                    <SelectItem value="4">4 semanas</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -337,7 +349,7 @@ export default function AgentSchedulePage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRuleDialogOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={!ruleForm.agent_id || createRuleM.isPending || updateRuleM.isPending}>
+              <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={!ruleForm.agent_id || !ruleForm.cycle_start_date || createRuleM.isPending || updateRuleM.isPending}>
                 {(createRuleM.isPending || updateRuleM.isPending) ? "Salvando..." : editingRule ? "Salvar" : "Criar"}
               </Button>
             </DialogFooter>
