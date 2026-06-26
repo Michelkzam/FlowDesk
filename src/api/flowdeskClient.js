@@ -57,21 +57,35 @@ class EntityClient {
     return data;
   }
 
+  _cleanData(data, isUpdate = false) {
+    const clean = { ...data };
+    if (isUpdate) {
+      delete clean.id;
+    }
+    delete clean.created_at;
+    delete clean.created_date;
+    delete clean.updated_at;
+    delete clean.updated_date;
+
+    if (this.tableName === 'users') {
+      if (clean.name && !clean.full_name) clean.full_name = clean.name;
+      if (!isUpdate && !clean.password_hash) clean.password_hash = 'supabase_auth';
+      if (!isUpdate && !clean.role) clean.role = clean.admin ? 'admin' : 'agent';
+      if (clean.department_name && !clean.department) clean.department = clean.department_name;
+    }
+
+    Object.keys(clean).forEach(key => {
+      if (clean[key] === undefined) delete clean[key];
+    });
+
+    return clean;
+  }
+
   async create(data) {
-    const insertData = { ...data };
-    if (!insertData.created_at && !insertData.created_date) {
+    const insertData = this._cleanData(data);
+    if (!insertData.created_at) {
       insertData.created_at = new Date().toISOString();
     }
-    delete insertData.created_date;
-    delete insertData.updated_at;
-
-    if (this.tableName === 'users' && insertData.name && !insertData.full_name) {
-      insertData.full_name = insertData.name;
-    }
-    if (this.tableName === 'users' && !insertData.password_hash) {
-      insertData.password_hash = 'supabase_auth';
-    }
-
     const { data: result, error } = await supabase
       .from(this.tableName)
       .insert(insertData)
@@ -82,15 +96,7 @@ class EntityClient {
   }
 
   async update(id, data) {
-    const updateData = { ...data };
-    delete updateData.id;
-    delete updateData.created_at;
-    delete updateData.created_date;
-
-    if (this.tableName === 'users' && updateData.name && !updateData.full_name) {
-      updateData.full_name = updateData.name;
-    }
-
+    const updateData = this._cleanData(data, true);
     const { data: result, error } = await supabase
       .from(this.tableName)
       .update(updateData)
