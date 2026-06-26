@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { ToastProvider } from "@/components/ui/use-toast"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
@@ -156,12 +157,14 @@ function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </Router>
-        <Toaster />
+        <ToastProvider>
+          <Router>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </Router>
+          <Toaster />
+        </ToastProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )
