@@ -78,6 +78,7 @@ export default function ProfileMenu() {
           full_name: profileForm.full_name,
           phone: profileForm.phone,
           department: profileForm.department,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', profile.id);
       if (error) throw error;
@@ -295,11 +296,15 @@ export default function ProfileMenu() {
                 <p className="text-xs text-muted-foreground">
                   Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : "Técnico"}</Badge>
                 </p>
-                {profile?.updated_at && (
+                {profile?.updated_at ? (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Última atualização: {format(new Date(profile.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </p>
-                )}
+                ) : profile?.created_at ? (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Membro desde: {format(new Date(profile.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                ) : null}
               </div>
             </div>
             <div>
