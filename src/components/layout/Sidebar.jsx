@@ -40,6 +40,7 @@ const navItems = [
       { label: "Departamentos", icon: Building2, path: "/departamentos" },
       { label: "Equipes", icon: UsersRound, path: "/equipes" },
       { label: "Funções", icon: Shield, path: "/funcoes" },
+      { label: "Perfis de Acesso", icon: Shield, path: "/perfis" },
       { label: "Organizações", icon: Network, path: "/organizacoes" },
       { label: "Técnicos", icon: UserCog, path: "/agentes" },
       { label: "Usuários", icon: Users, path: "/usuarios" },
