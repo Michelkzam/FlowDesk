@@ -92,6 +92,7 @@ export default function UsersPage() {
         });
         if (error) throw error;
         toast({ title: "Senha alterada", description: `Senha de ${editing.full_name || editing.email} alterada com sucesso!` });
+        queryClient.invalidateQueries({ queryKey: ["system-users"] });
       } catch (err) {
         toast({ title: "Erro ao alterar senha", description: err.message || "Tente novamente.", variant: "destructive" });
       }
@@ -126,6 +127,7 @@ export default function UsersPage() {
       setPasswordUser(null);
       setPwNew("");
       setPwConfirm("");
+      queryClient.invalidateQueries({ queryKey: ["system-users"] });
     } catch (err) {
       toast({ title: "Erro ao alterar senha", description: err.message || "Tente novamente.", variant: "destructive" });
     }
