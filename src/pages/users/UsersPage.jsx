@@ -40,7 +40,13 @@ export default function UsersPage() {
   // System users
   const { data: systemUsers = [], isLoading } = useQuery({
     queryKey: ["system-users"],
-    queryFn: () => db.entities.User.list(),
+    queryFn: async () => {
+      const { data: usersData } = await supabase.from('users').select('*');
+      const { data: clientsData } = await supabase.from('clients').select('id, name');
+      const clientMap = {};
+      (clientsData || []).forEach(c => { clientMap[c.id] = c.name; });
+      return (usersData || []).map(u => ({ ...u, client_name: u.client_id ? clientMap[u.client_id] || "" : "" }));
+    },
   });
 
   // Clients list
@@ -170,6 +176,9 @@ export default function UsersPage() {
     { key: "full_name", label: "Nome" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Telefone" },
+    {
+      key: "client_name", label: "Cliente", render: v => v ? <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{v}</Badge> : <span className="text-xs text-muted-foreground">—</span>
+    },
     { key: "role", label: "Perfil", render: v => (
       <Badge variant="outline" className={v === "admin" ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-blue-100 text-blue-700 border-blue-200"}>
         {v === "admin" ? "Admin" : "Usuário"}
