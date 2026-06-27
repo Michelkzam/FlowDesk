@@ -31,6 +31,7 @@ export default function UsersPage() {
   const [pwConfirm, setPwConfirm] = useState("");
   const [inviting, setInviting] = useState(false);
   const [resendingUser, setResendingUser] = useState(null);
+  const [confirmResendOpen, setConfirmResendOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { can } = usePermissions();
@@ -82,18 +83,21 @@ export default function UsersPage() {
     }
   };
 
-  const handleResendInvite = async (user) => {
+  const handleResendInvite = (user) => {
     setResendingUser(user);
+    setConfirmResendOpen(true);
+  };
+
+  const confirmResendInvite = async () => {
+    setConfirmResendOpen(false);
     try {
       const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      const { error } = await supabase.auth.admin.updateUserById(user.id, { password: tempPassword });
+      const { error } = await supabase.auth.admin.updateUserById(resendingUser.id, { password: tempPassword });
       if (error) throw error;
       await navigator.clipboard.writeText(tempPassword);
       toast({ title: "Convite reenviado!", description: `Nova senha copiada: ${tempPassword}. Cole e envie ao usuário.` });
     } catch (err) {
       toast({ title: "Erro ao reenviar", description: err.message || "Tente novamente.", variant: "destructive" });
-    } finally {
-      setResendingUser(null);
     }
   };
 
@@ -347,6 +351,23 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setPasswordUser(null)}>Cancelar</Button>
             <Button onClick={handleQuickPassword}>Alterar Senha</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmResendOpen} onOpenChange={setConfirmResendOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reenviar Convite</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Deseja gerar uma nova senha para <strong>{resendingUser?.full_name || resendingUser?.email}</strong>?
+            <br />
+            <span className="text-xs">A nova senha será copiada para sua área de transferência.</span>
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmResendOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmResendInvite}>Confirmar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
