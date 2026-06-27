@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Mail, Shield, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Mail, Shield, Eye, EyeOff, Key } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +26,9 @@ export default function UsersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordUser, setPasswordUser] = useState(null);
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
   const [inviting, setInviting] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -104,6 +107,30 @@ export default function UsersPage() {
     setEditOpen(true);
   };
 
+  const handleQuickPassword = async () => {
+    if (!pwNew || pwNew.length < 6) {
+      toast({ title: "Senha inválida", description: "Mínimo 6 caracteres.", variant: "destructive" });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      toast({ title: "Senhas não coincidem", description: "As senhas digitadas não são iguais.", variant: "destructive" });
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('admin_update_user_password', {
+        target_user_id: passwordUser.id,
+        new_password: pwNew,
+      });
+      if (error) throw error;
+      toast({ title: "Senha alterada", description: `Senha de ${passwordUser.full_name || passwordUser.email} alterada com sucesso!` });
+      setPasswordUser(null);
+      setPwNew("");
+      setPwConfirm("");
+    } catch (err) {
+      toast({ title: "Erro ao alterar senha", description: err.message || "Tente novamente.", variant: "destructive" });
+    }
+  };
+
   const columns = [
     { key: "full_name", label: "Nome" },
     { key: "email", label: "Email" },
@@ -112,6 +139,12 @@ export default function UsersPage() {
       <Badge variant="outline" className={v === "admin" ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-blue-100 text-blue-700 border-blue-200"}>
         {v === "admin" ? "Admin" : "Usuário"}
       </Badge>
+    )},
+    { key: "_pw", label: "", render: (_, row) => (
+      <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }}
+        className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha">
+        <Key className="w-3.5 h-3.5" />
+      </button>
     )},
   ];
 
@@ -239,6 +272,28 @@ export default function UsersPage() {
               {updateM.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!passwordUser} onOpenChange={() => setPasswordUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha — {passwordUser?.full_name || passwordUser?.email}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Nova Senha</Label>
+              <Input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Confirmar Senha</Label>
+              <Input type="password" value={pwConfirm} onChange={e => setPwConfirm(e.target.value)} placeholder="Repita a senha" minLength={6} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setPasswordUser(null)}>Cancelar</Button>
+            <Button onClick={handleQuickPassword}>Alterar Senha</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
