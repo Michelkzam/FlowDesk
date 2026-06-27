@@ -96,24 +96,29 @@ export default function ProfileMenu() {
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB.");
+      return;
+    }
     setSaving(true);
     try {
       const ext = file.name.split('.').pop();
       const path = `${profile.id}/avatar.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, contentType: file.type });
       if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path + '?t=' + Date.now());
       const { error } = await supabase
         .from('users')
-        .update({ avatar_url: urlData.publicUrl })
+        .update({ avatar_url: urlData.publicUrl, updated_at: new Date().toISOString() })
         .eq('id', profile.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast.success("Foto atualizada!");
     } catch (err) {
-      toast.error("Erro ao enviar foto: " + (err.message || "Tente novamente."));
+      console.error('[Avatar] Erro:', err);
+      toast.error("Erro ao enviar foto: " + (err.message || "Verifique se o bucket 'avatars' existe no Supabase Storage."));
     } finally {
       setSaving(false);
     }
