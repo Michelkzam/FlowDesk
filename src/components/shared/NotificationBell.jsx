@@ -53,7 +53,7 @@ export default function NotificationBell() {
                 notifs.map(n => (
                   <button
                     key={n.id}
-                    onClick={() => { setOpen(false); if (n.type === 'ticket') navigate('/tickets/todos'); else if (n.type === 'message') navigate('/chat/chats'); }}
+                    onClick={() => { setOpen(false); if (n.type === 'ticket') navigate(`/tickets/${n.ticketId}`); else if (n.type === 'message') navigate('/chat/chats'); }}
                     className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50 last:border-0"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.type === 'ticket' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>

@@ -39,6 +39,7 @@ export async function checkNewNotifications() {
         newNotifications.push({
           id: `ticket-${t.id}`,
           type: 'ticket',
+          ticketId: t.id,
           title: `Novo ticket: ${t.number || '#' + t.id?.slice(0, 6)}`,
           message: t.title,
           time: t.created_at,
