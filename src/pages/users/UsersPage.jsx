@@ -21,7 +21,7 @@ export default function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 " });
+  const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 ", client_name: "" });
   const [editForm, setEditForm] = useState({});
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -54,8 +54,10 @@ export default function UsersPage() {
     e.preventDefault();
     setInviting(true);
     try {
-      await db.auth.inviteUser(inviteForm.email, "user");
-      // Send email notification
+      const result = await db.auth.inviteUser(inviteForm.email, "user");
+      if (result?.user?.id && inviteForm.client_name) {
+        await db.entities.User.update(result.user.id, { client_name: inviteForm.client_name });
+      }
       try {
         await db.integrations.Core.SendEmail({
           to: inviteForm.email,
@@ -64,9 +66,9 @@ export default function UsersPage() {
         });
       } catch {}
       queryClient.invalidateQueries({ queryKey: ["system-users"] });
-      toast({ title: "Convite enviado!", description: `Convite enviado por email para ${inviteForm.email}${inviteForm.phone ? " e notificação via WhatsApp" : ""}` });
+      toast({ title: "Convite enviado!", description: `Convite enviado por email para ${inviteForm.email}` });
       setInviteOpen(false);
-      setInviteForm({ email: "", phone: "+55 " });
+      setInviteForm({ email: "", phone: "+55 ", client_name: "" });
     } catch (err) {
       toast({ title: "Erro ao enviar convite", description: err.message || "Tente novamente", variant: "destructive" });
     } finally {
@@ -101,7 +103,7 @@ export default function UsersPage() {
 
   const openEdit = (user) => {
     setEditing(user);
-    setEditForm({ role: user.role || "user", phone: user.phone || "" });
+    setEditForm({ role: user.role || "user", phone: user.phone || "", client_name: user.client_name || "" });
     setNewPassword("");
     setConfirmPassword("");
     setShowPassword(false);
@@ -201,6 +203,15 @@ export default function UsersPage() {
                 placeholder="+55 (00) 00000-0000"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Cliente (opcional)</Label>
+              <Input
+                value={inviteForm.client_name}
+                onChange={e => setInviteForm(p => ({ ...p, client_name: e.target.value }))}
+                placeholder="Nome do cliente vinculado"
+              />
+              <p className="text-[10px] text-muted-foreground">Se informado, o nome do cliente será exibido nos tickets criados por este usuário.</p>
+            </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 text-sm text-blue-800">
               <Mail className="w-4 h-4 mt-0.5 shrink-0" />
               <p>O convite de acesso será enviado por email e WhatsApp. O usuário define sua própria senha ao aceitar.</p>
@@ -237,6 +248,11 @@ export default function UsersPage() {
             <div className="space-y-1.5">
               <Label>Telefone</Label>
               <Input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="+55 (00) 00000-0000" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cliente Vinculado</Label>
+              <Input value={editForm.client_name || ""} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} placeholder="Nome do cliente" />
+              <p className="text-[10px] text-muted-foreground">Nome do cliente exibido nos tickets criados por este usuário.</p>
             </div>
             <div className="border-t border-border pt-4 space-y-3">
               <Label className="text-sm font-semibold">Alterar Senha</Label>

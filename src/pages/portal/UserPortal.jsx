@@ -128,6 +128,7 @@ export default function UserPortal() {
       user_name: currentUser?.full_name,
       user_email: currentUser?.email,
       user_phone: profile?.phone,
+      client_name: profile?.client_name || profile?.company || "",
       organization_name: profile?.company,
       status: "open",
       source: "web",

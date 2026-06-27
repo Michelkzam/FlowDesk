@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -10,13 +10,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 
 const defaultForm = {
   title: "", description: "", priority: "normal", source: "web",
-  user_name: "", user_email: "", user_phone: "",
+  user_name: "", user_email: "", user_phone: "", client_name: "",
   department_id: "", department_name: "", help_topic_id: "", help_topic_name: "",
   agent_id: "", agent_name: "", status: "open"
 };
+
+export default function NewTicketDialog({ open, onClose }) {
+  const [form, setForm] = useState(defaultForm);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (open) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          supabase.from('users').select('client_name, full_name, email').eq('id', data.user.id).single().then(({ data: profile }) => {
+            if (profile?.client_name) {
+              setForm(p => ({ ...p, client_name: profile.client_name, user_name: profile.full_name || "", user_email: profile.email || "" }));
+            }
+          });
+        }
+      });
+    }
+  }, [open]);
 
 export default function NewTicketDialog({ open, onClose }) {
   const [form, setForm] = useState(defaultForm);
