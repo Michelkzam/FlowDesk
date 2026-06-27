@@ -81,9 +81,9 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/portal" element={<UserPortal />} />
 
-      {/* Protected admin/agent routes */}
+      {/* Protected routes */}
       <Route path="/" element={
-        <ProtectedRoute requireAgent>
+        <ProtectedRoute>
           <AppLayout />
         </ProtectedRoute>
       }>
