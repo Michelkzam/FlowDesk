@@ -50,7 +50,11 @@ export default function UsersPage() {
   });
 
   const updateM = useMutation({
-    mutationFn: ({ id, data }) => db.entities.User.update(id, data),
+    mutationFn: ({ id, data }) => {
+      const clean = { ...data };
+      if (!clean.client_id) delete clean.client_id;
+      return db.entities.User.update(id, clean);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["system-users"] }); setEditOpen(false); },
   });
 
