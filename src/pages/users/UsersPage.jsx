@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Mail, Shield, Eye, EyeOff, Key } from "lucide-react";
+import { UserPlus, Mail, Shield, Eye, EyeOff, Key, Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase";
@@ -30,6 +30,7 @@ export default function UsersPage() {
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [resendingUser, setResendingUser] = useState(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { can } = usePermissions();
@@ -78,6 +79,21 @@ export default function UsersPage() {
       toast({ title: "Erro ao enviar convite", description: err.message || "Tente novamente", variant: "destructive" });
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleResendInvite = async (user) => {
+    setResendingUser(user);
+    try {
+      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+      const { error } = await supabase.auth.admin.updateUserById(user.id, { password: tempPassword });
+      if (error) throw error;
+      await navigator.clipboard.writeText(tempPassword);
+      toast({ title: "Convite reenviado!", description: `Nova senha copiada: ${tempPassword}. Cole e envie ao usuário.` });
+    } catch (err) {
+      toast({ title: "Erro ao reenviar", description: err.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setResendingUser(null);
     }
   };
 
@@ -173,10 +189,16 @@ export default function UsersPage() {
         canEdit={can("users.manage")}
         canDelete={can("users.manage")}
         extraActions={(row) => (
-          <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }}
-            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha">
-            <Key className="w-3.5 h-3.5" />
-          </button>
+          <>
+            <button onClick={(e) => { e.stopPropagation(); handleResendInvite(row); }}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite">
+              <Send className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }}
+              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha">
+              <Key className="w-3.5 h-3.5" />
+            </button>
+          </>
         )}
       />
 
