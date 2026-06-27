@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
 
 const channelEmoji = {
   whatsapp: "🟢",
@@ -34,12 +35,35 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+  const prevMsgCountRef = useRef(null);
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["chat-messages", ticket.id],
     queryFn: () => db.entities.ChatMessage.filter({ ticket_id: ticket.id }),
     refetchInterval: 300000,
   });
+
+  useEffect(() => {
+    if (!messages.length || prevMsgCountRef.current === null) {
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+    if (messages.length > prevMsgCountRef.current) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.sender_type !== "operator") {
+        supabase.from('system_settings').select('*').then(({ data }) => {
+          const map = {};
+          (data || []).forEach(s => { map[s.key] = s.value; });
+          if (map.sound_new_message_enabled === 'true' && map.sound_new_message_url) {
+            const audio = new Audio(map.sound_new_message_url);
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+          }
+        });
+      }
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages]);
 
   const sendMutation = useMutation({
     mutationFn: (msg) => db.entities.ChatMessage.create({

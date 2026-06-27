@@ -51,6 +51,8 @@ const defaultSettings = {
   sound_ticket_closed_url: "",
   sound_ticket_assigned_enabled: false,
   sound_ticket_assigned_url: "",
+  sound_new_message_enabled: true,
+  sound_new_message_url: "",
 };
 
 export default function SettingsPage() {
@@ -428,6 +430,7 @@ export default function SettingsPage() {
                 { key: "sound_new_ticket_enabled", urlKey: "sound_new_ticket_url", label: "Chegada de Novo Ticket", desc: "Toca quando um novo ticket é criado" },
                 { key: "sound_ticket_closed_enabled", urlKey: "sound_ticket_closed_url", label: "Encerramento de Ticket", desc: "Toca quando um ticket é encerrado" },
                 { key: "sound_ticket_assigned_enabled", urlKey: "sound_ticket_assigned_url", label: "Ticket Atribuído", desc: "Toca quando um ticket é atribuído a você" },
+                { key: "sound_new_message_enabled", urlKey: "sound_new_message_url", label: "Nova Mensagem no Chat", desc: "Toca quando uma nova mensagem é recebida nos chats" },
               ].map(sound => (
                 <div key={sound.key} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
                   <div className="flex-1">
