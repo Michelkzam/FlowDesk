@@ -9,10 +9,14 @@ import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AgentStats from "@/components/agents/AgentStats";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/usePermissions";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/use-toast";
 
 const defaultForm = { name: "", email: "", phone: "", department_name: "", role_name: "", status: "active", admin: false, perfil: "tecnico" };
 
@@ -21,8 +25,12 @@ export default function AgentsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const [statsAgent, setStatsAgent] = useState(null);
+  const [passwordAgent, setPasswordAgent] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const queryClient = useQueryClient();
   const { can } = usePermissions();
+  const { toast } = useToast();
 
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["agents"],
@@ -58,6 +66,30 @@ export default function AgentsPage() {
     else createMutation.mutate(form);
   };
 
+  const handlePasswordChange = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Senha inválida", description: "Mínimo 6 caracteres.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Senhas não coincidem", description: "As senhas digitadas não são iguais.", variant: "destructive" });
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('admin_update_user_password', {
+        target_user_id: passwordAgent.id,
+        new_password: newPassword,
+      });
+      if (error) throw error;
+      toast({ title: "Senha alterada", description: `Senha de ${passwordAgent.name} alterada com sucesso!` });
+      setPasswordAgent(null);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      toast({ title: "Erro ao alterar senha", description: err.message || "Tente novamente.", variant: "destructive" });
+    }
+  };
+
   const columns = [
     { key: "name", label: "Nome" },
     { key: "email", label: "Email" },
@@ -71,11 +103,17 @@ export default function AgentsPage() {
     { key: "role_name", label: "Função" },
     { key: "status", label: "Status", render: v => <StatusBadge value={v} /> },
     {
-      key: "_stats", label: "Stats", render: (_, row) => (
-        <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver estatísticas"
-          onClick={e => { e.stopPropagation(); setStatsAgent(row); }}>
-          <BarChart2 className="w-4 h-4 text-primary" />
-        </Button>
+      key: "_stats", label: "Ações", render: (_, row) => (
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver estatísticas"
+            onClick={e => { e.stopPropagation(); setStatsAgent(row); }}>
+            <BarChart2 className="w-4 h-4 text-primary" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Alterar senha"
+            onClick={e => { e.stopPropagation(); setPasswordAgent(row); setNewPassword(""); setConfirmPassword(""); }}>
+            <Key className="w-4 h-4 text-muted-foreground" />
+          </Button>
+        </div>
       )
     },
   ];
@@ -104,6 +142,29 @@ export default function AgentsPage() {
             <DialogTitle>Estatísticas — {statsAgent?.name}</DialogTitle>
           </DialogHeader>
           {statsAgent && <AgentStats agentId={statsAgent.id} agentName={statsAgent.name} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Modal */}
+      <Dialog open={!!passwordAgent} onOpenChange={() => setPasswordAgent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha — {passwordAgent?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Nova Senha</Label>
+              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Confirmar Senha</Label>
+              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita a senha" minLength={6} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setPasswordAgent(null)}>Cancelar</Button>
+            <Button onClick={handlePasswordChange}>Alterar Senha</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
