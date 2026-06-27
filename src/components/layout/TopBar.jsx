@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 
 import React, { useState, useEffect } from "react";
-import { Bell, Sun, Moon, Pause, Play } from "lucide-react";
+import { Sun, Moon, Pause, Play } from "lucide-react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -10,6 +10,7 @@ import { useTheme } from "@/lib/ThemeContext";
 import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 import ProfileMenu from "./ProfileMenu";
+import NotificationBell from "@/components/shared/NotificationBell";
 
 const REFRESH_INTERVAL = 300;
 
@@ -73,14 +74,7 @@ export default function TopBar() {
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        <Link to="/tickets/todos" className="p-2 rounded-lg hover:bg-muted dark:hover:bg-zinc-800 text-muted-foreground dark:text-zinc-400 relative">
-          <Bell className="w-4 h-4" />
-          {openCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">
-              {openCount > 99 ? "99+" : openCount}
-            </span>
-          )}
-        </Link>
+        <NotificationBell />
 
         <button
           onClick={() => setPaused(p => !p)}

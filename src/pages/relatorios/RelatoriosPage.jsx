@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Filter, Search } from "lucide-react";
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const STATUS_LABELS = { open: "Aberto", in_progress: "Em Andamento", waiting: "Aguardando", resolved: "Resolvido", closed: "Fechado" };
 const PRIORITY_LABELS = { low: "Baixa", normal: "Normal", high: "Alta", emergency: "Emergência" };
@@ -93,6 +95,33 @@ export default function RelatoriosPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(16);
+    doc.text("Relatório de Tickets - FlowDesk", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Período: ${filters.dateFrom} a ${filters.dateTo} | Total: ${filteredTickets.length} registros`, 14, 22);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+    const rows = filteredTickets.map(t => [
+      t.number || t.id?.slice(0, 8) || "",
+      t.title?.substring(0, 30) || "",
+      STATUS_LABELS[t.status] || t.status || "",
+      PRIORITY_LABELS[t.priority] || t.priority || "",
+      t.department_name || "",
+      t.agent_name || "",
+      t.user_name || "",
+      t.created_date ? format(parseISO(t.created_date), "dd/MM/yy HH:mm") : "",
+    ]);
+    doc.autoTable({
+      startY: 32,
+      head: [["#", "Título", "Status", "Prioridade", "Depto", "Agente", "Usuário", "Criado"]],
+      body: rows,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    doc.save(`relatorio_${filters.dateFrom}_${filters.dateTo}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -100,9 +129,14 @@ export default function RelatoriosPage() {
           <h1 className="text-xl font-bold text-foreground">Relatórios</h1>
           <p className="text-sm text-muted-foreground">Extraia e exporte dados dos atendimentos</p>
         </div>
-        <Button onClick={handleExportCSV} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-          <Download className="w-4 h-4" /> Exportar CSV ({filteredTickets.length})
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportCSV} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            <Download className="w-4 h-4" /> CSV ({filteredTickets.length})
+          </Button>
+          <Button onClick={handleExportPDF} variant="outline" className="gap-2">
+            <FileText className="w-4 h-4" /> PDF
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
