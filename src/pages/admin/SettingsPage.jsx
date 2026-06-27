@@ -124,14 +124,16 @@ export default function SettingsPage() {
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-      set(key, urlData.publicUrl);
-      toast({ title: "Áudio carregado", description: `Som de ${key.replace('sound_', '').replace('_', ' ')} atualizado!` });
+      set(key, JSON.stringify({ url: urlData.publicUrl, name: file.name }));
+      toast({ title: "Áudio carregado", description: `${file.name} carregado com sucesso!` });
     } catch (err) {
       toast({ title: "Erro ao carregar áudio", description: err.message || "Tente novamente.", variant: "destructive" });
     }
   };
 
-  const playPreview = (url, key) => {
+  const playPreview = (urlOrJson, key) => {
+    let url = urlOrJson;
+    try { const parsed = JSON.parse(urlOrJson); url = parsed.url; } catch {}
     if (!url) {
       toast({ title: "Sem áudio", description: "Nenhum áudio configurado para esta notificação.", variant: "destructive" });
       return;
@@ -471,9 +473,11 @@ export default function SettingsPage() {
                           onChange={(e) => handleSoundUpload(sound.urlKey, e)}
                         />
                         {settings[sound.urlKey] && (
-                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            Áudio personalizado
-                          </span>
+                          <div className="text-xs text-muted-foreground ml-9 max-w-[250px]" title={settings[sound.urlKey]}>
+                            {(() => {
+                              try { const p = JSON.parse(settings[sound.urlKey]); return <span className="truncate block">{p.name} <span className="text-muted-foreground/50">({p.url.split('/').slice(-2).join('/')})</span></span>; } catch { return <span className="truncate block">{settings[sound.urlKey].split('/').pop()}</span>; }
+                            })()}
+                          </div>
                         )}
                       </div>
                     )}

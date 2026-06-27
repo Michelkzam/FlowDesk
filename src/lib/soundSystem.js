@@ -30,7 +30,9 @@ export async function playSystemSound(type) {
     const enabledKey = `sound_${type}_enabled`;
     const urlKey = `sound_${type}_url`;
     if (settings[enabledKey] !== 'true') return;
-    const url = settings[urlKey];
+    let url = settings[urlKey];
+    if (!url) return;
+    try { const parsed = JSON.parse(url); url = parsed.url; } catch {}
     if (!url) return;
     const audio = new Audio(url);
     audio.volume = 0.5;
