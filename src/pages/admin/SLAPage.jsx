@@ -37,15 +37,6 @@ export default function SLAPage() {
     },
   });
 
-  const { data: schedules = [] } = useQuery({
-    queryKey: ["schedules"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('schedules').select('*').order('name');
-      if (error) return [];
-      return data || [];
-    },
-  });
-
   const createM = useMutation({
     mutationFn: async (d) => {
       if (d.is_default) await supabase.from('sla_plans').update({ is_default: false }).eq('is_default', true);
@@ -87,8 +78,9 @@ export default function SLAPage() {
       toast({ title: "Campo obrigatório", description: "Preencha o nome do plano.", variant: "destructive" });
       return;
     }
-    if (editing) updateM.mutate({ id: editing.id, data: form });
-    else createM.mutate(form);
+    const { schedule_id, ...cleanForm } = form;
+    if (editing) updateM.mutate({ id: editing.id, data: cleanForm });
+    else createM.mutate(cleanForm);
   };
 
   const columns = [
@@ -110,7 +102,7 @@ export default function SLAPage() {
     { key: "normal_hours", label: "Prazo Média (horas)", type: "number", required: true, hint: "Problemas pontuais/Dúvidas" },
     { key: "low_hours", label: "Prazo Baixa (horas)", type: "number", required: true, hint: "Solicitações de rotina/Melhorias" },
     { key: "grace_period", label: "Período de Tolerância (horas)", type: "number", hint: "Tempo extra antes de marcar como atrasado" },
-    { key: "schedule_id", label: "Cronograma", type: "select", options: [{ value: "", label: "Sem cronograma" }, ...schedules.map(s => ({ value: s.id, label: s.name }))] },
+
     { key: "status", label: "Status", type: "select", options: [{ value: "active", label: "Ativo" }, { value: "inactive", label: "Inativo" }] },
     { key: "notes", label: "Notas", type: "textarea" },
   ];
