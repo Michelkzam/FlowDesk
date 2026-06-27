@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Settings, Ticket, Users, BookOpen, Mail, ImageIcon, Upload } from "lucide-react";
+import { Save, Settings, Ticket, Users, BookOpen, Mail, ImageIcon, Upload, Volume2, Play, Pause } from "lucide-react";
 import UserProfilesTable from "@/components/settings/UserProfilesTable";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -43,6 +43,14 @@ const defaultSettings = {
   ticket_number_format: "######",
   lock_duration: 30,
   page_size: 25,
+  sound_login_enabled: true,
+  sound_login_url: "",
+  sound_new_ticket_enabled: true,
+  sound_new_ticket_url: "",
+  sound_ticket_closed_enabled: true,
+  sound_ticket_closed_url: "",
+  sound_ticket_assigned_enabled: false,
+  sound_ticket_assigned_url: "",
 };
 
 export default function SettingsPage() {
@@ -97,6 +105,46 @@ export default function SettingsPage() {
 
   const set = (k, v) => setSettings(p => ({ ...p, [k]: v }));
 
+  const [playingSound, setPlayingSound] = useState(null);
+
+  const handleSoundUpload = async (key, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('audio/')) {
+      toast({ title: "Arquivo inválido", description: "Selecione um arquivo de áudio.", variant: "destructive" });
+      return;
+    }
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `sounds/${key}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      set(key, urlData.publicUrl);
+      toast({ title: "Áudio carregado", description: `Som de ${key.replace('sound_', '').replace('_', ' ')} atualizado!` });
+    } catch (err) {
+      toast({ title: "Erro ao carregar áudio", description: err.message || "Tente novamente.", variant: "destructive" });
+    }
+  };
+
+  const playPreview = (url, key) => {
+    if (!url) {
+      toast({ title: "Sem áudio", description: "Nenhum áudio configurado para esta notificação.", variant: "destructive" });
+      return;
+    }
+    if (playingSound === key) {
+      setPlayingSound(null);
+      return;
+    }
+    const audio = new Audio(url);
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+    setPlayingSound(key);
+    audio.onended = () => setPlayingSound(null);
+  };
+
   const handleSave = async () => {
     try {
       const entries = Object.entries(settings).filter(([k]) => k in defaultSettings);
@@ -132,12 +180,13 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="system">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="system" className="text-xs gap-1"><Settings className="w-3.5 h-3.5" />Sistema</TabsTrigger>
           <TabsTrigger value="tickets" className="text-xs gap-1"><Ticket className="w-3.5 h-3.5" />Tickets</TabsTrigger>
           <TabsTrigger value="agents" className="text-xs gap-1"><Users className="w-3.5 h-3.5" />Agentes</TabsTrigger>
           <TabsTrigger value="kb" className="text-xs gap-1"><BookOpen className="w-3.5 h-3.5" />Base de Conhecimento</TabsTrigger>
           <TabsTrigger value="email" className="text-xs gap-1"><Mail className="w-3.5 h-3.5" />E-mail</TabsTrigger>
+          <TabsTrigger value="sounds" className="text-xs gap-1"><Volume2 className="w-3.5 h-3.5" />Sons</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system" className="space-y-4 mt-4">
@@ -360,6 +409,74 @@ export default function SettingsPage() {
                 <p>Acesse <strong>E-mails &gt; Configurações</strong> e defina este endereço como o e-mail de saída padrão do sistema.</p>
                 <p>Para usar o mesmo endereço por departamento, atribua-o individualmente em <strong>Agentes &gt; Departamentos &gt; Configurações de Resposta Automática</strong>.</p>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sounds" className="space-y-4 mt-4">
+          <Card className="border border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><Volume2 className="w-4 h-4" /> Sons do Sistema</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Configure os sons de notificação do sistema. Você pode ativar ou desativar cada som e personalizar o arquivo de áudio.
+              </p>
+
+              {[
+                { key: "sound_login_enabled", urlKey: "sound_login_url", label: "Inicialização do Sistema", desc: "Toca ao fazer login no sistema" },
+                { key: "sound_new_ticket_enabled", urlKey: "sound_new_ticket_url", label: "Chegada de Novo Ticket", desc: "Toca quando um novo ticket é criado" },
+                { key: "sound_ticket_closed_enabled", urlKey: "sound_ticket_closed_url", label: "Encerramento de Ticket", desc: "Toca quando um ticket é encerrado" },
+                { key: "sound_ticket_assigned_enabled", urlKey: "sound_ticket_assigned_url", label: "Ticket Atribuído", desc: "Toca quando um ticket é atribuído a você" },
+              ].map(sound => (
+                <div key={sound.key} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={settings[sound.key]}
+                        onCheckedChange={v => set(sound.key, v)}
+                      />
+                      <div>
+                        <p className="text-sm font-medium">{sound.label}</p>
+                        <p className="text-xs text-muted-foreground">{sound.desc}</p>
+                      </div>
+                    </div>
+                    {settings[sound.key] && (
+                      <div className="flex items-center gap-2 mt-3 ml-9">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => playPreview(settings[sound.urlKey], sound.key)}
+                        >
+                          {playingSound === sound.key ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          {playingSound === sound.key ? "Pausar" : "Ouvir"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => document.getElementById(`upload-${sound.key}`)?.click()}
+                        >
+                          <Upload className="w-3 h-3" /> Carregar Áudio
+                        </Button>
+                        <input
+                          id={`upload-${sound.key}`}
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={(e) => handleSoundUpload(sound.urlKey, e)}
+                        />
+                        {settings[sound.urlKey] && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            Áudio personalizado
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
