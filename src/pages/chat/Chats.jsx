@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState, useRef } from "react";
 
@@ -53,6 +54,7 @@ export default function Chats() {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setNewTicketOpen(false);
       setFormData({ title: "", priority: "normal", status: "open", channel: "portal" });
+      playSystemSound('new_ticket');
     },
   });
 

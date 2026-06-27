@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState, useRef, useEffect } from "react";
 
@@ -13,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "@/lib/supabase";
 
 const channelEmoji = {
   whatsapp: "🟢",
@@ -51,15 +51,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     if (messages.length > prevMsgCountRef.current) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.sender_type !== "operator") {
-        supabase.from('system_settings').select('*').then(({ data }) => {
-          const map = {};
-          (data || []).forEach(s => { map[s.key] = s.value; });
-          if (map.sound_new_message_enabled === 'true' && map.sound_new_message_url) {
-            const audio = new Audio(map.sound_new_message_url);
-            audio.volume = 0.5;
-            audio.play().catch(() => {});
-          }
-        });
+        playSystemSound('new_message');
       }
     }
     prevMsgCountRef.current = messages.length;

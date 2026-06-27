@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState, useRef, useEffect } from "react";
 
@@ -135,6 +136,7 @@ export default function UserPortal() {
     onSuccess: (ticket) => {
       queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.email] });
       setSelectedTicket(ticket);
+      playSystemSound('new_ticket');
     },
   });
 

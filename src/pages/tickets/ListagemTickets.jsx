@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState } from "react";
 
@@ -57,7 +58,7 @@ export default function ListagemTickets() {
 
   const createMutation = useMutation({
     mutationFn: (data) => db.entities.Ticket.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tickets"] }); closeDialog(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tickets"] }); closeDialog(); playSystemSound('new_ticket'); },
   });
 
   const updateMutation = useMutation({

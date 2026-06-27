@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState, useRef, useEffect } from "react";
 
@@ -156,12 +157,21 @@ export default function TicketDetail({ isPopup = false }) {
           new_value: data.agent_name || "Sem agente",
           description: `Agente alterado para "${data.agent_name || "Sem agente"}"`,
         });
+        if (data.agent_id) {
+          playSystemSound('ticket_assigned');
+        }
       }
       return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      if (ticket?.status !== "resolved" && ticket?.status !== "closed") {
+        const currentStatus = ticket?.status;
+        if (currentStatus === "resolved" || currentStatus === "closed") {
+          playSystemSound('ticket_closed');
+        }
+      }
     }
   });
 

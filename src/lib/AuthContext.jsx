@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { playSystemSound } from '@/lib/soundSystem';
 
 const AuthContext = createContext(null);
 
@@ -103,6 +104,7 @@ export function AuthProvider({ children }) {
     const p = await fetchProfile(data.user.id);
     setProfile(p);
     await fetchPermissions(p);
+    playSystemSound('login');
     return { user: data.user, profile: p };
   };
 

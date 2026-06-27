@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState } from "react";
 
@@ -32,6 +33,7 @@ export default function NewTicketDialog({ open, onClose }) {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setForm(defaultForm);
       onClose();
+      playSystemSound('new_ticket');
       navigate(`/tickets/${newTicket.id}`);
     }
   });
