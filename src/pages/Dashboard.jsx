@@ -15,6 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { subDays, differenceInMinutes } from "date-fns";
 import SLADashboard from "@/components/dashboard/SLADashboard";
 import { cn } from "@/lib/utils";
+import { openTicketWindow } from "@/lib/ticketWindow";
 
 const COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#f97316", "#10b981", "#6b7280"];
 
@@ -381,7 +382,7 @@ export default function Dashboard() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 shrink-0"
-                    onClick={() => { setSelectedFilter(null); navigate(`/tickets/${ticket.id}`); }}
+                    onClick={() => { setSelectedFilter(null); openTicketWindow(ticket.id); }}
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>

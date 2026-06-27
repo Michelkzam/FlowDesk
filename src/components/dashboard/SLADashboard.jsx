@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, Clock, CheckCircle, TrendingUp, Timer, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { openTicketWindow } from "@/lib/ticketWindow";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -80,7 +80,6 @@ function calculateSLAStatus(ticket, slaPlan) {
 }
 
 export default function SLADashboard() {
-  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const { data: tickets = [], isLoading } = useQuery({
@@ -280,7 +279,7 @@ export default function SLADashboard() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 shrink-0"
-                    onClick={() => { setSelectedCategory(null); navigate(`/tickets/${ticket.id}`); }}
+                    onClick={() => { setSelectedCategory(null); openTicketWindow(ticket.id); }}
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
