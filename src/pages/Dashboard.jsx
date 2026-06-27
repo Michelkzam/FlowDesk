@@ -1,10 +1,12 @@
 import { supabase } from '@/lib/supabase';
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { Ticket, Users, Clock, AlertTriangle, CheckCircle, TrendingUp, UserCog, BookOpen, ShieldCheck, MessageSquare, Settings, FolderOpen, BarChart3 } from "lucide-react";
+import { Ticket, Users, Clock, AlertTriangle, CheckCircle, TrendingUp, UserCog, BookOpen, ShieldCheck, MessageSquare, Settings, FolderOpen, BarChart3, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import { format } from "date-fns";
@@ -12,10 +14,11 @@ import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { subDays, differenceInMinutes } from "date-fns";
 import SLADashboard from "@/components/dashboard/SLADashboard";
+import { cn } from "@/lib/utils";
 
 const COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#f97316", "#10b981", "#6b7280"];
 
-function StatCard({ title, value, icon: IconComponent, color, subtitle, to }) {
+function StatCard({ title, value, icon: IconComponent, color, subtitle, onClick }) {
   const Icon = IconComponent;
   const colorMap = {
     blue: "bg-blue-50 text-blue-600 border-blue-100",
@@ -26,24 +29,21 @@ function StatCard({ title, value, icon: IconComponent, color, subtitle, to }) {
     orange: "bg-orange-50 text-orange-600 border-orange-100",
     gray: "bg-muted text-muted-foreground border-border",
   };
-  const Wrapper = to ? Link : "div";
   return (
-    <Wrapper to={to} className="block">
-      <Card className={`hover:shadow-md transition-all ${to ? "cursor-pointer hover:scale-[1.02]" : ""}`}>
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">{title}</p>
-              <p className="text-3xl font-bold text-foreground mt-1">{value}</p>
-              {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-            </div>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colorMap[color] || colorMap.gray}`}>
-              <Icon className="w-5 h-5" />
-            </div>
+    <Card className="hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]" onClick={onClick}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground font-medium">{title}</p>
+            <p className="text-3xl font-bold text-foreground mt-1">{value}</p>
+            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
           </div>
-        </CardContent>
-      </Card>
-    </Wrapper>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colorMap[color] || colorMap.gray}`}>
+            <Icon className="w-5 h-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -64,6 +64,7 @@ function QuickLink({ icon: Icon, label, to, color }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [selectedFilter, setSelectedFilter] = useState(null);
 
   const { data: tickets = [], isLoading: loadingTickets } = useQuery({
     queryKey: ["tickets"],
@@ -135,6 +136,15 @@ export default function Dashboard() {
 
   const isLoading = loadingTickets || loadingAgents;
 
+  const filteredTickets = useMemo(() => {
+    if (!selectedFilter) return [];
+    return tickets.filter(t => {
+      if (selectedFilter.type === "status") return t.status === selectedFilter.value;
+      if (selectedFilter.type === "priority") return t.priority === selectedFilter.value && !["resolved", "closed"].includes(t.status);
+      return false;
+    });
+  }, [selectedFilter, tickets]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -162,12 +172,12 @@ export default function Dashboard() {
 
       {/* Stats principais */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard title="Abertos" value={open} icon={Ticket} color="blue" to="/tickets/todos?status=open" />
-        <StatCard title="Em Atendimento" value={inProgress} icon={Clock} color="amber" to="/tickets/todos?status=in_progress" />
-        <StatCard title="Aguardando" value={waiting} icon={Clock} color="purple" to="/tickets/todos?status=waiting" />
-        <StatCard title="Aprovação" value={pendingApproval} icon={ShieldCheck} color="orange" to="/tickets/todos?status=pending_approval" />
-        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" to="/tickets/todos?status=resolved" />
-        <StatCard title="Críticos" value={emergency} icon={AlertTriangle} color="red" to="/tickets/todos?priority=emergency" />
+        <StatCard title="Abertos" value={open} icon={Ticket} color="blue" onClick={() => setSelectedFilter({ type: "status", value: "open", label: "Tickets Abertos" })} />
+        <StatCard title="Em Atendimento" value={inProgress} icon={Clock} color="amber" onClick={() => setSelectedFilter({ type: "status", value: "in_progress", label: "Em Atendimento" })} />
+        <StatCard title="Aguardando" value={waiting} icon={Clock} color="purple" onClick={() => setSelectedFilter({ type: "status", value: "waiting", label: "Aguardando" })} />
+        <StatCard title="Aprovação" value={pendingApproval} icon={ShieldCheck} color="orange" onClick={() => setSelectedFilter({ type: "status", value: "pending_approval", label: "Aguardando Aprovação" })} />
+        <StatCard title="Resolvidos" value={resolved} icon={CheckCircle} color="emerald" onClick={() => setSelectedFilter({ type: "status", value: "resolved", label: "Tickets Resolvidos" })} />
+        <StatCard title="Críticos" value={emergency} icon={AlertTriangle} color="red" onClick={() => setSelectedFilter({ type: "priority", value: "emergency", label: "Tickets Críticos" })} />
       </div>
 
       {/* SLA Metrics */}
@@ -346,6 +356,41 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={!!selectedFilter} onOpenChange={() => setSelectedFilter(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{selectedFilter?.label} ({filteredTickets.length})</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {filteredTickets.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum ticket nesta categoria.</p>
+            ) : (
+              filteredTickets.map(ticket => (
+                <div key={ticket.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-muted-foreground font-mono">#{ticket.number || ticket.id?.slice(0, 8)}</span>
+                      <PriorityBadge value={ticket.priority} />
+                      <StatusBadge value={ticket.status} />
+                    </div>
+                    <p className="text-sm font-medium truncate">{ticket.title}</p>
+                    {ticket.user_name && <p className="text-xs text-muted-foreground">{ticket.user_name}</p>}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => { setSelectedFilter(null); navigate(`/tickets/${ticket.id}`); }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
