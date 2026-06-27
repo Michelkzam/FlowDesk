@@ -2,6 +2,9 @@ import { Client } from 'pg';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '../../.env') });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const sql = fs.readFileSync(path.join(__dirname, 'supabase-schema.sql'), 'utf8');
 
 const c = new Client({
-  connectionString: 'postgresql://postgres:FlowDesk2024!@db.lxolgqkavtnnrzakjtrw.supabase.co:5432/postgres',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 

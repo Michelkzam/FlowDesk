@@ -24,6 +24,19 @@ dist-ssr
 *.db
 server/*.db
 
+# Debug/test scripts (contain hardcoded credentials)
+server/test-*.js
+server/debug-*.js
+server/check-*.js
+server/fix-users.js
+server/fix-users-table.js
+server/fix-users-cols.js
+server/fix-roles-rls.js
+server/create-roles.js
+server/seed-supabase.js
+server/seed-example-data.js
+server/fix-rls-recursion.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

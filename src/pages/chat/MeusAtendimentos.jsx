@@ -94,11 +94,11 @@ function TicketCard({ ticket, onClick }) {
           {ticket.created_date ? format(new Date(ticket.created_date), "dd/MM HH:mm", { locale: ptBR }) : "—"}
         </span>
         <Badge variant="outline" className={`text-xs ${
-          ticket.priority === "urgent" ? "bg-red-100 text-red-700 border-red-200" :
+          ticket.priority === "emergency" ? "bg-red-100 text-red-700 border-red-200" :
           ticket.priority === "high" ? "bg-amber-100 text-amber-700 border-amber-200" :
           "bg-muted text-muted-foreground border-border"
         }`}>
-          {ticket.priority === "urgent" ? "Urgente" : ticket.priority === "high" ? "Alta" : ticket.priority === "medium" ? "Média" : "Baixa"}
+          {ticket.priority === "emergency" ? "Crítica" : ticket.priority === "high" ? "Alta" : ticket.priority === "normal" ? "Média" : "Baixa"}
         </Badge>
       </div>
     </button>
@@ -108,7 +108,7 @@ function TicketCard({ ticket, onClick }) {
 export default function MeusAtendimentos() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: "", priority: "medium", status: "open", channel: "portal" });
+  const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const queryClient = useQueryClient();
@@ -123,7 +123,7 @@ export default function MeusAtendimentos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setNewTicketOpen(false);
-      setFormData({ title: "", priority: "medium", status: "open", channel: "portal" });
+      setFormData({ title: "", priority: "normal", status: "open", channel: "portal" });
     },
   });
 
@@ -261,9 +261,9 @@ export default function MeusAtendimentos() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="normal">Média</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="emergency">Crítica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

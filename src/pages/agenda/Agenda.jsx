@@ -40,7 +40,7 @@ export default function Agenda() {
   const [filterView, setFilterView] = useState(null);
   const [formData, setFormData] = useState({
     title: "", description: "", client_name: "", operator_name: "",
-    type: "support", status: "scheduled", priority: "medium",
+    type: "support", status: "scheduled", priority: "normal",
     start_date: "", end_date: "", notes: ""
   });
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ export default function Agenda() {
         client_name: data.client_name || "",
         operator_name: data.operator_name || "",
         status: "open",
-        priority: data.priority || "medium",
+        priority: data.priority || "normal",
         scheduled_date: data.start_date,
         is_scheduled: true,
         channel: "portal",
@@ -71,7 +71,7 @@ export default function Agenda() {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setDialogOpen(false);
-      setFormData({ title: "", description: "", client_name: "", operator_name: "", type: "support", status: "scheduled", priority: "medium", start_date: "", end_date: "", notes: "" });
+      setFormData({ title: "", description: "", client_name: "", operator_name: "", type: "support", status: "scheduled", priority: "normal", start_date: "", end_date: "", notes: "" });
     },
   });
 
@@ -218,9 +218,9 @@ export default function Agenda() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="normal">Média</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="emergency">Crítica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

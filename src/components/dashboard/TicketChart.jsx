@@ -35,8 +35,8 @@ export function TicketsByStatusChart({ tickets }) {
 }
 
 export function TicketsByPriorityChart({ tickets }) {
-  const priorityLabels = { low: "Baixa", medium: "Média", high: "Alta", urgent: "Urgente" };
-  const priorityColors = { low: "#94a3b8", medium: "#3b82f6", high: "#f59e0b", urgent: "#ef4444" };
+  const priorityLabels = { low: "Baixa", normal: "Média", high: "Alta", emergency: "Crítica" };
+  const priorityColors = { low: "#94a3b8", normal: "#3b82f6", high: "#f59e0b", emergency: "#ef4444" };
 
   const data = Object.entries(
     tickets.reduce((acc, t) => {

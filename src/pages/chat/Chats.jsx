@@ -38,7 +38,7 @@ export default function Chats() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: "", priority: "medium", status: "open", channel: "portal" });
+  const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
   const queryClient = useQueryClient();
   const initialStatusRef = useRef(null);
 
@@ -52,7 +52,7 @@ export default function Chats() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setNewTicketOpen(false);
-      setFormData({ title: "", priority: "medium", status: "open", channel: "portal" });
+      setFormData({ title: "", priority: "normal", status: "open", channel: "portal" });
     },
   });
 
@@ -179,7 +179,7 @@ export default function Chats() {
                            ticket.status === "closed" ? "Fechado" : ticket.status}
                         </span>
                         <span className={`text-xs px-1.5 py-0.5 rounded-full ${priorityColors[ticket.priority] || "bg-muted text-muted-foreground"}`}>
-                          {ticket.priority === "low" ? "Baixa" : ticket.priority === "medium" ? "Média" : ticket.priority === "high" ? "Alta" : "Urgente"}
+                          {ticket.priority === "low" ? "Baixa" : ticket.priority === "normal" ? "Média" : ticket.priority === "high" ? "Alta" : "Crítica"}
                         </span>
                       </div>
                     </div>
@@ -231,9 +231,9 @@ export default function Chats() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="normal">Média</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="emergency">Crítica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

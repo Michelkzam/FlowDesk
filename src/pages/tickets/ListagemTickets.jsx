@@ -47,7 +47,7 @@ export default function ListagemTickets() {
   const [filterChannel, setFilterChannel] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState(null);
-  const [formData, setFormData] = useState({ title: "", description: "", priority: "medium", status: "open", channel: "portal", client_name: "" });
+  const [formData, setFormData] = useState({ title: "", description: "", priority: "normal", status: "open", channel: "portal", client_name: "" });
   const queryClient = useQueryClient();
 
   const { data: tickets = [], isLoading } = useQuery({
@@ -68,7 +68,7 @@ export default function ListagemTickets() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingTicket(null);
-    setFormData({ title: "", description: "", priority: "medium", status: "open", channel: "portal", client_name: "" });
+    setFormData({ title: "", description: "", priority: "normal", status: "open", channel: "portal", client_name: "" });
   };
 
   const openEdit = (ticket) => {

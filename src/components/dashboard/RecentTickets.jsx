@@ -16,9 +16,9 @@ const statusMap = {
 
 const priorityMap = {
   low: { label: "Baixa", class: "bg-muted text-muted-foreground" },
-  medium: { label: "Média", class: "bg-blue-100 text-blue-600" },
+  normal: { label: "Média", class: "bg-blue-100 text-blue-600" },
   high: { label: "Alta", class: "bg-amber-100 text-amber-600" },
-  urgent: { label: "Urgente", class: "bg-red-100 text-red-600" },
+  emergency: { label: "Crítica", class: "bg-red-100 text-red-600" },
 };
 
 export default function RecentTickets({ tickets }) {
