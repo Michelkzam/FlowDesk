@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Mail, Shield } from "lucide-react";
+import { UserPlus, Mail, Shield, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { supabase } from "@/lib/supabase";
 
 export default function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -22,6 +23,9 @@ export default function UsersPage() {
   const [editing, setEditing] = useState(null);
   const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 " });
   const [editForm, setEditForm] = useState({});
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [inviting, setInviting] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -67,9 +71,33 @@ export default function UsersPage() {
     }
   };
 
+  const handleSave = async () => {
+    await updateM.mutateAsync({ id: editing.id, data: editForm });
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        toast({ title: "Senha muito curta", description: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" });
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        toast({ title: "Senhas não coincidem", description: "As senhas digitadas não são iguais.", variant: "destructive" });
+        return;
+      }
+      try {
+        const { error } = await supabase.auth.admin.updateUserById(editing.id, { password: newPassword });
+        if (error) throw error;
+        toast({ title: "Senha alterada", description: `Senha de ${editing.full_name || editing.email} alterada com sucesso!` });
+      } catch (err) {
+        toast({ title: "Erro ao alterar senha", description: err.message || "Tente novamente.", variant: "destructive" });
+      }
+    }
+  };
+
   const openEdit = (user) => {
     setEditing(user);
     setEditForm({ role: user.role || "user", phone: user.phone || "" });
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
     setEditOpen(true);
   };
 
@@ -172,11 +200,40 @@ export default function UsersPage() {
               <Label>Telefone</Label>
               <Input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} placeholder="+55 (00) 00000-0000" />
             </div>
+            <div className="border-t border-border pt-4 space-y-3">
+              <Label className="text-sm font-semibold">Alterar Senha</Label>
+              <p className="text-xs text-muted-foreground">Deixe em branco para manter a senha atual.</p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Nova Senha</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    minLength={6}
+                  />
+                  <button type="button" onClick={() => setShowPassword(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Confirmar Senha</Label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Repita a senha"
+                  minLength={6}
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
-            <Button onClick={() => updateM.mutate({ id: editing.id, data: editForm })} className="bg-primary hover:bg-primary/90" disabled={updateM.isPending}>
-              Salvar
+            <Button onClick={handleSave} className="bg-primary hover:bg-primary/90" disabled={updateM.isPending}>
+              {updateM.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
