@@ -28,14 +28,14 @@ const navItems = [
     ]
   },
   {
-    label: "Base de Conhecimento", icon: BookOpen, children: [
+    label: "Base de Conhecimento", icon: BookOpen, permission: "kb.create", children: [
       { label: "Artigos", icon: FileText, path: "/kb/artigos" },
       { label: "Categorias", icon: Tag, path: "/kb/categorias" },
       { label: "Respostas Rápidas", icon: Zap, path: "/kb/respostas" },
     ]
   },
   {
-    label: "Cadastros", icon: Users, children: [
+    label: "Cadastros", icon: Users, permission: "users.manage", children: [
       { label: "Clientes", icon: Users, path: "/clientes" },
       { label: "Departamentos", icon: Building2, path: "/departamentos" },
       { label: "Equipes", icon: UsersRound, path: "/equipes" },
@@ -47,13 +47,13 @@ const navItems = [
     ]
   },
   {
-    label: "Financeiro", icon: DollarSign, children: [
+    label: "Financeiro", icon: DollarSign, permission: "admin.access", children: [
       { label: "Contratos", icon: FileSignature, path: "/contratos" },
       { label: "Finanças", icon: TrendingUp, path: "/financeiro" },
     ]
   },
   {
-    label: "Relatórios", icon: BarChart3, children: [
+    label: "Relatórios", icon: BarChart3, permission: "reports.view", children: [
       { label: "Cronogramas", icon: Clock, path: "/admin/cronogramas" },
       { label: "Filtros de Tickets", icon: Filter, path: "/admin/filtros" },
       { label: "Log de Auditoria", icon: ShieldCheck, path: "/admin/auditoria" },
@@ -61,7 +61,7 @@ const navItems = [
     ]
   },
   {
-    label: "Sistema", icon: Settings, children: [
+    label: "Sistema", icon: Settings, permission: "admin.access", children: [
       { label: "Configurações", icon: Settings, path: "/admin/configuracoes" },
       { label: "Escalas de Trabalho", icon: Clock, path: "/admin/escala" },
       { label: "Feriados", icon: Bell, path: "/admin/feriados" },
@@ -226,7 +226,21 @@ function NavItem({ item, depth = 0, collapsed }) {
 
 export default function Sidebar({ collapsed, onToggleCollapse }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { logout } = useAuth();
+  const { logout, profile, can } = useAuth();
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.permission && !can(item.permission)) return false;
+    if (item.children) {
+      const visibleChildren = item.children.filter(c => !c.permission || can(c.permission));
+      return visibleChildren.length > 0;
+    }
+    return true;
+  }).map(item => {
+    if (item.children) {
+      return { ...item, children: item.children.filter(c => !c.permission || can(c.permission)) };
+    }
+    return item;
+  });
 
   return (
     <>
@@ -290,7 +304,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
 
         {/* Nav */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {navItems.map(item => (
+          {filteredNavItems.map(item => (
             <NavItem key={item.label} item={item} collapsed={collapsed} />
           ))}
         </nav>
