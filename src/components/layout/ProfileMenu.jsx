@@ -12,6 +12,8 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const PERMISSION_LABELS = {
   "tickets.create": "Criar tickets",
@@ -293,6 +295,11 @@ export default function ProfileMenu() {
                 <p className="text-xs text-muted-foreground">
                   Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : "Técnico"}</Badge>
                 </p>
+                {profile?.updated_at && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Última atualização: {format(new Date(profile.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                )}
               </div>
             </div>
             <div>
