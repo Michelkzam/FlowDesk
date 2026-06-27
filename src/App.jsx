@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import { ThemeProvider } from '@/lib/ThemeContext';
+import WelcomeOverlay from './components/shared/WelcomeOverlay';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
@@ -153,6 +154,25 @@ function AppRoutes() {
   );
 }
 
+import { useState, useEffect } from 'react';
+
+function WelcomeGate() {
+  const { profile } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (profile && !sessionStorage.getItem('welcomeShown')) {
+      setShowWelcome(true);
+      sessionStorage.setItem('welcomeShown', '1');
+    }
+  }, [profile]);
+
+  if (showWelcome) {
+    return <WelcomeOverlay userName={profile?.full_name || profile?.email || "Usuário"} onClose={() => setShowWelcome(false)} />;
+  }
+  return null;
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -160,6 +180,7 @@ function App() {
         <ToastProvider>
           <Router>
             <AuthProvider>
+              <WelcomeGate />
               <AppRoutes />
             </AuthProvider>
           </Router>
