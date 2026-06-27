@@ -45,7 +45,16 @@ export default function AgentsPage() {
     onError: (e) => { console.error('Erro ao criar técnico:', e); toast({ title: "Erro", description: "Erro ao criar técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => db.entities.Agent.update(id, data),
+    mutationFn: ({ id, data }) => {
+      const payload = {
+        full_name: data.name || data.full_name,
+        phone: data.phone || null,
+        department: data.department_name || data.department || null,
+        role: data.admin ? "admin" : "agent",
+        status: data.status || "active",
+      };
+      return db.entities.Agent.update(id, payload);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); toast({ title: "Sucesso", description: "Técnico atualizado com sucesso!" }); },
     onError: (e) => { console.error('Erro ao atualizar técnico:', e); toast({ title: "Erro", description: "Erro ao atualizar técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
