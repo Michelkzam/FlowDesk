@@ -158,8 +158,13 @@ export default function SettingsPage() {
       }));
       const { error } = await supabase.from('system_settings').upsert(upserts, { onConflict: 'key' });
       if (error) throw error;
-      if (logoPreview) localStorage.setItem("appLogo", logoPreview);
-      else if (logo === null) localStorage.removeItem("appLogo");
+      if (logoPreview) {
+        localStorage.setItem("appLogo", logoPreview);
+        await supabase.from('system_settings').upsert({ key: 'helpdesk_logo', value: logoPreview }, { onConflict: 'key' });
+      } else if (logo === null) {
+        localStorage.removeItem("appLogo");
+        await supabase.from('system_settings').delete().eq('key', 'helpdesk_logo');
+      }
       localStorage.setItem("appName", settings.helpdesk_name);
       document.title = settings.helpdesk_name;
       queryClient.invalidateQueries({ queryKey: ["system-settings"] });
