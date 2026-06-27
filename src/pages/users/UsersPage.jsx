@@ -32,6 +32,7 @@ export default function UsersPage() {
   const [inviting, setInviting] = useState(false);
   const [resendingUser, setResendingUser] = useState(null);
   const [confirmResendOpen, setConfirmResendOpen] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { can } = usePermissions();
@@ -85,6 +86,7 @@ export default function UsersPage() {
 
   const handleResendInvite = (user) => {
     setResendingUser(user);
+    setResendEmail(user.email || "");
     setConfirmResendOpen(true);
   };
 
@@ -359,14 +361,18 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Reenviar Convite</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Deseja gerar uma nova senha para <strong>{resendingUser?.full_name || resendingUser?.email}</strong>?
-            <br />
-            <span className="text-xs">A nova senha será copiada para sua área de transferência.</span>
-          </p>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Será gerada uma nova senha para <strong>{resendingUser?.full_name || resendingUser?.email}</strong>.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email para reenvio</Label>
+              <Input type="email" value={resendEmail} onChange={e => setResendEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmResendOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmResendInvite}>Confirmar</Button>
+            <Button onClick={confirmResendInvite}>Gerar Senha e Copiar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
