@@ -215,7 +215,7 @@ export default function ProfilesPage() {
                       const perm = ALL_PERMISSIONS.find(p => p.key === key);
                       const checked = selectedPerms.includes(key);
                       return (
-                        <label key={key} className="flex items-center gap-2 cursor-pointer text-xs py-0.5">
+                        <label key={key} className="flex items-center gap-2 cursor-pointer text-xs py-0.5" onClick={() => togglePerm(key)}>
                           <span className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", checked ? "bg-primary border-primary text-white" : "border-border bg-background")}>
                             {checked && <Check className="w-3 h-3" />}
                           </span>
