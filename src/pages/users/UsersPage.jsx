@@ -83,7 +83,10 @@ export default function UsersPage() {
         return;
       }
       try {
-        const { error } = await supabase.auth.admin.updateUserById(editing.id, { password: newPassword });
+        const { error } = await supabase.rpc('admin_update_user_password', {
+          target_user_id: editing.id,
+          new_password: newPassword,
+        });
         if (error) throw error;
         toast({ title: "Senha alterada", description: `Senha de ${editing.full_name || editing.email} alterada com sucesso!` });
       } catch (err) {
