@@ -43,11 +43,6 @@ export default function NewTicketDialog({ open, onClose }) {
     }
   }, [open]);
 
-export default function NewTicketDialog({ open, onClose }) {
-  const [form, setForm] = useState(defaultForm);
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
   const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list() });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
   const { data: helpTopics = [] } = useQuery({ queryKey: ["help-topics"], queryFn: () => db.entities.HelpTopic.list() });
