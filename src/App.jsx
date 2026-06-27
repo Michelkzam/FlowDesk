@@ -18,6 +18,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import UserPortal from './pages/portal/UserPortal';
+import ClientPortalPage from './pages/portal/ClientPortalPage';
 
 // Tickets
 import TicketList from './pages/tickets/TicketList';
@@ -80,6 +81,7 @@ function AppRoutes() {
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/portal" element={<UserPortal />} />
+      <Route path="/cliente" element={<ClientPortalPage />} />
 
       {/* Protected routes */}
       <Route path="/" element={
