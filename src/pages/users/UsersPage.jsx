@@ -140,12 +140,6 @@ export default function UsersPage() {
         {v === "admin" ? "Admin" : "Usuário"}
       </Badge>
     )},
-    { key: "_pw", label: "", render: (_, row) => (
-      <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }}
-        className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha">
-        <Key className="w-3.5 h-3.5" />
-      </button>
-    )},
   ];
 
   return (
@@ -169,6 +163,12 @@ export default function UsersPage() {
         emptyMessage="Nenhum usuário cadastrado"
         canEdit={can("users.manage")}
         canDelete={can("users.manage")}
+        extraActions={(row) => (
+          <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }}
+            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha">
+            <Key className="w-3.5 h-3.5" />
+          </button>
+        )}
       />
 
       {/* Invite Dialog */}
