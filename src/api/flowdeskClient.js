@@ -215,7 +215,7 @@ class AuthClient {
         status: 'active'
       });
     }
-    return data;
+    return { ...data, tempPassword };
   }
 }
 

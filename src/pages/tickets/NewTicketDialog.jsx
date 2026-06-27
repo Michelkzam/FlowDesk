@@ -28,9 +28,14 @@ export default function NewTicketDialog({ open, onClose }) {
     if (open) {
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
-          supabase.from('users').select('client_name, full_name, email').eq('id', data.user.id).single().then(({ data: profile }) => {
-            if (profile?.client_name) {
-              setForm(p => ({ ...p, client_name: profile.client_name, user_name: profile.full_name || "", user_email: profile.email || "" }));
+          supabase.from('users').select('client_id, client_name, full_name, email').eq('id', data.user.id).single().then(({ data: profile }) => {
+            if (profile) {
+              setForm(p => ({
+                ...p,
+                client_name: profile.client_name || "",
+                user_name: profile.full_name || "",
+                user_email: profile.email || ""
+              }));
             }
           });
         }

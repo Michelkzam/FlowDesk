@@ -21,7 +21,7 @@ export default function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 ", client_name: "" });
+  const [inviteForm, setInviteForm] = useState({ email: "", phone: "+55 ", client_id: "" });
   const [editForm, setEditForm] = useState({});
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -40,6 +40,12 @@ export default function UsersPage() {
     queryFn: () => db.entities.User.list(),
   });
 
+  // Clients list
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: () => db.entities.Client.list(),
+  });
+
   const updateM = useMutation({
     mutationFn: ({ id, data }) => db.entities.User.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["system-users"] }); setEditOpen(false); },
@@ -55,20 +61,19 @@ export default function UsersPage() {
     setInviting(true);
     try {
       const result = await db.auth.inviteUser(inviteForm.email, "user");
-      if (result?.user?.id && inviteForm.client_name) {
-        await db.entities.User.update(result.user.id, { client_name: inviteForm.client_name });
+      if (result?.user?.id) {
+        const updateData = {};
+        if (inviteForm.client_id) updateData.client_id = inviteForm.client_id;
+        const selectedClient = clients.find(c => c.id === inviteForm.client_id);
+        if (selectedClient) updateData.client_name = selectedClient.name;
+        if (Object.keys(updateData).length > 0) {
+          await db.entities.User.update(result.user.id, updateData);
+        }
       }
-      try {
-        await db.integrations.Core.SendEmail({
-          to: inviteForm.email,
-          subject: "Convite de Acesso ao FlowDesk",
-          body: `Você foi convidado a acessar o sistema FlowDesk. Acesse o link no seu email para criar sua senha.`
-        });
-      } catch {}
       queryClient.invalidateQueries({ queryKey: ["system-users"] });
-      toast({ title: "Convite enviado!", description: `Convite enviado por email para ${inviteForm.email}` });
+      toast({ title: "Convite enviado!", description: `Usuário criado: ${inviteForm.email}. Senha temporária enviada.` });
       setInviteOpen(false);
-      setInviteForm({ email: "", phone: "+55 ", client_name: "" });
+      setInviteForm({ email: "", phone: "+55 ", client_id: "" });
     } catch (err) {
       toast({ title: "Erro ao enviar convite", description: err.message || "Tente novamente", variant: "destructive" });
     } finally {
@@ -103,7 +108,7 @@ export default function UsersPage() {
 
   const openEdit = (user) => {
     setEditing(user);
-    setEditForm({ role: user.role || "user", phone: user.phone || "", client_name: user.client_name || "" });
+    setEditForm({ role: user.role || "user", phone: user.phone || "", client_id: user.client_id || "" });
     setNewPassword("");
     setConfirmPassword("");
     setShowPassword(false);
@@ -204,13 +209,15 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Cliente (opcional)</Label>
-              <Input
-                value={inviteForm.client_name}
-                onChange={e => setInviteForm(p => ({ ...p, client_name: e.target.value }))}
-                placeholder="Nome do cliente vinculado"
-              />
-              <p className="text-[10px] text-muted-foreground">Se informado, o nome do cliente será exibido nos tickets criados por este usuário.</p>
+              <Label>Cliente Vinculado (opcional)</Label>
+              <Select value={inviteForm.client_id || "none"} onValueChange={v => setInviteForm(p => ({ ...p, client_id: v === "none" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="Nenhum cliente" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum cliente</SelectItem>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Se selecionado, o nome do cliente será exibido nos tickets criados por este usuário.</p>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2 text-sm text-blue-800">
               <Mail className="w-4 h-4 mt-0.5 shrink-0" />
@@ -251,7 +258,13 @@ export default function UsersPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Cliente Vinculado</Label>
-              <Input value={editForm.client_name || ""} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} placeholder="Nome do cliente" />
+              <Select value={editForm.client_id || "none"} onValueChange={v => setEditForm(p => ({ ...p, client_id: v === "none" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="Nenhum cliente" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum cliente</SelectItem>
+                  {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <p className="text-[10px] text-muted-foreground">Nome do cliente exibido nos tickets criados por este usuário.</p>
             </div>
             <div className="border-t border-border pt-4 space-y-3">
