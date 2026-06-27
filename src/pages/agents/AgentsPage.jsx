@@ -102,20 +102,6 @@ export default function AgentsPage() {
     { key: "department_name", label: "Departamento" },
     { key: "role_name", label: "Função" },
     { key: "status", label: "Status", render: v => <StatusBadge value={v} /> },
-    {
-      key: "_stats", label: "Ações", render: (_, row) => (
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver estatísticas"
-            onClick={e => { e.stopPropagation(); setStatsAgent(row); }}>
-            <BarChart2 className="w-4 h-4 text-primary" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" title="Alterar senha"
-            onClick={e => { e.stopPropagation(); setPasswordAgent(row); setNewPassword(""); setConfirmPassword(""); }}>
-            <Key className="w-4 h-4 text-muted-foreground" />
-          </Button>
-        </div>
-      )
-    },
   ];
 
   const fields = [
@@ -132,7 +118,29 @@ export default function AgentsPage() {
   return (
     <div>
       <PageHeader title="Técnicos" subtitle="Gerencie os técnicos de suporte" action={openCreate} actionLabel="Novo Técnico" canCreate={can("users.manage")} />
-      <DataTable columns={columns} data={agents} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteMutation.mutate(item.id)} searchKeys={["name", "email", "department_name"]} emptyMessage="Nenhum técnico cadastrado" canEdit={can("users.manage")} canDelete={can("users.manage")} />
+      <DataTable
+        columns={columns}
+        data={agents}
+        isLoading={isLoading}
+        onEdit={openEdit}
+        onDelete={item => deleteMutation.mutate(item.id)}
+        searchKeys={["name", "email", "department_name"]}
+        emptyMessage="Nenhum técnico cadastrado"
+        canEdit={can("users.manage")}
+        canDelete={can("users.manage")}
+        extraActions={(row) => (
+          <>
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver estatísticas"
+              onClick={e => { e.stopPropagation(); setStatsAgent(row); }}>
+              <BarChart2 className="w-4 h-4 text-primary" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="Alterar senha"
+              onClick={e => { e.stopPropagation(); setPasswordAgent(row); setNewPassword(""); setConfirmPassword(""); }}>
+              <Key className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </>
+        )}
+      />
       <FormDialog open={dialogOpen} onClose={close} title={editing ? "Editar Técnico" : "Novo Técnico"} fields={fields} data={form} onChange={set} onSubmit={handleSubmit} isLoading={createMutation.isPending || updateMutation.isPending} />
 
       {/* Stats Modal */}
