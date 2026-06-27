@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export default function AgentSchedulePage() {
     start_time: "08:00", end_time: "18:00", notes: ""
   });
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: schedules = [], isLoading: loadingSchedules } = useQuery({
     queryKey: ["work-schedules"],
@@ -77,14 +79,14 @@ export default function AgentSchedulePage() {
   const createRuleM = useMutation({
     mutationFn: async (d) => {
       const agent = agents.find(a => a.id === d.agent_id);
-      const payload = { ...d, agent_name: agent?.full_name || agent?.email || "" };
+      const payload = { ...d, agent_name: agent?.full_name || agent?.email || "", status: 'active' };
       delete payload.id;
       const { data, error } = await supabase.from('on_call_rules').insert(payload).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }); setRuleDialogOpen(false); },
-    onError: (e) => console.error('[Escalas] Erro criar regra:', e),
+    onSuccess: (data) => { queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }); setRuleDialogOpen(false); toast({ title: "Sucesso", description: "Regra criada com sucesso!" }); },
+    onError: (e) => { console.error('[Escalas] Erro criar regra:', e); toast({ title: "Erro", description: "Erro ao criar regra: " + (e.message || "Verifique os dados e tente novamente."), variant: "destructive" }); },
   });
 
   const updateRuleM = useMutation({
@@ -96,8 +98,8 @@ export default function AgentSchedulePage() {
       const { error } = await supabase.from('on_call_rules').update(payload).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }); setRuleDialogOpen(false); setEditingRule(null); },
-    onError: (e) => console.error('[Escalas] Erro atualizar regra:', e),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }); setRuleDialogOpen(false); setEditingRule(null); toast({ title: "Sucesso", description: "Regra atualizada com sucesso!" }); },
+    onError: (e) => { console.error('[Escalas] Erro atualizar regra:', e); toast({ title: "Erro", description: "Erro ao atualizar regra: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
 
   const deleteRuleM = useMutation({
@@ -105,7 +107,8 @@ export default function AgentSchedulePage() {
       const { error } = await supabase.from('on_call_rules').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["on-call-rules"] }); toast({ title: "Sucesso", description: "Regra excluída com sucesso!" }); },
+    onError: (e) => { console.error('[Escalas] Erro excluir regra:', e); toast({ title: "Erro", description: "Erro ao excluir regra: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
 
   const calendarDays = useMemo(() => {
@@ -156,7 +159,14 @@ export default function AgentSchedulePage() {
 
   const handleSubmitRule = (e) => {
     e.preventDefault();
-    if (!ruleForm.agent_id || !ruleForm.cycle_start_date) return;
+    if (!ruleForm.agent_id) {
+      toast({ title: "Campo obrigatório", description: "Selecione um técnico.", variant: "destructive" });
+      return;
+    }
+    if (!ruleForm.cycle_start_date) {
+      toast({ title: "Campo obrigatório", description: "Informe a data de início do ciclo.", variant: "destructive" });
+      return;
+    }
     if (editingRule) updateRuleM.mutate({ id: editingRule.id, data: ruleForm });
     else createRuleM.mutate(ruleForm);
   };

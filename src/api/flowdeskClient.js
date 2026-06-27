@@ -257,6 +257,7 @@ const entities = {
   TicketFilter: new EntityClient('ticket_filters'),
   WorkSchedule: new EntityClient('work_schedules'),
   OnCallRule: new EntityClient('on_call_rules'),
+  Holiday: new EntityClient('holidays'),
 };
 
 const integrations = {
