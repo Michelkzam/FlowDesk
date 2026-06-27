@@ -93,14 +93,11 @@ export default function UsersPage() {
   const confirmResendInvite = async () => {
     setConfirmResendOpen(false);
     try {
-      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      const { error } = await supabase.rpc('admin_update_user_password', {
-        target_user_id: resendingUser.id,
-        new_password: tempPassword,
+      const { error } = await supabase.auth.resetPasswordForEmail(resendEmail, {
+        redirectTo: window.location.origin,
       });
       if (error) throw error;
-      await navigator.clipboard.writeText(tempPassword);
-      toast({ title: "Convite reenviado!", description: `Nova senha copiada: ${tempPassword}. Cole e envie ao usuário.` });
+      toast({ title: "Email de redefinição enviado!", description: `Email enviado para ${resendEmail}. O usuário deve definir uma nova senha pelo link.` });
     } catch (err) {
       toast({ title: "Erro ao reenviar", description: err.message || "Tente novamente.", variant: "destructive" });
     }
@@ -366,7 +363,7 @@ export default function UsersPage() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Será gerada uma nova senha para <strong>{resendingUser?.full_name || resendingUser?.email}</strong>.
+              Um email de redefinição de senha será enviado para <strong>{resendingUser?.full_name || resendingUser?.email}</strong>.
             </p>
             <div className="space-y-1.5">
               <Label className="text-xs">Email para reenvio</Label>
@@ -375,7 +372,7 @@ export default function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmResendOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmResendInvite}>Gerar Senha e Copiar</Button>
+            <Button onClick={confirmResendInvite}>Enviar Email de Redefinição</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
