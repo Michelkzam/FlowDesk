@@ -34,7 +34,7 @@ export default function TopBar() {
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          window.location.reload();
+          queryClient.invalidateQueries();
           return REFRESH_INTERVAL;
         }
         return prev - 1;

@@ -1,23 +1,90 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Save, Settings, Ticket, Users, BookOpen, Mail, ImageIcon, Upload } from "lucide-react";
 import UserProfilesTable from "@/components/settings/UserProfilesTable";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/lib/supabase";
+
+const defaultSettings = {
+  helpdesk_name: "FlowDesk",
+  helpdesk_url: "",
+  status: "online",
+  default_priority: "normal",
+  default_status: "open",
+  max_open_tickets: 0,
+  require_login: false,
+  captcha_enabled: false,
+  auto_assign_unassigned: false,
+  rich_text_enabled: true,
+  agent_password_expiry: "never",
+  kb_enabled: true,
+  kb_require_login: false,
+  canned_responses_enabled: true,
+  admin_email: "",
+  smtp_enabled: false,
+  smtp_host: "",
+  smtp_port: "587",
+  smtp_auth: "basic",
+  smtp_username: "",
+  smtp_password: "",
+  smtp_header_spoofing: false,
+  smtp_from_name: "",
+  smtp_from_email: "",
+  default_sla_id: "",
+  default_department_id: "",
+  ticket_number_format: "######",
+  lock_duration: 30,
+  page_size: 25,
+};
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [logo, setLogo] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const logoInputRef = React.useRef(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: settingsData = [], isLoading } = useQuery({
+    queryKey: ["system-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('system_settings').select('*');
+      if (error) return [];
+      return data || [];
+    },
+  });
+
+  const settingsMap = {};
+  settingsData.forEach(s => { settingsMap[s.key] = s.value; });
+
+  const [settings, setSettings] = useState(defaultSettings);
+
+  useEffect(() => {
+    if (settingsData.length > 0) {
+      const loaded = { ...defaultSettings };
+      settingsData.forEach(s => {
+        if (s.key in loaded) {
+          const val = s.value;
+          if (val === 'true') loaded[s.key] = true;
+          else if (val === 'false') loaded[s.key] = false;
+          else if (!isNaN(val) && val !== '') loaded[s.key] = Number(val);
+          else loaded[s.key] = val;
+        }
+      });
+      setSettings(loaded);
+      if (loaded.helpdesk_name) document.title = loaded.helpdesk_name;
+      const savedLogo = localStorage.getItem("appLogo");
+      if (savedLogo) setLogoPreview(savedLogo);
+    }
+  }, [settingsData]);
 
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
@@ -28,48 +95,28 @@ export default function SettingsPage() {
     reader.readAsDataURL(file);
   };
 
-  const [settings, setSettings] = useState({
-    helpdesk_name: "FlowDesk",
-    helpdesk_url: "",
-    status: "online",
-    default_priority: "normal",
-    default_status: "open",
-    max_open_tickets: 0,
-    require_login: false,
-    captcha_enabled: false,
-    auto_assign_unassigned: false,
-    rich_text_enabled: true,
-    agent_password_expiry: "never",
-    kb_enabled: true,
-    kb_require_login: false,
-    canned_responses_enabled: true,
-    admin_email: "",
-    smtp_enabled: false,
-    smtp_host: "",
-    smtp_port: "587",
-    smtp_auth: "basic",
-    smtp_username: "",
-    smtp_password: "",
-    smtp_header_spoofing: false,
-    smtp_from_name: "",
-    smtp_from_email: "",
-    default_sla_id: "",
-    default_department_id: "",
-    ticket_number_format: "######",
-    lock_duration: 30,
-    page_size: 25,
-  });
-
   const set = (k, v) => setSettings(p => ({ ...p, [k]: v }));
 
-  const handleSave = () => {
-    // Persist logo and app name to localStorage for global use
-    if (logoPreview) localStorage.setItem("appLogo", logoPreview);
-    else if (logo === null) localStorage.removeItem("appLogo");
-    localStorage.setItem("appName", settings.helpdesk_name);
-    document.title = settings.helpdesk_name;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      const entries = Object.entries(settings).filter(([k]) => k in defaultSettings);
+      const upserts = entries.map(([key, value]) => ({
+        key,
+        value: String(value),
+      }));
+      const { error } = await supabase.from('system_settings').upsert(upserts, { onConflict: 'key' });
+      if (error) throw error;
+      if (logoPreview) localStorage.setItem("appLogo", logoPreview);
+      else if (logo === null) localStorage.removeItem("appLogo");
+      localStorage.setItem("appName", settings.helpdesk_name);
+      document.title = settings.helpdesk_name;
+      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
+      toast({ title: "Configurações salvas", description: "As alterações foram salvas com sucesso!" });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      toast({ title: "Erro ao salvar", description: e.message || "Tente novamente.", variant: "destructive" });
+    }
   };
 
   return (

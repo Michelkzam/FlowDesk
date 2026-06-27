@@ -11,5 +11,17 @@ export default defineConfig({
   },
   plugins: [
     react(),
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-switch', '@radix-ui/react-label'],
+          'vendor-charts': ['recharts'],
+          'vendor-utils': ['date-fns', '@tanstack/react-query'],
+        },
+      },
+    },
+  },
 });

@@ -258,6 +258,7 @@ const entities = {
   WorkSchedule: new EntityClient('work_schedules'),
   OnCallRule: new EntityClient('on_call_rules'),
   Holiday: new EntityClient('holidays'),
+  SystemSetting: new EntityClient('system_settings'),
 };
 
 const integrations = {

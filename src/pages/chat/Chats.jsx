@@ -197,7 +197,7 @@ export default function Chats() {
               const statusChanged = initialStatusRef.current !== null && selectedTicket.status !== initialStatusRef.current;
               setSelectedTicket(null);
               initialStatusRef.current = null;
-              if (statusChanged) window.location.reload();
+              if (statusChanged) queryClient.invalidateQueries();
             }} onUpdate={(updated) => {
               setSelectedTicket(updated);
               queryClient.invalidateQueries({ queryKey: ["tickets"] });

@@ -45,7 +45,7 @@ export default function TicketHistory() {
         queryClient.invalidateQueries({ queryKey: ["tickets"] });
       }
       if (e.key === "chat_opened" || e.key === "chat_closed") {
-        window.location.reload();
+        queryClient.invalidateQueries();
       }
     };
     window.addEventListener("storage", handler);
