@@ -94,7 +94,7 @@ export default function UsersPage() {
     setConfirmResendOpen(false);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resendEmail, {
-        redirectTo: `${window.location.origin}/#/login`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
       toast({ title: "Email de redefinição enviado!", description: `Email enviado para ${resendEmail}. O usuário deve definir uma nova senha pelo link.` });
