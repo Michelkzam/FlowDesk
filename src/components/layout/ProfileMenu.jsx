@@ -7,16 +7,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Settings, LogOut, Camera, Eye, EyeOff } from "lucide-react";
+import { User, Settings, LogOut, Camera, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+
+const PERMISSION_LABELS = {
+  "tickets.create": "Criar tickets",
+  "tickets.edit": "Editar tickets",
+  "tickets.delete": "Excluir tickets",
+  "tickets.close": "Fechar tickets",
+  "tickets.assign": "Atribuir tickets",
+  "tickets.transfer": "Transferir tickets",
+  "kb.create": "Criar artigos",
+  "kb.edit": "Editar artigos",
+  "kb.delete": "Excluir artigos",
+  "kb.publish": "Publicar artigos",
+  "users.manage": "Gerenciar usuários",
+  "reports.view": "Ver relatórios",
+  "admin.access": "Acesso administrativo",
+};
 
 export default function ProfileMenu() {
-  const { profile, logout } = useAuth();
+  const { profile, logout, permissions, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
@@ -148,6 +166,9 @@ export default function ProfileMenu() {
           <DropdownMenuItem onClick={() => setPasswordOpen(true)} className="cursor-pointer gap-2">
             <Settings className="w-4 h-4" /> Alterar Senha
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPermissionsOpen(true)} className="cursor-pointer gap-2">
+            <Shield className="w-4 h-4" /> Minhas Permissões
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout} className="cursor-pointer gap-2 text-red-600 focus:text-red-600">
             <LogOut className="w-4 h-4" /> Sair
@@ -256,6 +277,52 @@ export default function ProfileMenu() {
               <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Alterar Senha"}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={permissionsOpen} onOpenChange={setPermissionsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Minhas Permissões</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Shield className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-sm font-semibold">{profile?.full_name || profile?.email}</p>
+                <p className="text-xs text-muted-foreground">
+                  Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : "Técnico"}</Badge>
+                </p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Permissões</p>
+              {isAdmin ? (
+                <div className="space-y-1">
+                  {Object.entries(PERMISSION_LABELS).map(([key, label]) => (
+                    <div key={key} className="flex items-center gap-2 text-sm">
+                      <span className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 text-[10px]">✓</span>
+                      {label}
+                    </div>
+                  ))}
+                </div>
+              ) : permissions.length > 0 ? (
+                <div className="space-y-1">
+                  {permissions.map(p => (
+                    <div key={p} className="flex items-center gap-2 text-sm">
+                      <span className="w-4 h-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 text-[10px]">✓</span>
+                      {PERMISSION_LABELS[p] || p}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma permissão especial atribuída.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPermissionsOpen(false)}>Fechar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
