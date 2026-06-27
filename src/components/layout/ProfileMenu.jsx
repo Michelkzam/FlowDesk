@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Settings, LogOut, Camera, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,6 +34,7 @@ const PERMISSION_LABELS = {
 export default function ProfileMenu() {
   const { profile, logout, permissions, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -85,9 +86,9 @@ export default function ProfileMenu() {
       await supabase.auth.updateUser({ data: { full_name: profileForm.full_name } });
       queryClient.invalidateQueries({ queryKey: ["me"] });
       setProfileOpen(false);
-      toast.success("Perfil atualizado com sucesso!");
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" });
     } catch (err) {
-      toast.error("Erro ao salvar: " + (err.message || "Tente novamente."));
+      toast({ title: "Erro", description: "Erro ao salvar: " + (err.message || "Tente novamente."), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -97,7 +98,7 @@ export default function ProfileMenu() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB.");
+      toast({ title: "Erro", description: "A imagem deve ter no máximo 2MB.", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -115,10 +116,10 @@ export default function ProfileMenu() {
         .eq('id', profile.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast.success("Foto atualizada!");
+      toast({ title: "Sucesso", description: "Foto atualizada!" });
     } catch (err) {
       console.error('[Avatar] Erro:', err);
-      toast.error("Erro ao enviar foto: " + (err.message || "Verifique se o bucket 'avatars' existe no Supabase Storage."));
+      toast({ title: "Erro", description: "Erro ao enviar foto: " + (err.message || "Verifique se o bucket 'avatars' existe no Supabase Storage."), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -127,11 +128,11 @@ export default function ProfileMenu() {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (passwordForm.newPassword.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres.");
+      toast({ title: "Erro", description: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" });
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error("As senhas não coincidem.");
+      toast({ title: "Erro", description: "As senhas não coincidem.", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -142,9 +143,9 @@ export default function ProfileMenu() {
       if (error) throw error;
       setPasswordOpen(false);
       setPasswordForm({ newPassword: "", confirmPassword: "" });
-      toast.success("Senha alterada com sucesso!");
+      toast({ title: "Sucesso", description: "Senha alterada com sucesso!" });
     } catch (err) {
-      toast.error("Erro ao alterar senha: " + (err.message || "Tente novamente."));
+      toast({ title: "Erro", description: "Erro ao alterar senha: " + (err.message || "Tente novamente."), variant: "destructive" });
     } finally {
       setSaving(false);
     }

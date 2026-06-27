@@ -41,18 +41,18 @@ export default function AgentsPage() {
 
   const createMutation = useMutation({
     mutationFn: d => db.entities.Agent.create(d),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); },
-    onError: (e) => { console.error('Erro ao criar técnico:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); toast({ title: "Sucesso", description: "Técnico criado com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao criar técnico:', e); toast({ title: "Erro", description: "Erro ao criar técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => db.entities.Agent.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); },
-    onError: (e) => { console.error('Erro ao atualizar técnico:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); toast({ title: "Sucesso", description: "Técnico atualizado com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao atualizar técnico:', e); toast({ title: "Erro", description: "Erro ao atualizar técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
   const deleteMutation = useMutation({
     mutationFn: id => db.entities.Agent.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agents"] }),
-    onError: (e) => { console.error('Erro ao excluir técnico:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); toast({ title: "Sucesso", description: "Técnico excluído com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao excluir técnico:', e); toast({ title: "Erro", description: "Erro ao excluir técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); };

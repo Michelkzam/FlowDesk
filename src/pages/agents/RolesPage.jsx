@@ -9,6 +9,7 @@ import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/components/ui/use-toast";
 
 const ALL_PERMISSIONS = [
   "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
@@ -25,22 +26,23 @@ export default function RolesPage() {
   const [selectedPerms, setSelectedPerms] = useState([]);
   const queryClient = useQueryClient();
   const { can } = usePermissions();
+  const { toast } = useToast();
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
   const createM = useMutation({
     mutationFn: d => db.entities.Role.create(d),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); },
-    onError: (e) => { console.error('Erro ao criar função:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); toast({ title: "Sucesso", description: "Função criada com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao criar função:', e); toast({ title: "Erro", description: "Erro ao criar função: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
   const updateM = useMutation({
     mutationFn: ({ id, data }) => db.entities.Role.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); },
-    onError: (e) => { console.error('Erro ao atualizar função:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); close(); toast({ title: "Sucesso", description: "Função atualizada com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao atualizar função:', e); toast({ title: "Erro", description: "Erro ao atualizar função: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
   const deleteM = useMutation({
     mutationFn: id => db.entities.Role.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["roles"] }),
-    onError: (e) => { console.error('Erro ao excluir função:', e); alert('Erro: ' + e.message); }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); toast({ title: "Sucesso", description: "Função excluída com sucesso!" }); },
+    onError: (e) => { console.error('Erro ao excluir função:', e); toast({ title: "Erro", description: "Erro ao excluir função: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); setSelectedPerms([]); };

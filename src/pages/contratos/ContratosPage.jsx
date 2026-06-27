@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, differenceInDays, parseISO, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/components/ui/use-toast";
 
 const statusColors = {
   active: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -37,6 +38,7 @@ export default function ContratosPage() {
   const [form, setForm] = useState(defaultForm);
   const [viewingAttachments, setViewingAttachments] = useState(null);
   const qc = useQueryClient();
+  const { toast } = useToast();
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ["contracts"],
@@ -58,8 +60,8 @@ export default function ContratosPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); },
-    onError: (e) => console.error('[Contratos] Erro ao criar:', e),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); toast({ title: "Sucesso", description: "Contrato criado com sucesso!" }); },
+    onError: (e) => { console.error('[Contratos] Erro ao criar:', e); toast({ title: "Erro", description: "Erro ao criar contrato: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
   const updateM = useMutation({
     mutationFn: async ({ id, data }) => {
@@ -74,12 +76,13 @@ export default function ContratosPage() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); },
-    onError: (e) => console.error('[Contratos] Erro ao atualizar:', e),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); close_(); toast({ title: "Sucesso", description: "Contrato atualizado com sucesso!" }); },
+    onError: (e) => { console.error('[Contratos] Erro ao atualizar:', e); toast({ title: "Erro", description: "Erro ao atualizar contrato: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
   const deleteM = useMutation({
     mutationFn: id => db.entities.Contract.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["contracts"] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contracts"] }); toast({ title: "Sucesso", description: "Contrato excluído com sucesso!" }); },
+    onError: (e) => { console.error('[Contratos] Erro ao excluir:', e); toast({ title: "Erro", description: "Erro ao excluir contrato: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
 
   const close_ = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); };

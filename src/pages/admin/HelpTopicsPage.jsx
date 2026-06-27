@@ -8,6 +8,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import DataTable from "@/components/shared/DataTable";
 import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
+import { useToast } from "@/components/ui/use-toast";
 
 const defaultForm = { name: "", type: "public", department_id: "", priority: "normal", status: "active", disable_auto_response: false, notes: "" };
 
@@ -16,6 +17,7 @@ export default function HelpTopicsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["help-topics"],
@@ -35,8 +37,8 @@ export default function HelpTopicsPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); },
-    onError: (e) => console.error('[HelpTopics] Erro create:', e),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); toast({ title: "Sucesso", description: "Tópico criado com sucesso!" }); },
+    onError: (e) => { console.error('[HelpTopics] Erro create:', e); toast({ title: "Erro", description: "Erro ao criar tópico: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
   const updateM = useMutation({
     mutationFn: async ({ id, data }) => {
@@ -47,16 +49,16 @@ export default function HelpTopicsPage() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); },
-    onError: (e) => console.error('[HelpTopics] Erro update:', e),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); close(); toast({ title: "Sucesso", description: "Tópico atualizado com sucesso!" }); },
+    onError: (e) => { console.error('[HelpTopics] Erro update:', e); toast({ title: "Erro", description: "Erro ao atualizar tópico: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
   const deleteM = useMutation({
     mutationFn: async (id) => {
       const { error } = await supabase.from('help_topics').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["help-topics"] }),
-    onError: (e) => console.error('[HelpTopics] Erro delete:', e),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["help-topics"] }); toast({ title: "Sucesso", description: "Tópico excluído com sucesso!" }); },
+    onError: (e) => { console.error('[HelpTopics] Erro delete:', e); toast({ title: "Erro", description: "Erro ao excluir tópico: " + (e.message || "Tente novamente."), variant: "destructive" }); },
   });
 
   const close = () => { setDialogOpen(false); setEditing(null); setForm(defaultForm); };
