@@ -94,7 +94,10 @@ export default function UsersPage() {
     setConfirmResendOpen(false);
     try {
       const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      const { error } = await supabase.auth.admin.updateUserById(resendingUser.id, { password: tempPassword });
+      const { error } = await supabase.rpc('admin_update_user_password', {
+        target_user_id: resendingUser.id,
+        new_password: tempPassword,
+      });
       if (error) throw error;
       await navigator.clipboard.writeText(tempPassword);
       toast({ title: "Convite reenviado!", description: `Nova senha copiada: ${tempPassword}. Cole e envie ao usuário.` });
