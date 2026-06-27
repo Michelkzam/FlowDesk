@@ -1,15 +1,15 @@
 import { db } from '@/api/flowdeskClient';
 
 import React, { useState, useEffect } from "react";
-import { Bell, LogOut, User, Sun, Moon, Pause, Play } from "lucide-react";
+import { Bell, Sun, Moon, Pause, Play } from "lucide-react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "@/lib/ThemeContext";
-import { useAuth } from "@/lib/AuthContext";
 import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
+import ProfileMenu from "./ProfileMenu";
 
 const REFRESH_INTERVAL = 300;
 
@@ -17,7 +17,6 @@ export default function TopBar() {
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [paused, setPaused] = useState(false);
-  const { logout } = useAuth();
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -55,8 +54,6 @@ export default function TopBar() {
   const today = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const todayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
 
-  const roleLabel = user?.role === "admin" ? "Administrador" : "Técnico";
-
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-border dark:border-zinc-700 h-14 flex items-center justify-between px-4 gap-3">
       <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground dark:text-zinc-400 shrink-0">
@@ -85,7 +82,6 @@ export default function TopBar() {
           )}
         </Link>
 
-        {/* Countdown Timer */}
         <button
           onClick={() => setPaused(p => !p)}
           className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted dark:hover:bg-zinc-800 transition-colors cursor-pointer"
@@ -106,23 +102,7 @@ export default function TopBar() {
           </span>
         </button>
 
-        <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border dark:border-zinc-700">
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-            <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold leading-tight text-gray-900 dark:text-zinc-100">{user?.full_name || user?.email || "Usuario"}</p>
-            <p className="text-xs text-muted-foreground dark:text-zinc-400">{roleLabel}</p>
-          </div>
-        </div>
-
-        <button
-          className="p-2 rounded-lg hover:bg-muted dark:hover:bg-zinc-800 text-muted-foreground dark:text-zinc-400 hover:text-red-500 transition-colors ml-1"
-          title="Sair do sistema"
-          onClick={() => logout()}
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        <ProfileMenu />
       </div>
     </header>
   );
