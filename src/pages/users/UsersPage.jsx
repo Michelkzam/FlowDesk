@@ -114,6 +114,9 @@ export default function UsersPage() {
           perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
           status: 'active'
         });
+        try {
+          await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
+        } catch (_) {}
       } catch (authErr) {
         await supabase.from('users').upsert({
           id, email: d.email, password_hash: 'pending_reset',
@@ -126,7 +129,7 @@ export default function UsersPage() {
         });
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado com sucesso!" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado! Email de redefinição de senha enviado." }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
   });
 
