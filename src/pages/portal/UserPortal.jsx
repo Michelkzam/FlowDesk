@@ -5,7 +5,7 @@ import { playSystemSound } from '@/lib/soundSystem';
 import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Send, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight } from "lucide-react";
+import { MessageSquare, Send, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,85 @@ function TicketStatusBadge({ status }) {
     <span className={cn("inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium", cfg.cls)}>
       <Icon className="w-3 h-3" />{cfg.label}
     </span>
+  );
+}
+
+// Tela de login para o portal
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) throw authError;
+      const { data: profileData } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+      onLogin(data.user, profileData);
+    } catch (err) {
+      setError(err.message || "Credenciais inválidas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="h-screen flex flex-col items-center justify-center bg-background p-4">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
+            <MessageSquare className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold">Central de Suporte</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Faça login para acessar o suporte</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
+          {error && (
+            <div className="text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-sm">
+              {error}
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" /> Email
+            </Label>
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-muted-foreground" /> Senha
+            </Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 gap-2" disabled={loading}>
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Entrando...</> : <>Entrar <ArrowRight className="w-4 h-4" /></>}
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -96,7 +175,15 @@ export default function UserPortal() {
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: currentUser, isLoading: loadingUser } = useQuery({ queryKey: ["me"], queryFn: () => db.auth.me() });
+  const { data: currentUser, isLoading: loadingUser, refetch } = useQuery({ 
+    queryKey: ["me"], 
+    queryFn: () => db.auth.me(),
+    retry: false,
+  });
+
+  const handleLogin = async (user, profileData) => {
+    await refetch();
+  };
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["my-tickets", currentUser?.email],
@@ -190,6 +277,11 @@ export default function UserPortal() {
 
   if (loadingUser) {
     return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  // Show login screen if not authenticated
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   // Show welcome screen if profile not set
