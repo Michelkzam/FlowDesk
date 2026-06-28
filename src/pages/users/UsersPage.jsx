@@ -79,33 +79,32 @@ export default function UsersPage() {
 
   const { data: clients = [] } = useQuery({ queryKey: ["clients"], queryFn: () => db.entities.Client.list() });
   const { data: organizations = [] } = useQuery({ queryKey: ["organizations"], queryFn: () => db.entities.Organization.list() });
-  const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
-  const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list() });
+  const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: async () => {
+    try { return await db.entities.Role.list(); } catch { return []; }
+  }});
+  const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: async () => {
+    try { return await db.entities.Department.list(); } catch { return []; }
+  }});
 
   const filteredUsers = filterRole === "all" ? allUsers : allUsers.filter(u => u.role === filterRole);
   const stats = { total: allUsers.length, admin: allUsers.filter(u => u.role === "admin").length, agent: allUsers.filter(u => u.role === "agent").length, user: allUsers.filter(u => u.role === "user").length };
 
   const createM = useMutation({
     mutationFn: async d => {
-      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      const { data, error } = await supabase.auth.signUp({
-        email: d.email,
-        password: tempPassword,
-        options: { data: { full_name: d.full_name, role: d.role } }
+      const id = crypto.randomUUID();
+      const { error } = await supabase.from('users').insert({
+        id, email: d.email, password_hash: 'pending_reset',
+        full_name: d.full_name, role: d.role, role_id: d.role_id || null,
+        phone: d.phone || null, department: d.department || null,
+        department_id: d.department_id || null,
+        client_id: d.client_id || null, organization_id: d.organization_id || null,
+        perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
+        status: 'active'
       });
       if (error) throw error;
-      if (data.user) {
-        await supabase.from('users').insert({
-          id: data.user.id, email: d.email, password_hash: 'supabase_auth',
-          full_name: d.full_name, role: d.role, role_id: d.role_id || null,
-          phone: d.phone || null, department: d.department || null,
-          department_id: d.department_id || null,
-          client_id: d.client_id || null, organization_id: d.organization_id || null,
-          perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
-          status: 'active'
-        });
-      }
-      return data;
+      try {
+        await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
+      } catch (_) {}
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado com sucesso!" }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
