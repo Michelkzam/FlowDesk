@@ -25,6 +25,7 @@ async function migrate() {
       table.string('full_name').notNullable();
       table.string('role').defaultTo('agent');
       table.uuid('role_id').references('id').inTable('roles').onDelete('SET NULL');
+      table.string('perfil').defaultTo('tecnico');
       table.string('status').defaultTo('active');
       table.string('avatar_url');
       table.string('phone');
@@ -32,6 +33,15 @@ async function migrate() {
       table.timestamps(true, true);
     });
     console.log('[DB] Tabela "users" criada');
+  }
+
+  // Add perfil column to users if missing
+  const hasPerfil = await db.schema.hasColumn('users', 'perfil');
+  if (!hasPerfil) {
+    await db.schema.alterTable('users', (table) => {
+      table.string('perfil').defaultTo('tecnico');
+    });
+    console.log('[DB] Coluna "perfil" adicionada à tabela "users"');
   }
 
   // Categories table

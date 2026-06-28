@@ -86,9 +86,10 @@ class EntityClient {
 
     if (this.tableName === 'users') {
       if (clean.name && !clean.full_name) clean.full_name = clean.name;
-      if (!isUpdate && !clean.password_hash) clean.password_hash = 'supabase_auth';
-      if (!isUpdate && !clean.role) clean.role = clean.admin ? 'admin' : 'agent';
+      if (!clean.password_hash) clean.password_hash = 'supabase_auth';
+      if (!clean.role) clean.role = clean.admin ? 'admin' : 'agent';
       if (clean.department_name && !clean.department) clean.department = clean.department_name;
+      if (clean.perfil && !clean.perfil_set) clean.perfil = clean.perfil;
     }
 
     Object.keys(clean).forEach(key => {
@@ -146,9 +147,18 @@ class AgentEntityClient extends EntityClient {
       .order(field, { ascending: !descending })
       .limit(limit);
     if (error) throw error;
+
+    const { data: departments = [] } = await supabase.from('departments').select('id, name');
+    const { data: roles = [] } = await supabase.from('roles').select('id, name');
+    const deptMap = Object.fromEntries(departments.map(d => [d.id, d.name]));
+    const roleMap = Object.fromEntries(roles.map(r => [r.id, r.name]));
+
     return (data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
       if (row.full_name && !row.name) row.name = row.full_name;
+      row.department_name = row.department || deptMap[row.department_id] || null;
+      row.role_name = roleMap[row.role_id] || null;
+      if (!row.perfil) row.perfil = row.role === 'admin' ? 'administrador' : 'tecnico';
       return row;
     });
   }

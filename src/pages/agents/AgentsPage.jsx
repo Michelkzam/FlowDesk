@@ -40,7 +40,20 @@ export default function AgentsPage() {
   const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
 
   const createMutation = useMutation({
-    mutationFn: d => db.entities.Agent.create(d),
+    mutationFn: async d => {
+      const deptName = departments.find(dep => dep.id === d.department_id)?.name || d.department_name || null;
+      const payload = {
+        full_name: d.name || d.full_name,
+        email: d.email,
+        phone: d.phone || null,
+        department: deptName,
+        role_id: d.role_id || null,
+        role: d.admin ? "admin" : "agent",
+        perfil: d.perfil || "tecnico",
+        status: d.status || "active",
+      };
+      return db.entities.Agent.create(payload);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["agents"] }); close(); toast({ title: "Sucesso", description: "Técnico criado com sucesso!" }); },
     onError: (e) => { console.error('Erro ao criar técnico:', e); toast({ title: "Erro", description: "Erro ao criar técnico: " + (e.message || "Tente novamente."), variant: "destructive" }); }
   });
