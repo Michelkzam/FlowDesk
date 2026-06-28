@@ -10,10 +10,20 @@ async function migrate() {
       table.string('name').notNullable().unique();
       table.string('description');
       table.json('permissions').defaultTo('[]');
+      table.json('pages').defaultTo('[]');
       table.string('status').defaultTo('active');
       table.timestamps(true, true);
     });
     console.log('[DB] Tabela "roles" criada');
+  }
+
+  // Add pages column to roles if missing
+  const hasPages = await db.schema.hasColumn('roles', 'pages');
+  if (!hasPages) {
+    await db.schema.alterTable('roles', (table) => {
+      table.json('pages').defaultTo('[]');
+    });
+    console.log('[DB] Coluna "pages" adicionada à tabela "roles"');
   }
 
   // Users table
