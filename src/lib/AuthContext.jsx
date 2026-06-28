@@ -102,6 +102,7 @@ export function AuthProvider({ children }) {
         if (session?.user) {
           setUser(session.user);
           setIsAuthenticated(true);
+          setLoading(false);
           const p = await fetchProfile(session.user.id);
           setProfile(p);
           await fetchPermissions(p);
@@ -110,6 +111,7 @@ export function AuthProvider({ children }) {
           setProfile(null);
           setPermissions([]);
           setIsAuthenticated(false);
+          setLoading(false);
         }
       }
     );
@@ -130,6 +132,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
     setUser(data.user);
     setIsAuthenticated(true);
+    setLoading(false);
     const p = await fetchProfile(data.user.id);
     setProfile(p);
     await fetchPermissions(p);
