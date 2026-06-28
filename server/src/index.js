@@ -3,6 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: resolve(__dirname, '../.env') });
 
 import { initWebSocket } from './services/websocket.js';
 import { startAutoCloseCron } from './cron/autoCloseInactive.js';
@@ -12,8 +19,6 @@ import ticketRoutes from './routes/tickets.js';
 import categoryRoutes from './routes/categories.js';
 import slaRoutes from './routes/sla.js';
 import agentRoutes from './routes/agents.js';
-
-dotenv.config();
 
 const app = express();
 const server = createServer(app);

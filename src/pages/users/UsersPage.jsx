@@ -88,46 +88,26 @@ export default function UsersPage() {
 
   const createM = useMutation({
     mutationFn: async d => {
-      const id = crypto.randomUUID();
       const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-
+      const { data, error } = await supabase.auth.signUp({
+        email: d.email,
+        password: tempPassword,
+        options: { data: { full_name: d.full_name, role: d.role } }
+      });
+      if (error) throw error;
+      const userId = data.user?.id || crypto.randomUUID();
+      await supabase.from('users').upsert({
+        id: userId, email: d.email, password_hash: 'supabase_auth',
+        full_name: d.full_name, role: d.role, role_id: d.role_id || null,
+        phone: d.phone || null, department: d.department || null,
+        department_id: d.department_id || null,
+        client_id: d.client_id || null, organization_id: d.organization_id || null,
+        perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
+        status: 'active'
+      });
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        const resp = await fetch(`${API_URL}/api/auth/create-user`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ email: d.email, password: tempPassword, full_name: d.full_name, role: d.role })
-        });
-        if (!resp.ok) {
-          const err = await resp.json();
-          throw new Error(err.message || 'Erro ao criar usuário no Auth');
-        }
-        const { user } = await resp.json();
-        await supabase.from('users').upsert({
-          id: user.id, email: d.email, password_hash: 'supabase_auth',
-          full_name: d.full_name, role: d.role, role_id: d.role_id || null,
-          phone: d.phone || null, department: d.department || null,
-          department_id: d.department_id || null,
-          client_id: d.client_id || null, organization_id: d.organization_id || null,
-          perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
-          status: 'active'
-        });
-        try {
-          await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
-        } catch (_) {}
-      } catch (authErr) {
-        await supabase.from('users').upsert({
-          id, email: d.email, password_hash: 'pending_reset',
-          full_name: d.full_name, role: d.role, role_id: d.role_id || null,
-          phone: d.phone || null, department: d.department || null,
-          department_id: d.department_id || null,
-          client_id: d.client_id || null, organization_id: d.organization_id || null,
-          perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
-          status: 'active'
-        });
-      }
+        await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
+      } catch (_) {}
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado! Email de redefinição de senha enviado." }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
@@ -181,20 +161,9 @@ export default function UsersPage() {
       if (newPassword.length < 6) { toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres.", variant: "destructive" }); return; }
       if (newPassword !== confirmPassword) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        const resp = await fetch(`${API_URL}/api/auth/admin-password`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ target_user_id: editing.id, new_password: newPassword })
-        });
-        if (!resp.ok) {
-          const err = await resp.json();
-          throw new Error(err.message || 'Erro ao alterar senha');
-        }
-        toast({ title: "Senha alterada com sucesso!" });
-      } catch (err) { toast({ title: "Erro ao alterar senha", description: err.message, variant: "destructive" }); }
+        await supabase.auth.resetPasswordForEmail(editing.email, { redirectTo: `${window.location.origin}/reset-password` });
+        toast({ title: "Email de redefinição enviado!", description: `Para ${editing.email}. O usuário deve definir a nova senha pelo link.` });
+      } catch (err) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
     }
   };
 
