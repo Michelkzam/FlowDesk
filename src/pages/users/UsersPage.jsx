@@ -114,7 +114,13 @@ export default function UsersPage() {
   });
 
   const updateM = useMutation({
-    mutationFn: ({ id, data }) => db.entities.User.update(id, data),
+    mutationFn: ({ id, data }) => {
+      const clean = { ...data };
+      ['role_id', 'client_id', 'organization_id', 'department_id'].forEach(k => {
+        if (!clean[k] || clean[k] === '') delete clean[k];
+      });
+      return db.entities.User.update(id, clean);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setEditOpen(false); toast({ title: "Sucesso", description: "Usuário atualizado!" }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
   });
