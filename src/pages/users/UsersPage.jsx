@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Shield, Key, Eye, EyeOff, Mail, Send, Settings, Check } from "lucide-react";
+import { UserPlus, Shield, Eye, EyeOff, Mail, Settings, Check } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase";
@@ -44,9 +44,6 @@ export default function UsersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordUser, setPasswordUser] = useState(null);
-  const [pwNew, setPwNew] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
   const [rolesOpen, setRolesOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({ name: "", description: "", permissions: [] });
@@ -188,25 +185,6 @@ export default function UsersPage() {
     }
   };
 
-  const handleQuickPassword = async () => {
-    if (!pwNew || pwNew.length < 6) { toast({ title: "Mínimo 6 caracteres", variant: "destructive" }); return; }
-    if (pwNew !== pwConfirm) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
-    try {
-      const { error } = await supabase.rpc('admin_update_user_password', { target_user_id: passwordUser.id, new_password: pwNew });
-      if (error) throw error;
-      toast({ title: "Senha alterada!" }); setPasswordUser(null); setPwNew(""); setPwConfirm("");
-      queryClient.invalidateQueries({ queryKey: ["all-users"] });
-    } catch (err) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
-  };
-
-  const handleResendInvite = async (user) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` });
-      if (error) throw error;
-      toast({ title: "Email de redefinição enviado!", description: `Para ${user.email}` });
-    } catch (err) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
-  };
-
   const columns = [
     { key: "full_name", label: "Nome", render: (v, row) => (
       <div><p className="font-medium text-sm">{v || "—"}</p><p className="text-xs text-muted-foreground">{row.email}</p></div>
@@ -244,12 +222,7 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <DataTable columns={columns} data={filteredUsers} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["full_name", "email", "department_name", "organization_name", "client_name"]} emptyMessage="Nenhum usuário encontrado" canEdit={can("users.manage")} canDelete={can("users.manage")} extraActions={(row) => (
-        <>
-          <button onClick={(e) => { e.stopPropagation(); handleResendInvite(row); }} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite"><Send className="w-3.5 h-3.5" /></button>
-          <button onClick={(e) => { e.stopPropagation(); setPasswordUser(row); setPwNew(""); setPwConfirm(""); }} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Alterar senha"><Key className="w-3.5 h-3.5" /></button>
-        </>
-      )} />
+      <DataTable columns={columns} data={filteredUsers} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["full_name", "email", "department_name", "organization_name", "client_name"]} emptyMessage="Nenhum usuário encontrado" canEdit={can("users.manage")} canDelete={can("users.manage")} />
 
       {/* Create/Edit User Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
@@ -403,18 +376,6 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={updateM.isPending}>{updateM.isPending ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Quick Password Dialog */}
-      <Dialog open={!!passwordUser} onOpenChange={() => setPasswordUser(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Alterar Senha — {passwordUser?.full_name || passwordUser?.email}</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5"><Label>Nova Senha</Label><Input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="Mínimo 6 caracteres" minLength={6} /></div>
-            <div className="space-y-1.5"><Label>Confirmar</Label><Input type="password" value={pwConfirm} onChange={e => setPwConfirm(e.target.value)} placeholder="Repita a senha" minLength={6} /></div>
-          </div>
-          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setPasswordUser(null)}>Cancelar</Button><Button onClick={handleQuickPassword}>Alterar</Button></div>
         </DialogContent>
       </Dialog>
 
