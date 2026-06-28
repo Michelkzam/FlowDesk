@@ -89,7 +89,7 @@ export const PRIORITY_LABELS = Object.fromEntries(
 
 export const PRIORITY_LIST = Object.keys(TICKET_PRIORITIES);
 
-export const SOURCE_EMOJI = { web: "🌐", email: "📧", api: "⚙️", phone: "📞", whatsapp: "💬" };
+export const SOURCE_EMOJI = { web: "🌐", email: "📧", api: "⚙️", phone: "📞", whatsapp: "💬", telegram: "✈️" };
 
 export const CLOSED_STATUSES = ["resolved", "closed"];
 

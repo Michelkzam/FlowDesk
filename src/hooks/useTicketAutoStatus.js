@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 
 /**
- * Hook that checks every 30 minutes for tickets "in_progress" or "open"
+ * Hook that checks every 2 hours for tickets "in_progress" or "open"
  * with no response for more than 24 hours and moves them to "waiting".
  */
 import { useEffect } from "react";
@@ -27,11 +27,14 @@ export function useTicketAutoStatus() {
 
       if (stale.length === 0) return;
 
-      await Promise.all(
+      const results = await Promise.allSettled(
         stale.map(t => db.entities.Ticket.update(t.id, { status: "waiting" }))
       );
 
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      const succeeded = results.filter(r => r.status === "fulfilled").length;
+      if (succeeded > 0) {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      }
     };
 
     // Delay initial run by 5 seconds to avoid startup burst

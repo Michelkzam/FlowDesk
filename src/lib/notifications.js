@@ -64,7 +64,9 @@ export async function checkNewNotifications() {
       notifications = [...newNotifications, ...notifications].slice(0, 50);
       notify(notifications);
     }
-  } catch {}
+  } catch (error) {
+    console.error('[Notifications] Erro ao verificar notificações:', error);
+  }
 }
 
 export function getNotifications() {
