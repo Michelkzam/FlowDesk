@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Ticket, Users, UsersRound,
   BookOpen, Settings, ChevronDown, ChevronRight, Menu, X,
   PanelLeftClose, PanelLeftOpen, LogOut, Tag, Clock, Filter,
-  Building2, Inbox, ListOrdered, HelpCircle,
+  Building2, Inbox, ListOrdered, HelpCircle, Shield,
   Network, Calendar, Zap, FileText, Bell, TrendingUp, ShieldCheck,
   Monitor, FileSignature, BarChart3, DollarSign, RefreshCw, Video, History
 } from "lucide-react";
