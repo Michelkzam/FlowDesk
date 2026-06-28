@@ -147,17 +147,9 @@ class AgentEntityClient extends EntityClient {
       .order(field, { ascending: !descending })
       .limit(limit);
     if (error) throw error;
-
-    const { data: departments = [] } = await supabase.from('departments').select('id, name');
-    const { data: roles = [] } = await supabase.from('roles').select('id, name');
-    const deptMap = Object.fromEntries(departments.map(d => [d.id, d.name]));
-    const roleMap = Object.fromEntries(roles.map(r => [r.id, r.name]));
-
     return (data || []).map(row => {
       if (row.created_at && !row.created_date) row.created_date = row.created_at;
       if (row.full_name && !row.name) row.name = row.full_name;
-      row.department_name = row.department || deptMap[row.department_id] || null;
-      row.role_name = roleMap[row.role_id] || null;
       if (!row.perfil) row.perfil = row.role === 'admin' ? 'administrador' : 'tecnico';
       return row;
     });

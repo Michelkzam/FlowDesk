@@ -39,6 +39,16 @@ export default function AgentsPage() {
   const { data: departments = [] } = useQuery({ queryKey: ["departments"], queryFn: () => db.entities.Department.list() });
   const { data: roles = [] } = useQuery({ queryKey: ["roles"], queryFn: () => db.entities.Role.list() });
 
+  const deptMap = Object.fromEntries(departments.map(d => [d.id, d.name]));
+  const roleMap = Object.fromEntries(roles.map(r => [r.id, r.name]));
+
+  const agentsWithNames = agents.map(a => ({
+    ...a,
+    department_name: a.department || deptMap[a.department_id] || "—",
+    role_name: roleMap[a.role_id] || "—",
+    perfil: a.perfil || (a.role === 'admin' ? 'administrador' : 'tecnico'),
+  }));
+
   const createMutation = useMutation({
     mutationFn: async d => {
       const deptName = departments.find(dep => dep.id === d.department_id)?.name || d.department_name || null;
@@ -154,7 +164,7 @@ export default function AgentsPage() {
       <PageHeader title="Técnicos" subtitle="Gerencie os técnicos de suporte" action={openCreate} actionLabel="Novo Técnico" canCreate={can("users.manage")} />
       <DataTable
         columns={columns}
-        data={agents}
+        data={agentsWithNames}
         isLoading={isLoading}
         onEdit={openEdit}
         onDelete={item => deleteMutation.mutate(item.id)}
