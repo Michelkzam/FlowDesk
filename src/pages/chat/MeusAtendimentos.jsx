@@ -76,17 +76,17 @@ function TicketCard({ ticket, onClick }) {
         <span className="text-base flex-shrink-0">{channelEmoji[ticket.channel] || "🌐"}</span>
       </div>
 
-      {ticket.operator_name && (
+      {ticket.agent_name && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
           <Headphones className="w-3 h-3" />
-          <span className="truncate">{ticket.operator_name}</span>
+          <span className="truncate">{ticket.agent_name}</span>
         </div>
       )}
 
-      {ticket.client_phone && (
+      {ticket.user_phone && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
           <Phone className="w-3 h-3" />
-          <span>{ticket.client_phone}</span>
+          <span>{ticket.user_phone}</span>
         </div>
       )}
 
@@ -134,7 +134,7 @@ export default function MeusAtendimentos() {
       !search ||
       (t.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (t.title || "").toLowerCase().includes(search.toLowerCase()) ||
-      (t.client_phone || "").toLowerCase().includes(search.toLowerCase())
+      (t.user_phone || "").toLowerCase().includes(search.toLowerCase())
     );
     if (status === "resolved") return searchFiltered.filter(t => t.status === "resolved" || t.status === "closed");
     return searchFiltered.filter(t => t.status === status);

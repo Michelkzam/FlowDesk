@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../db/connection.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
@@ -94,7 +94,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/create-user (cria usuário no Supabase Auth)
-router.post('/create-user', authenticate, async (req, res) => {
+router.post('/create-user', authenticate, authorize('admin'), async (req, res) => {
   try {
     const { email, password, full_name, role = 'user' } = req.body;
 
@@ -121,7 +121,7 @@ router.post('/create-user', authenticate, async (req, res) => {
 });
 
 // PUT /api/auth/admin-password (admin altera senha de qualquer usuário)
-router.put('/admin-password', authenticate, async (req, res) => {
+router.put('/admin-password', authenticate, authorize('admin'), async (req, res) => {
   try {
     const { target_user_id, new_password } = req.body;
 
@@ -149,7 +149,7 @@ router.put('/admin-password', authenticate, async (req, res) => {
 });
 
 // DELETE /api/auth/delete-user (admin exclui usuário do Auth)
-router.delete('/delete-user', authenticate, async (req, res) => {
+router.delete('/delete-user', authenticate, authorize('admin'), async (req, res) => {
   try {
     const { target_user_id } = req.body;
 

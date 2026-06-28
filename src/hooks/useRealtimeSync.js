@@ -76,6 +76,7 @@ export function useSmartPolling(queryKey, fetchFn, options = {}) {
   const { enabled = true, baseInterval = 10000, activeInterval = 2000 } = options;
   const intervalRef = useRef(baseInterval);
   const lastDataRef = useRef(null);
+  const [, forceRender] = useState(0);
 
   const { data, isLoading } = useQuery({
     queryKey,
@@ -88,10 +89,10 @@ export function useSmartPolling(queryKey, fetchFn, options = {}) {
   useEffect(() => {
     if (data && lastDataRef.current) {
       const hasChanged = JSON.stringify(data) !== JSON.stringify(lastDataRef.current);
-      if (hasChanged) {
-        intervalRef.current = activeInterval;
-      } else {
-        intervalRef.current = baseInterval;
+      const newInterval = hasChanged ? activeInterval : baseInterval;
+      if (intervalRef.current !== newInterval) {
+        intervalRef.current = newInterval;
+        forceRender(n => n + 1);
       }
     }
     lastDataRef.current = data;

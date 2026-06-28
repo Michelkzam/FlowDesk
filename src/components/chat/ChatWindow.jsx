@@ -128,7 +128,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
       {/* Ticket info bar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 border-b border-border text-xs text-muted-foreground flex-shrink-0 flex-wrap">
         <span>Ticket #{ticket.id?.slice(-6)}</span>
-        {ticket.operator_name && <><span>•</span><span>Operador: {ticket.operator_name}</span></>}
+        {ticket.agent_name && <><span>•</span><span>Operador: {ticket.agent_name}</span></>}
         {ticket.category_name && <><span>•</span><span>{ticket.category_name}</span></>}
         <span>•</span>
         <span>Criado: {format(new Date(ticket.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>

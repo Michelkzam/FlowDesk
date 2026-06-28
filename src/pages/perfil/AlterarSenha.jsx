@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function AlterarSenha() {
   const [formData, setFormData] = useState({ current: "", password: "", confirm: "" });
@@ -11,6 +13,8 @@ export default function AlterarSenha() {
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,10 +27,19 @@ export default function AlterarSenha() {
       setError("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
-    // Password change via platform
-    setSuccess(true);
-    setFormData({ current: "", password: "", confirm: "" });
-    setTimeout(() => setSuccess(false), 3000);
+    setLoading(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password: formData.password });
+      if (updateError) throw updateError;
+      setSuccess(true);
+      setFormData({ current: "", password: "", confirm: "" });
+      toast({ title: "Sucesso", description: "Senha alterada com sucesso!" });
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.message || "Erro ao alterar senha.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

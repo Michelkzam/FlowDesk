@@ -39,7 +39,7 @@ export default function Agenda() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filterView, setFilterView] = useState(null);
   const [formData, setFormData] = useState({
-    title: "", description: "", client_name: "", operator_name: "",
+    title: "", description: "", client_name: "", agent_name: "",
     type: "support", status: "scheduled", priority: "normal",
     start_date: "", end_date: "", notes: ""
   });
@@ -58,7 +58,7 @@ export default function Agenda() {
         title: `[Agendamento] ${data.title}`,
         description: data.description || "",
         client_name: data.client_name || "",
-        operator_name: data.operator_name || "",
+        agent_name: data.agent_name || "",
         status: "open",
         priority: data.priority || "normal",
         scheduled_date: data.start_date,
@@ -71,7 +71,7 @@ export default function Agenda() {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setDialogOpen(false);
-      setFormData({ title: "", description: "", client_name: "", operator_name: "", type: "support", status: "scheduled", priority: "normal", start_date: "", end_date: "", notes: "" });
+      setFormData({ title: "", description: "", client_name: "", agent_name: "", type: "support", status: "scheduled", priority: "normal", start_date: "", end_date: "", notes: "" });
     },
   });
 
@@ -162,7 +162,7 @@ export default function Agenda() {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                   {appt.start_date && <span>{format(new Date(appt.start_date), "HH:mm")} {appt.end_date ? `→ ${format(new Date(appt.end_date), "HH:mm")}` : ""}</span>}
                   {appt.client_name && <span><User className="w-3 h-3 inline" /> {appt.client_name}</span>}
-                  {appt.operator_name && <span>Op: {appt.operator_name}</span>}
+                  {appt.agent_name && <span>Op: {appt.agent_name}</span>}
                 </div>
                 {appt.description && <p className="text-xs text-muted-foreground mt-1 truncate">{appt.description}</p>}
               </div>
@@ -199,7 +199,7 @@ export default function Agenda() {
               </div>
               <div className="space-y-1.5">
                 <Label>Operador</Label>
-                <Input value={formData.operator_name} onChange={(e) => setFormData(p => ({ ...p, operator_name: e.target.value }))} placeholder="Nome do operador" />
+                <Input value={formData.agent_name} onChange={(e) => setFormData(p => ({ ...p, agent_name: e.target.value }))} placeholder="Nome do operador" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

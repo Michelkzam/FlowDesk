@@ -93,7 +93,7 @@ export default function Historico() {
                   <TableRow key={t.id} className="hover:bg-muted/30">
                     <TableCell className="text-sm font-medium">{t.title}</TableCell>
                     <TableCell className="text-sm">{t.client_name || "—"}</TableCell>
-                    <TableCell className="text-sm">{t.operator_name || "—"}</TableCell>
+                    <TableCell className="text-sm">{t.agent_name || "—"}</TableCell>
                     <TableCell className="text-sm capitalize">{t.channel || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusColors[t.status]}>

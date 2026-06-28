@@ -89,7 +89,6 @@ class EntityClient {
       if (!clean.password_hash) clean.password_hash = 'supabase_auth';
       if (!clean.role) clean.role = clean.admin ? 'admin' : 'agent';
       if (clean.department_name && !clean.department) clean.department = clean.department_name;
-      if (clean.perfil && !clean.perfil_set) clean.perfil = clean.perfil;
     }
 
     Object.keys(clean).forEach(key => {
@@ -263,6 +262,8 @@ const entities = {
   OnCallRule: new EntityClient('on_call_rules'),
   Holiday: new EntityClient('holidays'),
   SystemSetting: new EntityClient('system_settings'),
+  Appointment: new EntityClient('appointments'),
+  ChatQueue: new EntityClient('chat_queues'),
 };
 
 const integrations = {

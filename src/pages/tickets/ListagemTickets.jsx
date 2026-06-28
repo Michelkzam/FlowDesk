@@ -173,13 +173,13 @@ export default function ListagemTickets() {
                   <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Nenhum ticket encontrado</TableCell></TableRow>
                 ) : filtered.map(ticket => {
                   const st = statusConfig[ticket.status] || statusConfig.open;
-                  const pr = priorityConfig[ticket.priority] || priorityConfig.medium;
+                  const pr = priorityConfig[ticket.priority] || priorityConfig.normal;
                   return (
                     <TableRow key={ticket.id} className="hover:bg-muted/30">
                       <TableCell className="text-xs text-muted-foreground font-mono">{ticket.id?.slice(-6)}</TableCell>
                       <TableCell className="text-sm font-medium max-w-[180px] truncate">{ticket.title}</TableCell>
                       <TableCell className="text-sm">{ticket.client_name || "—"}</TableCell>
-                      <TableCell className="text-sm">{ticket.operator_name || "—"}</TableCell>
+                      <TableCell className="text-sm">{ticket.agent_name || "—"}</TableCell>
                       <TableCell className="text-sm">{channelEmoji[ticket.channel]} {ticket.channel || "—"}</TableCell>
                       <TableCell><Badge variant="outline" className={st.class}>{st.label}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={pr.class}>{pr.label}</Badge></TableCell>

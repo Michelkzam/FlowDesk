@@ -168,12 +168,6 @@ export default function TicketDetail({ isPopup = false }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      if (ticket?.status !== "resolved" && ticket?.status !== "closed") {
-        const currentStatus = ticket?.status;
-        if (currentStatus === "resolved" || currentStatus === "closed") {
-          playSystemSound('ticket_closed');
-        }
-      }
     }
   });
 

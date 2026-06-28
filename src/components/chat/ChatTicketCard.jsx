@@ -36,9 +36,9 @@ export default function ChatTicketCard({ ticket, onClick }) {
         )}
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          {ticket.operator_name && (
+          {ticket.agent_name && (
             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-              {ticket.operator_name}
+              {ticket.agent_name}
             </Badge>
           )}
         </div>

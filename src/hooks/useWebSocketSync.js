@@ -74,6 +74,7 @@ export function useWebSocketSync() {
       s.off("ticket:transferred", handleTicketTransferred);
       s.off("ticket:auto-closed", handleTicketAutoClosed);
       s.off("message:created", handleMessageCreated);
+      s.disconnect();
     };
   }, [isAuthenticated, user, queryClient]);
 

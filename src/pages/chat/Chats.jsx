@@ -68,7 +68,7 @@ export default function Chats() {
     const matchSearch = !search ||
       (t.title || "").toLowerCase().includes(search.toLowerCase()) ||
       (t.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (t.client_phone || "").toLowerCase().includes(search.toLowerCase());
+      (t.user_phone || "").toLowerCase().includes(search.toLowerCase());
     if (activeFilter === "open") return matchSearch && t.status === "open";
     if (activeFilter === "in_progress") return matchSearch && t.status === "in_progress";
     if (activeFilter === "resolved") return matchSearch && (t.status === "resolved" || t.status === "closed");
