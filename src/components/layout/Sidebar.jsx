@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Ticket, Users, UserCog, UsersRound, Shield,
+  LayoutDashboard, Ticket, Users, UsersRound,
   BookOpen, Settings, ChevronDown, ChevronRight, Menu, X,
   PanelLeftClose, PanelLeftOpen, LogOut, Tag, Clock, Filter,
   Building2, Inbox, ListOrdered, HelpCircle,
@@ -38,10 +38,7 @@ const navItems = [
       { label: "Clientes", icon: Users, path: "/clientes" },
       { label: "Departamentos", icon: Building2, path: "/departamentos" },
       { label: "Equipes", icon: UsersRound, path: "/equipes" },
-      { label: "Funções", icon: Shield, path: "/funcoes" },
-      { label: "Perfis de Acesso", icon: Shield, path: "/perfis" },
       { label: "Organizações", icon: Network, path: "/organizacoes" },
-      { label: "Técnicos", icon: UserCog, path: "/agentes" },
       { label: "Usuários", icon: Users, path: "/usuarios" },
     ]
   },

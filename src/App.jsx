@@ -26,11 +26,8 @@ import TicketHistory from './pages/tickets/TicketHistory';
 import ApprovalQueue from './pages/tickets/ApprovalQueue';
 
 // Agents
-import AgentsPage from './pages/agents/AgentsPage';
 import DepartmentsPage from './pages/agents/DepartmentsPage';
 import TeamsPage from './pages/agents/TeamsPage';
-import RolesPage from './pages/agents/RolesPage';
-import ProfilesPage from './pages/cadastros/ProfilesPage';
 
 // Users
 import UsersPage from './pages/users/UsersPage';
@@ -97,10 +94,7 @@ function AppRoutes() {
         <Route path="tickets/aprovacao" element={<ApprovalQueue />} />
         <Route path="tickets/novo" element={<TicketList />} />
         <Route path="tickets/:id" element={<TicketDetail />} />
-        <Route path="agentes" element={<AgentsPage />} />
         <Route path="equipes" element={<TeamsPage />} />
-        <Route path="funcoes" element={<RolesPage />} />
-        <Route path="perfis" element={<ProfilesPage />} />
         <Route path="departamentos" element={<DepartmentsPage />} />
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="organizacoes" element={<OrganizationsPage />} />
