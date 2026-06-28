@@ -120,6 +120,34 @@ router.post('/create-user', authenticate, async (req, res) => {
   }
 });
 
+// PUT /api/auth/admin-password (admin altera senha de qualquer usuário)
+router.put('/admin-password', authenticate, async (req, res) => {
+  try {
+    const { target_user_id, new_password } = req.body;
+
+    if (!target_user_id || !new_password) {
+      return res.status(400).json({ message: 'ID do usuário e nova senha são obrigatórios' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres' });
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
+      password: new_password
+    });
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.json({ message: 'Senha atualizada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    res.status(500).json({ message: 'Erro interno no servidor' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   try {

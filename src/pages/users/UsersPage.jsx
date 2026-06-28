@@ -178,8 +178,18 @@ export default function UsersPage() {
       if (newPassword.length < 6) { toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres.", variant: "destructive" }); return; }
       if (newPassword !== confirmPassword) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
       try {
-        const { error } = await supabase.rpc('admin_update_user_password', { target_user_id: editing.id, new_password: newPassword });
-        if (error) throw error;
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        const resp = await fetch(`${API_URL}/api/auth/admin-password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ target_user_id: editing.id, new_password: newPassword })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.message || 'Erro ao alterar senha');
+        }
         toast({ title: "Senha alterada com sucesso!" });
       } catch (err) { toast({ title: "Erro ao alterar senha", description: err.message, variant: "destructive" }); }
     }
