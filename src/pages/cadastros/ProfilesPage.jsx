@@ -1,6 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/shared/PageHeader";
@@ -12,32 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, User, Check, X } from "lucide-react";
+import { Shield, Users, User, Check } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
-
-const ALL_PERMISSIONS = [
-  { key: "tickets.create", label: "Criar tickets" },
-  { key: "tickets.edit", label: "Editar tickets" },
-  { key: "tickets.delete", label: "Excluir tickets" },
-  { key: "tickets.close", label: "Fechar tickets" },
-  { key: "tickets.assign", label: "Atribuir tickets" },
-  { key: "tickets.transfer", label: "Transferir tickets" },
-  { key: "kb.create", label: "Criar artigos KB" },
-  { key: "kb.edit", label: "Editar artigos KB" },
-  { key: "kb.delete", label: "Excluir artigos KB" },
-  { key: "kb.publish", label: "Publicar artigos KB" },
-  { key: "users.manage", label: "Gerenciar usuários" },
-  { key: "reports.view", label: "Ver relatórios" },
-  { key: "admin.access", label: "Acesso administrativo" },
-];
-
-const PERMISSION_GROUPS = {
-  "Tickets": ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer"],
-  "Base de Conhecimento": ["kb.create", "kb.edit", "kb.delete", "kb.publish"],
-  "Sistema": ["users.manage", "reports.view", "admin.access"],
-};
+import { cn } from "@/lib/utils";
+import { ALL_PERMISSIONS_WITH_LABELS, PERMISSION_GROUPS } from "@/lib/constants";
 
 const defaultForm = { name: "", description: "", status: "active" };
 
@@ -125,7 +104,7 @@ export default function ProfilesPage() {
     {
       key: "permissions", label: "Permissões", render: (v) => {
         const count = (v || []).length;
-        return <Badge variant="outline" className="text-xs">{count} / {ALL_PERMISSIONS.length}</Badge>;
+        return <Badge variant="outline" className="text-xs">{count} / {ALL_PERMISSIONS_WITH_LABELS.length}</Badge>;
       }
     },
     {
@@ -201,7 +180,7 @@ export default function ProfilesPage() {
               </Select>
             </div>
             <div className="border-t border-border pt-4 space-y-3">
-              <Label className="text-sm font-semibold">Permissões ({selectedPerms.length}/{ALL_PERMISSIONS.length})</Label>
+              <Label className="text-sm font-semibold">Permissões ({selectedPerms.length}/{ALL_PERMISSIONS_WITH_LABELS.length})</Label>
               {Object.entries(PERMISSION_GROUPS).map(([group, perms]) => (
                 <div key={group} className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -212,7 +191,7 @@ export default function ProfilesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-1 pl-2">
                     {perms.map(key => {
-                      const perm = ALL_PERMISSIONS.find(p => p.key === key);
+                      const perm = ALL_PERMISSIONS_WITH_LABELS.find(p => p.key === key);
                       const checked = selectedPerms.includes(key);
                       return (
                         <label key={key} className="flex items-center gap-2 cursor-pointer text-xs py-0.5" onClick={() => togglePerm(key)}>
@@ -250,8 +229,4 @@ export default function ProfilesPage() {
       </Dialog>
     </div>
   );
-}
-
-function cn(...classes) {
-  return classes.filter(Boolean).join(' ');
 }

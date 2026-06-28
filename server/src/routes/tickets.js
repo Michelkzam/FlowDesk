@@ -99,18 +99,18 @@ router.put('/:id', authenticate, async (req, res) => {
   try {
     const { status, priority, agent_id, agent_name, category_id, category_name } = req.body;
 
+    const updateData = { updated_at: new Date() };
+    if (status !== undefined) updateData.status = status;
+    if (priority !== undefined) updateData.priority = priority;
+    if (agent_id !== undefined) updateData.agent_id = agent_id;
+    if (agent_name !== undefined) updateData.agent_name = agent_name;
+    if (category_id !== undefined) updateData.category_id = category_id;
+    if (category_name !== undefined) updateData.category_name = category_name;
+    if (status === 'resolved' || status === 'closed') updateData.closed_date = new Date();
+
     const [ticket] = await db('tickets')
       .where({ id: req.params.id })
-      .update({
-        status,
-        priority,
-        agent_id,
-        agent_name,
-        category_id,
-        category_name,
-        updated_at: new Date(),
-        ...(status === 'resolved' || status === 'closed' ? { closed_date: new Date() } : {})
-      })
+      .update(updateData)
       .returning('*');
 
     if (!ticket) {

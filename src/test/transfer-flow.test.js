@@ -15,13 +15,6 @@ vi.mock('@/api/flowdeskClient', () => ({
   },
 }));
 
-vi.mock('@/api/client', () => ({
-  api: {
-    transferTicket: vi.fn(),
-    getTicketMessages: vi.fn(),
-  },
-}));
-
 describe('Fluxo de Transferência de Ticket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -97,8 +90,6 @@ describe('Fluxo de Transferência de Ticket', () => {
   });
 
   it('6. Deve impedir transferência sem ser o técnico responsável', async () => {
-    const { db } = await import('@/api/flowdeskClient');
-
     const ticket = { id: 'ticket-1', agent_id: 'agent-1' };
     const currentUserId = 'agent-2';
 
@@ -112,21 +103,7 @@ describe('Fluxo de Transferência de Ticket', () => {
     expect(canTransfer).toBe(true);
   });
 
-  it('8. Deve invalidar queries após transferência', async () => {
-    const { api } = await import('@/api/client');
-
-    api.transferTicket.mockResolvedValue({
-      success: true,
-      message: 'Ticket transferido com sucesso',
-    });
-
-    const result = await api.transferTicket('ticket-1', 'agent-2', 'Maria', 'Motivo');
-
-    expect(result.success).toBe(true);
-    expect(api.transferTicket).toHaveBeenCalledWith('ticket-1', 'agent-2', 'Maria', 'Motivo');
-  });
-
-  it('9. Deve mostrar toast de sucesso após transferência', () => {
+  it('8. Deve mostrar toast de sucesso após transferência', () => {
     const toast = vi.fn();
     const message = 'Ticket transferido para Maria com sucesso';
     toast({ title: 'Sucesso', description: message });
@@ -136,7 +113,7 @@ describe('Fluxo de Transferência de Ticket', () => {
     });
   });
 
-  it('10. Deve mostrar erro se transferência falhar', () => {
+  it('9. Deve mostrar erro se transferência falhar', () => {
     const toast = vi.fn();
     const error = new Error('Apenas o técnico responsável pode transferir');
     toast({ title: 'Erro', description: error.message, variant: 'destructive' });

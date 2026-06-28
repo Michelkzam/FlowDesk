@@ -1,6 +1,5 @@
 import { db } from '@/api/flowdeskClient';
 
-import React from "react";
 
 import CrudPage from "@/components/shared/CrudPage";
 

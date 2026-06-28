@@ -1,10 +1,9 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { AlertTriangle, X, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { openTicketWindow } from "@/lib/ticketWindow";

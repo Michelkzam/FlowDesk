@@ -1,12 +1,11 @@
 import { db } from '@/api/flowdeskClient';
 
-import React from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, EyeOff, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 // Defines which screens each profile can access
 const profilePermissions = {

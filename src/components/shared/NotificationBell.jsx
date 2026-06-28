@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Bell, X, MessageSquare, Ticket } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { subscribeNotifications, checkNewNotifications, getNotifications, clearNotifications } from "@/lib/notifications";
+import { useState, useEffect } from "react";
+import { Bell, MessageSquare, Ticket } from "lucide-react";
+import { subscribeNotifications, checkNewNotifications, clearNotifications } from "@/lib/notifications";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";

@@ -1,21 +1,14 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/shared/PageHeader";
 import DataTable from "@/components/shared/DataTable";
-import FormDialog from "@/components/shared/FormDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Badge } from "@/components/ui/badge";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/components/ui/use-toast";
-
-const ALL_PERMISSIONS = [
-  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
-  "kb.create", "kb.edit", "kb.delete", "kb.publish",
-  "users.manage", "reports.view", "admin.access",
-];
+import { ALL_PERMISSIONS } from "@/lib/constants";
 
 const defaultForm = { name: "", status: "active", notes: "" };
 

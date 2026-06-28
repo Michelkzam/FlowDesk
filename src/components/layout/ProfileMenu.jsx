@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ const PERMISSION_LABELS = {
 };
 
 export default function ProfileMenu() {
-  const { profile, logout, permissions, isAdmin } = useAuth();
+  const { profile, logout, permissions, isAdmin, isAgent } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -300,7 +300,7 @@ export default function ProfileMenu() {
               <div>
                 <p className="text-sm font-semibold">{profile?.full_name || profile?.email}</p>
                 <p className="text-xs text-muted-foreground">
-                  Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : "Técnico"}</Badge>
+                  Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : isAgent ? "Técnico" : "Usuário"}</Badge>
                 </p>
                 {profile?.updated_at ? (
                   <p className="text-[11px] text-muted-foreground mt-1">

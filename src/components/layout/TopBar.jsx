@@ -1,13 +1,12 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useEffect } from "react";
-import { Sun, Moon, Pause, Play } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sun, Moon, Pause } from "lucide-react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "@/lib/ThemeContext";
-import { Link } from "react-router-dom";
 import GlobalSearch from "@/components/shared/GlobalSearch";
 import ProfileMenu from "./ProfileMenu";
 import NotificationBell from "@/components/shared/NotificationBell";

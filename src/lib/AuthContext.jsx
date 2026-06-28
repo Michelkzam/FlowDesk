@@ -1,14 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
+import { ALL_PERMISSIONS } from '@/lib/constants';
 
 const AuthContext = createContext(null);
-
-const ALL_PERMISSIONS = [
-  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
-  "kb.create", "kb.edit", "kb.delete", "kb.publish",
-  "users.manage", "reports.view", "admin.access",
-];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

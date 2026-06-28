@@ -1,6 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Ticket, Users, X, UserCog, BookOpen, Monitor } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 

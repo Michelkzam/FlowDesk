@@ -1,9 +1,8 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Zap, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";

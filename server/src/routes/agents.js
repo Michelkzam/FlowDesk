@@ -30,6 +30,9 @@ router.post('/', authenticate, authorize('admin'), async (req, res) => {
       return res.status(400).json({ message: 'Email, senha e nome são obrigatórios' });
     }
 
+    const allowedRoles = ['agent', 'user'];
+    const finalRole = allowedRoles.includes(role) ? role : 'agent';
+
     const existing = await db('users').where({ email }).first();
     if (existing) {
       return res.status(409).json({ message: 'Email já cadastrado' });
@@ -42,7 +45,7 @@ router.post('/', authenticate, authorize('admin'), async (req, res) => {
       email,
       password_hash: passwordHash,
       full_name,
-      role,
+      role: finalRole,
       status: 'active'
     }).returning(['id', 'email', 'full_name', 'role', 'status', 'created_at']);
 
@@ -58,9 +61,13 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   try {
     const { full_name, email, role, status } = req.body;
 
+    const allowedRoles = ['agent', 'user'];
+    const updateData = { full_name, email, status, updated_at: new Date() };
+    if (role && allowedRoles.includes(role)) updateData.role = role;
+
     const [agent] = await db('users')
       .where({ id: req.params.id })
-      .update({ full_name, email, role, status, updated_at: new Date() })
+      .update(updateData)
       .returning(['id', 'email', 'full_name', 'role', 'status']);
 
     if (!agent) {

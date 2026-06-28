@@ -1,6 +1,5 @@
-import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Ticket, Users, UserCog, UsersRound, Shield,

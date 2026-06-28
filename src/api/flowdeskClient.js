@@ -198,7 +198,9 @@ class AuthClient {
   }
 
   async inviteUser(email, role = 'user') {
-    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+    const array = new Uint8Array(12);
+    crypto.getRandomValues(array);
+    const tempPassword = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12) + 'A1!';
     const { data, error } = await supabase.auth.signUp({
       email,
       password: tempPassword,

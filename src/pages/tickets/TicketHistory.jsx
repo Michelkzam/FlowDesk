@@ -1,10 +1,10 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Search, MessageSquare, Lock, CheckCircle, Archive, Clock, Headphones, Hourglass, ShieldAlert, FileText, Printer, Download } from "lucide-react";
+import { ChevronLeft, Search, Lock, CheckCircle, Archive, Clock, Headphones, Hourglass, ShieldAlert, Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";

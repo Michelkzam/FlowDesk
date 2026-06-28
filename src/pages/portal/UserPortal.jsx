@@ -1,10 +1,10 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Send, LogOut, User, Clock, CheckCircle, AlertCircle, Ticket, Phone, Building2, ArrowRight } from "lucide-react";
+import { MessageSquare, Send, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

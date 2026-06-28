@@ -1,15 +1,13 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/api/flowdeskClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, Clock, CheckCircle, TrendingUp, Timer, ExternalLink } from "lucide-react";
+import { AlertTriangle, Clock, TrendingUp, Timer, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openTicketWindow } from "@/lib/ticketWindow";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 const SLA_HOURS = {
   emergency: 2,

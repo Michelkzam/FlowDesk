@@ -3,6 +3,19 @@ import db from './connection.js';
 async function migrate() {
   console.log('[DB] Iniciando migrações...');
 
+  // Roles table (created before users because users.role_id references roles)
+  if (!(await db.schema.hasTable('roles'))) {
+    await db.schema.createTable('roles', (table) => {
+      table.uuid('id').primary().defaultTo(db.raw('uuid_generate_v4()'));
+      table.string('name').notNullable().unique();
+      table.string('description');
+      table.json('permissions').defaultTo('[]');
+      table.string('status').defaultTo('active');
+      table.timestamps(true, true);
+    });
+    console.log('[DB] Tabela "roles" criada');
+  }
+
   // Users table
   if (!(await db.schema.hasTable('users'))) {
     await db.schema.createTable('users', (table) => {
@@ -11,6 +24,7 @@ async function migrate() {
       table.string('password_hash').notNullable();
       table.string('full_name').notNullable();
       table.string('role').defaultTo('agent');
+      table.uuid('role_id').references('id').inTable('roles').onDelete('SET NULL');
       table.string('status').defaultTo('active');
       table.string('avatar_url');
       table.string('phone');

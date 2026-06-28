@@ -3,7 +3,6 @@ import { ToastProvider } from "@/components/ui/use-toast"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -62,6 +61,8 @@ import SincronizarPage from './pages/admin/SincronizarPage';
 import ClientesPage from './pages/cadastros/ClientesPage';
 import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
+
+import { useState, useEffect } from 'react';
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -128,13 +129,19 @@ function AppRoutes() {
           <ProtectedRoute requireAdmin><SettingsPage /></ProtectedRoute>
         } />
         <Route path="agendamentos" element={<AppointmentsPage />} />
-        <Route path="financeiro" element={<FinanceiroDashboard />} />
+        <Route path="financeiro" element={
+          <ProtectedRoute requireAgent><FinanceiroDashboard /></ProtectedRoute>
+        } />
         <Route path="relatorios" element={<RelatoriosPage />} />
         <Route path="admin/auditoria" element={
           <ProtectedRoute requireAdmin><AuditLogPage /></ProtectedRoute>
         } />
-        <Route path="inventario" element={<InventarioPage />} />
-        <Route path="contratos" element={<ContratosPage />} />
+        <Route path="inventario" element={
+          <ProtectedRoute requireAgent><InventarioPage /></ProtectedRoute>
+        } />
+        <Route path="contratos" element={
+          <ProtectedRoute requireAgent><ContratosPage /></ProtectedRoute>
+        } />
         <Route path="relatorios/atendentes" element={<PainelAtendentes />} />
         <Route path="admin/escala" element={
           <ProtectedRoute requireAdmin><AgentSchedulePage /></ProtectedRoute>
@@ -159,8 +166,6 @@ function AppRoutes() {
     </Routes>
   );
 }
-
-import { useState, useEffect } from 'react';
 
 function WelcomeGate() {
   const { profile } = useAuth();

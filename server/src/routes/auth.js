@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, full_name, role = 'user' } = req.body;
+    const { email, password, full_name } = req.body;
 
     if (!email || !password || !full_name) {
       return res.status(400).json({ message: 'Email, senha e nome são obrigatórios' });
@@ -70,7 +70,7 @@ router.post('/register', async (req, res) => {
       email,
       password_hash: passwordHash,
       full_name,
-      role,
+      role: 'user',
       status: 'active'
     }).returning(['id', 'email', 'full_name', 'role', 'status', 'created_at']);
 

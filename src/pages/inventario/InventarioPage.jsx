@@ -1,6 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Monitor, Package, Key, Cpu, Pencil, Trash2 } from "lucide-react";

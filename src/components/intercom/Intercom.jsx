@@ -25,7 +25,6 @@ import {
   Search,
   X,
   Minus,
-  Circle,
   MessageSquare,
   Users,
   Hash,
@@ -33,7 +32,6 @@ import {
   PhoneOff,
   Pause,
   Play,
-  Clock,
   ArrowLeft,
 } from "lucide-react"
 

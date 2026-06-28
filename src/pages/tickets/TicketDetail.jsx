@@ -4,7 +4,7 @@ import { playSystemSound } from '@/lib/soundSystem';
 import React, { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Send, Lock, MessageSquare, Check, CheckCircle2, Zap, Paperclip, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive } from "lucide-react";
 import QuickReplyPicker from "@/components/shared/QuickReplyPicker";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { openTicketWindow } from "@/lib/ticketWindow";
 import { broadcastTicketUpdate, broadcastMessageUpdate } from "@/hooks/useRealtimeSync";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/lib/AuthContext";
 import SLATimer from "@/components/tickets/SLATimer";
 import ResolutionModal from "@/components/tickets/ResolutionModal";
 
@@ -55,6 +56,7 @@ export default function TicketDetail({ isPopup = false }) {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const { can } = usePermissions();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     if (isPopup) {
@@ -234,7 +236,6 @@ export default function TicketDetail({ isPopup = false }) {
     }
   };
 
-  const isAdmin = currentUser?.role === "admin";
   const isResolved = ticket?.status === "resolved" || ticket?.status === "closed";
   const isAssignedToMe = ticket?.agent_id === currentUser?.id;
   const isUnassigned = !ticket?.agent_id;
@@ -447,8 +448,8 @@ export default function TicketDetail({ isPopup = false }) {
                 <SelectItem value="in_progress">Em Andamento</SelectItem>
                 <SelectItem value="waiting">Aguardando</SelectItem>
                 <SelectItem value="pending_approval">Aguard. Aprovação</SelectItem>
-                {currentUser?.role === "admin" && <SelectItem value="resolved">Resolvido</SelectItem>}
-                {currentUser?.role === "admin" && <SelectItem value="closed">Fechado</SelectItem>}
+                {isAdmin && <SelectItem value="resolved">Resolvido</SelectItem>}
+                {isAdmin && <SelectItem value="closed">Fechado</SelectItem>}
               </SelectContent>
             </Select>
           )}

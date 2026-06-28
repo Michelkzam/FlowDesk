@@ -1,17 +1,22 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { wsService } from "@/services/websocket";
+import { useQueryClient } from "@tanstack/react-query";
+import { io } from "socket.io-client";
 
-const NOTIFICATION_TYPES = {
-  TICKET_ASSUMED: "ticket:assumed",
-  TICKET_TRANSFERRED: "ticket:transferred",
-  TICKET_FINALIZED: "ticket:finalized",
-  TICKET_REOPENED: "ticket:reopened",
-  MESSAGE_RECEIVED: "message:received",
-};
+const SOCKET_URL = import.meta.env.VITE_WS_URL || "http://localhost:3001";
+
+let socket = null;
+
+function getSocket() {
+  if (!socket) {
+    socket = io(SOCKET_URL, { autoConnect: false, reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 3000 });
+  }
+  return socket;
+}
 
 export function useNotifications(currentUser) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -32,10 +37,9 @@ export function useNotifications(currentUser) {
     if ("Notification" in window && Notification.permission === "granted") {
       const notification = new Notification(title, {
         body,
-        icon: "/favicon.ico",
+        icon: "/icons/icon-192x192.png",
         tag: "flowdesk-notification",
       });
-
       notification.onclick = () => {
         window.focus();
         if (url) window.location.href = url;
@@ -44,100 +48,72 @@ export function useNotifications(currentUser) {
     }
   }, []);
 
-  const handleTicketAssumed = useCallback((data) => {
-    if (data.agentId === currentUser?.id) return;
-
-    const title = "Ticket Assumido";
-    const body = `${data.agentName || "Um técnico"} assumiu o ticket ${data.ticketNumber || ""}`;
-
-    toast({
-      title,
-      description: body,
-      variant: "info",
-    });
-
-    playNotificationSound();
-    sendBrowserNotification(title, body, `/tickets/${data.ticketId}`);
-  }, [currentUser, toast, playNotificationSound, sendBrowserNotification]);
-
-  const handleTicketTransferred = useCallback((data) => {
-    if (data.toAgentId !== currentUser?.id) return;
-
-    const title = "Ticket Transferido";
-    const body = `Você recebeu o ticket ${data.ticketNumber || ""} de ${data.fromAgentName || "um colega"}`;
-
-    toast({
-      title,
-      description: body,
-      variant: "info",
-    });
-
-    playNotificationSound();
-    sendBrowserNotification(title, body, `/tickets/${data.ticketId}`);
-  }, [currentUser, toast, playNotificationSound, sendBrowserNotification]);
-
-  const handleTicketFinalized = useCallback((data) => {
-    if (data.agentId === currentUser?.id) return;
-
-    const title = "Ticket Finalizado";
-    const body = `O ticket ${data.ticketNumber || ""} foi finalizado por ${data.agentName || "um técnico"}`;
-
-    toast({
-      title,
-      description: body,
-      variant: "success",
-    });
-  }, [currentUser, toast]);
-
-  const handleTicketReopened = useCallback((data) => {
-    if (data.agentId !== currentUser?.id) return;
-
-    const title = "Ticket Reaberto";
-    const body = `O ticket ${data.ticketNumber || ""} foi reaberto pelo usuário`;
-
-    toast({
-      title,
-      description: body,
-      variant: "warning",
-    });
-
-    playNotificationSound();
-    sendBrowserNotification(title, body, `/tickets/${data.ticketId}`);
-  }, [currentUser, toast, playNotificationSound, sendBrowserNotification]);
-
-  const handleMessageReceived = useCallback((data) => {
-    if (data.senderType === "agent") return;
-
-    const title = "Nova Mensagem";
-    const body = `${data.senderName || "Usuário"}: ${data.message?.substring(0, 50) || ""}${data.message?.length > 50 ? "..." : ""}`;
-
-    toast({
-      title,
-      description: body,
-      variant: "default",
-    });
-
-    playNotificationSound();
-    sendBrowserNotification(title, body, `/tickets/${data.ticketId}`);
-  }, [toast, playNotificationSound, sendBrowserNotification]);
-
   useEffect(() => {
-    const unsubAssumed = wsService.on(NOTIFICATION_TYPES.TICKET_ASSUMED, handleTicketAssumed);
-    const unsubTransferred = wsService.on(NOTIFICATION_TYPES.TICKET_TRANSFERRED, handleTicketTransferred);
-    const unsubFinalized = wsService.on(NOTIFICATION_TYPES.TICKET_FINALIZED, handleTicketFinalized);
-    const unsubReopened = wsService.on(NOTIFICATION_TYPES.TICKET_REOPENED, handleTicketReopened);
-    const unsubMessage = wsService.on(NOTIFICATION_TYPES.MESSAGE_RECEIVED, handleMessageReceived);
+    const s = getSocket();
+    if (!s.connected) s.connect();
+
+    const handleTicketClaimed = (data) => {
+      if (data.agent_id === currentUser?.id) return;
+      const title = "Ticket Assumido";
+      const body = `O ticket foi assumido por ${data.agent_name || "um técnico"}`;
+      toast({ title, description: body, variant: "info" });
+      playNotificationSound();
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    };
+
+    const handleTicketUpdated = (data) => {
+      if (data.status === "resolved" || data.status === "closed") {
+        if (data.agent_id === currentUser?.id) return;
+        const title = "Ticket Finalizado";
+        const body = `O ticket ${data.number || ""} foi finalizado`;
+        toast({ title, description: body, variant: "success" });
+      }
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      if (data.id) queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
+    };
+
+    const handleTicketTransferred = (data) => {
+      if (data.to_agent_id !== currentUser?.id) return;
+      const title = "Ticket Transferido";
+      const body = `Você recebeu um ticket de ${data.from_agent_name || "um colega"}`;
+      toast({ title, description: body, variant: "info" });
+      playNotificationSound();
+      sendBrowserNotification(title, body, `/tickets/${data.ticketId || ""}`);
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    };
+
+    const handleMessageCreated = (data) => {
+      if (data.sender_type === "agent") return;
+      const title = "Nova Mensagem";
+      const body = `${data.sender_name || "Usuário"}: ${(data.body || "").substring(0, 50)}${(data.body || "").length > 50 ? "..." : ""}`;
+      toast({ title, description: body, variant: "default" });
+      playNotificationSound();
+      sendBrowserNotification(title, body, `/tickets/${data.ticket_id}`);
+      queryClient.invalidateQueries({ queryKey: ["ticket-messages", data.ticket_id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    };
+
+    const handleTicketAutoClosed = (data) => {
+      const title = "Ticket Auto-fechado";
+      const body = `O ticket ${data.number || ""} foi encerrado por inatividade`;
+      toast({ title, description: body, variant: "warning" });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    };
+
+    s.on("ticket:claimed", handleTicketClaimed);
+    s.on("ticket:updated", handleTicketUpdated);
+    s.on("ticket:transferred", handleTicketTransferred);
+    s.on("message:created", handleMessageCreated);
+    s.on("ticket:auto-closed", handleTicketAutoClosed);
 
     return () => {
-      unsubAssumed();
-      unsubTransferred();
-      unsubFinalized();
-      unsubReopened();
-      unsubMessage();
+      s.off("ticket:claimed", handleTicketClaimed);
+      s.off("ticket:updated", handleTicketUpdated);
+      s.off("ticket:transferred", handleTicketTransferred);
+      s.off("message:created", handleMessageCreated);
+      s.off("ticket:auto-closed", handleTicketAutoClosed);
     };
-  }, [handleTicketAssumed, handleTicketTransferred, handleTicketFinalized, handleTicketReopened, handleMessageReceived]);
+  }, [currentUser, toast, playNotificationSound, sendBrowserNotification, queryClient]);
 
-  return {
-    NOTIFICATION_TYPES,
-  };
+  return {};
 }

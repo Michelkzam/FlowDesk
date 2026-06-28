@@ -9,8 +9,8 @@ export function subscribeNotifications(callback) {
   return () => { listeners = listeners.filter(l => l !== callback); };
 }
 
-function notify(notifications) {
-  listeners.forEach(l => l(notifications));
+function notify(items) {
+  listeners.forEach(l => l(items));
 }
 
 export async function checkNewNotifications() {

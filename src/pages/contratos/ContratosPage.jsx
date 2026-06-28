@@ -1,10 +1,10 @@
 import { db } from '@/api/flowdeskClient';
 import { supabase } from '@/lib/supabase';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calendar, Paperclip, X, Download } from "lucide-react";
+import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Paperclip, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -13,8 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, differenceInDays, parseISO, isPast } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 const statusColors = {

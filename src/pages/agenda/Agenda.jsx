@@ -1,6 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -15,8 +15,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { Plus, Calendar, Clock, User, AlertTriangle, CheckCircle, XCircle, Users } from "lucide-react";
-import { format, isToday, isThisWeek, isThisMonth, isPast, startOfDay } from "date-fns";
+import { Plus, Calendar, Clock, User, AlertTriangle, XCircle, Users } from "lucide-react";
+import { format, isToday, isThisWeek, isThisMonth, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const statusConfig = {

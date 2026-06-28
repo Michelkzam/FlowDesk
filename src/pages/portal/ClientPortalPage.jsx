@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  LogIn, Mail, Lock, Loader2, Ticket, Eye, EyeOff, List, MessageSquare, Send, ExternalLink, CheckCircle, Clock, XCircle, AlertTriangle
+import { Mail, Lock, Loader2, Ticket, Eye, EyeOff, List, MessageSquare, Send, ExternalLink, CheckCircle, Clock, XCircle
 } from "lucide-react";
 
 const STATUS_CONFIG = {

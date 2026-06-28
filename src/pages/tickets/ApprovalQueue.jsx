@@ -1,9 +1,8 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
-import { CheckCircle2, XCircle, Eye, Clock, User, MessageSquare, ShieldAlert } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, Clock, User, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { openTicketWindow } from "@/lib/ticketWindow";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 export default function ApprovalQueue() {
   const queryClient = useQueryClient();

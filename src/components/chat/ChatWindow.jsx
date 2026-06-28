@@ -1,17 +1,16 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, MoreVertical } from "lucide-react";
+import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

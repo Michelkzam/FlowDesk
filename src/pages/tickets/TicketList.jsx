@@ -1,9 +1,9 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Search, Download, ExternalLink, LayoutList, Columns, Calendar, X, CheckSquare, Square, History, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import KanbanBoard from "@/components/tickets/KanbanBoard";
 import BulkActionsBar from "@/components/tickets/BulkActionsBar";
 import { openTicketWindow } from "@/lib/ticketWindow";
 import { usePermissions } from "@/hooks/usePermissions";
-import SLATimer, { SLATimerMini } from "@/components/tickets/SLATimer";
+import { SLATimerMini } from "@/components/tickets/SLATimer";
 
 const sourceEmoji = { web: "🌐", email: "📧", api: "⚙️", phone: "📞", whatsapp: "💬" };
 

@@ -1,12 +1,11 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter

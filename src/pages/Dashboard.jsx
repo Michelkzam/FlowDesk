@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { Ticket, Users, Clock, AlertTriangle, CheckCircle, TrendingUp, UserCog, BookOpen, ShieldCheck, MessageSquare, Settings, FolderOpen, BarChart3, ExternalLink } from "lucide-react";
@@ -14,7 +14,6 @@ import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { subDays, differenceInMinutes } from "date-fns";
 import SLADashboard from "@/components/dashboard/SLADashboard";
-import { cn } from "@/lib/utils";
 import { openTicketWindow } from "@/lib/ticketWindow";
 
 const COLORS = ["#3b82f6", "#f59e0b", "#a855f7", "#f97316", "#10b981", "#6b7280"];
@@ -48,13 +47,26 @@ function StatCard({ title, value, icon: IconComponent, color, subtitle, onClick 
   );
 }
 
+const QUICK_LINK_COLORS = {
+  blue: "border-l-blue-500 bg-blue-100 text-blue-600",
+  amber: "border-l-amber-500 bg-amber-100 text-amber-600",
+  orange: "border-l-orange-500 bg-orange-100 text-orange-600",
+  emerald: "border-l-emerald-500 bg-emerald-100 text-emerald-600",
+  purple: "border-l-purple-500 bg-purple-100 text-purple-600",
+  red: "border-l-red-500 bg-red-100 text-red-600",
+  gray: "border-l-gray-500 bg-gray-100 text-gray-600",
+  green: "border-l-green-500 bg-green-100 text-green-600",
+  cyan: "border-l-cyan-500 bg-cyan-100 text-cyan-600",
+};
+
 function QuickLink({ icon: Icon, label, to, color }) {
+  const colorClasses = QUICK_LINK_COLORS[color] || QUICK_LINK_COLORS.gray;
   return (
     <Link to={to} className="block">
-      <Card className={`hover:shadow-md transition-all cursor-pointer hover:scale-[1.02] border-l-4 border-l-${color}-500`}>
+      <Card className={`hover:shadow-md transition-all cursor-pointer hover:scale-[1.02] border-l-4 ${colorClasses}`}>
         <CardContent className="p-4 flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-lg bg-${color}-100 flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 text-${color}-600`} />
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorClasses.split(' ')[1]}`}>
+            <Icon className={`w-5 h-5 ${colorClasses.split(' ')[2]}`} />
           </div>
           <span className="text-sm font-medium text-foreground">{label}</span>
         </CardContent>

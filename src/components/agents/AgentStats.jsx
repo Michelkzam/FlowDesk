@@ -1,6 +1,5 @@
 import { db } from '@/api/flowdeskClient';
 
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card } from "@/components/ui/card";

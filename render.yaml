@@ -11,7 +11,7 @@ services:
       - key: PORT
         value: 10000
       - key: JWT_SECRET
-        value: flowdesk_jwt_secret_2024_ultra_secure
+        sync: false
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGIN

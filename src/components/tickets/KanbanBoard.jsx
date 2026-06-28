@@ -1,9 +1,8 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { PriorityBadge } from "@/components/shared/StatusBadge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

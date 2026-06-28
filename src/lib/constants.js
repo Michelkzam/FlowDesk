@@ -1,3 +1,31 @@
+export const ALL_PERMISSIONS = [
+  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
+  "kb.create", "kb.edit", "kb.delete", "kb.publish",
+  "users.manage", "reports.view", "admin.access",
+];
+
+export const ALL_PERMISSIONS_WITH_LABELS = [
+  { key: "tickets.create", label: "Criar tickets" },
+  { key: "tickets.edit", label: "Editar tickets" },
+  { key: "tickets.delete", label: "Excluir tickets" },
+  { key: "tickets.close", label: "Fechar tickets" },
+  { key: "tickets.assign", label: "Atribuir tickets" },
+  { key: "tickets.transfer", label: "Transferir tickets" },
+  { key: "kb.create", label: "Criar artigos KB" },
+  { key: "kb.edit", label: "Editar artigos KB" },
+  { key: "kb.delete", label: "Excluir artigos KB" },
+  { key: "kb.publish", label: "Publicar artigos KB" },
+  { key: "users.manage", label: "Gerenciar usuários" },
+  { key: "reports.view", label: "Ver relatórios" },
+  { key: "admin.access", label: "Acesso administrativo" },
+];
+
+export const PERMISSION_GROUPS = {
+  "Tickets": ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer"],
+  "Base de Conhecimento": ["kb.create", "kb.edit", "kb.delete", "kb.publish"],
+  "Sistema": ["users.manage", "reports.view", "admin.access"],
+};
+
 export const TICKET_STATUSES = {
   open: { key: "open", label: "Pendente", color: "bg-yellow-400", textColor: "text-yellow-800", dotColor: "bg-yellow-500", badgeCls: "bg-blue-100 text-blue-700 border-blue-200" },
   in_progress: { key: "in_progress", label: "Em Atendimento", color: "bg-blue-500", textColor: "text-white", dotColor: "bg-blue-500", badgeCls: "bg-amber-100 text-amber-700 border-amber-200" },

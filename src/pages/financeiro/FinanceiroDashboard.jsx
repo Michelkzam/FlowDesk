@@ -1,10 +1,9 @@
 import { db } from '@/api/flowdeskClient';
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, Ticket, Users, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
