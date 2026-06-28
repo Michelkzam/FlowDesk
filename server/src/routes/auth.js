@@ -148,6 +148,28 @@ router.put('/admin-password', authenticate, async (req, res) => {
   }
 });
 
+// DELETE /api/auth/delete-user (admin exclui usuário do Auth)
+router.delete('/delete-user', authenticate, async (req, res) => {
+  try {
+    const { target_user_id } = req.body;
+
+    if (!target_user_id) {
+      return res.status(400).json({ message: 'ID do usuário é obrigatório' });
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(target_user_id);
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.json({ message: 'Usuário excluído com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
+    res.status(500).json({ message: 'Erro interno no servidor' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   try {

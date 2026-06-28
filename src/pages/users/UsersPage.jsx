@@ -126,7 +126,19 @@ export default function UsersPage() {
   });
 
   const deleteM = useMutation({
-    mutationFn: id => db.entities.User.delete(id),
+    mutationFn: async (id) => {
+      await db.entities.User.delete(id);
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        await fetch(`${API_URL}/api/auth/delete-user`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ target_user_id: id })
+        });
+      } catch (_) {}
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); toast({ title: "Sucesso", description: "Usuário excluído!" }); },
   });
 
