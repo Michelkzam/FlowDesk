@@ -3,8 +3,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../db/connection.js';
 import { authenticate } from '../middleware/auth.js';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -83,6 +89,33 @@ router.post('/register', async (req, res) => {
     res.status(201).json({ token, user });
   } catch (error) {
     console.error('Erro no registro:', error);
+    res.status(500).json({ message: 'Erro interno no servidor' });
+  }
+});
+
+// POST /api/auth/create-user (cria usuário no Supabase Auth)
+router.post('/create-user', authenticate, async (req, res) => {
+  try {
+    const { email, password, full_name, role = 'user' } = req.body;
+
+    if (!email || !password || !full_name) {
+      return res.status(400).json({ message: 'Email, senha e nome são obrigatórios' });
+    }
+
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name, role }
+    });
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(201).json({ user: data.user });
+  } catch (error) {
+    console.error('Erro ao criar usuário no Auth:', error);
     res.status(500).json({ message: 'Erro interno no servidor' });
   }
 });

@@ -92,19 +92,42 @@ export default function UsersPage() {
   const createM = useMutation({
     mutationFn: async d => {
       const id = crypto.randomUUID();
-      const { error } = await supabase.from('users').insert({
-        id, email: d.email, password_hash: 'pending_reset',
-        full_name: d.full_name, role: d.role, role_id: d.role_id || null,
-        phone: d.phone || null, department: d.department || null,
-        department_id: d.department_id || null,
-        client_id: d.client_id || null, organization_id: d.organization_id || null,
-        perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
-        status: 'active'
-      });
-      if (error) throw error;
+      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+
       try {
-        await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
-      } catch (_) {}
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        const resp = await fetch(`${API_URL}/api/auth/create-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ email: d.email, password: tempPassword, full_name: d.full_name, role: d.role })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.message || 'Erro ao criar usuário no Auth');
+        }
+        const { user } = await resp.json();
+        await supabase.from('users').upsert({
+          id: user.id, email: d.email, password_hash: 'supabase_auth',
+          full_name: d.full_name, role: d.role, role_id: d.role_id || null,
+          phone: d.phone || null, department: d.department || null,
+          department_id: d.department_id || null,
+          client_id: d.client_id || null, organization_id: d.organization_id || null,
+          perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
+          status: 'active'
+        });
+      } catch (authErr) {
+        await supabase.from('users').upsert({
+          id, email: d.email, password_hash: 'pending_reset',
+          full_name: d.full_name, role: d.role, role_id: d.role_id || null,
+          phone: d.phone || null, department: d.department || null,
+          department_id: d.department_id || null,
+          client_id: d.client_id || null, organization_id: d.organization_id || null,
+          perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
+          status: 'active'
+        });
+      }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado com sucesso!" }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
