@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,34 +75,36 @@ export default function ClientPortalPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!currentUser) { setLoading(false); return; }
-    const fetchTickets = async () => {
+  const { data: ticketsData = [], isLoading: loadingTickets } = useQuery({
+    queryKey: ["portal-tickets", currentUser?.id],
+    queryFn: async () => {
       const { data } = await supabase.from('tickets')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      setTickets(data || []);
-      setLoading(false);
-    };
-    fetchTickets();
-    const interval = setInterval(fetchTickets, 30000);
-    return () => clearInterval(interval);
-  }, [currentUser]);
+        .order('created_date', { ascending: false });
+      return data || [];
+    },
+    enabled: !!currentUser,
+    refetchInterval: 30000,
+  });
 
-  useEffect(() => {
-    if (!selectedTicket) { setMessages([]); return; }
-    const fetchMessages = async () => {
+  useEffect(() => { setTickets(ticketsData); }, [ticketsData]);
+  useEffect(() => { setLoading(loadingTickets); }, [loadingTickets]);
+
+  const { data: messagesData = [] } = useQuery({
+    queryKey: ["portal-messages", selectedTicket?.id],
+    queryFn: async () => {
       const { data } = await supabase.from('ticket_messages')
         .select('*')
         .eq('ticket_id', selectedTicket.id)
-        .order('created_at', { ascending: true });
-      setMessages(data || []);
-    };
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 10000);
-    return () => clearInterval(interval);
-  }, [selectedTicket]);
+        .order('created_date', { ascending: true });
+      return data || [];
+    },
+    enabled: !!selectedTicket,
+    refetchInterval: 10000,
+  });
+
+  useEffect(() => { setMessages(messagesData); }, [messagesData]);
 
   const filteredTickets = tickets.filter(t => {
     if (statusFilter === "all") return true;
@@ -151,7 +153,7 @@ export default function ClientPortalPage() {
       const { data } = await supabase.from('ticket_messages')
         .select('*')
         .eq('ticket_id', selectedTicket.id)
-        .order('created_at', { ascending: true });
+        .order('created_date', { ascending: true });
       setMessages(data || []);
     } catch (e) {
       toast({ title: "Erro", description: e.message || "Não foi possível enviar a mensagem.", variant: "destructive" });
@@ -387,7 +389,7 @@ function TicketListPanel({ tickets, loading, statusFilter, setStatusFilter, onSe
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${st.color}`}>{st.label}</span>
                     </div>
                     <p className="text-sm font-medium truncate">{t.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{format(t.created_at)}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{format(t.created_date)}</p>
                   </div>
                   <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
                 </div>
@@ -428,7 +430,7 @@ function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack
           <div key={m.id} className={`flex ${m.sender_type === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[75%] p-3 rounded-lg ${m.sender_type === "user" ? "bg-primary text-white" : "bg-gray-100 dark:bg-zinc-800"}`}>
               <p className="text-sm">{m.body}</p>
-              <p className="text-[10px] mt-1 opacity-60">{format(m.created_at)}</p>
+              <p className="text-[10px] mt-1 opacity-60">{format(m.created_date)}</p>
             </div>
           </div>
         ))}

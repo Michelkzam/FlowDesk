@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
 
 import { useState, useRef, useEffect } from "react";
@@ -80,7 +81,7 @@ function WelcomeScreen({ user, onStart }) {
           </Button>
         </form>
 
-        <button onClick={() => db.auth.logout("/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mx-auto">
+        <button onClick={() => supabase.auth.signOut().then(() => window.location.href = "/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mx-auto">
           <LogOut className="w-4 h-4" /> Sair
         </button>
       </div>
@@ -216,7 +217,7 @@ export default function UserPortal() {
             </div>
             <span className="text-sm font-medium hidden sm:block">{currentUser?.full_name || currentUser?.email}</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500" onClick={() => db.auth.logout("/")} title="Sair">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500" onClick={() => supabase.auth.signOut().then(() => window.location.href = "/")} title="Sair">
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
