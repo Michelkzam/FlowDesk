@@ -217,7 +217,6 @@ export default function UserPortal() {
       user_email: currentUser?.email,
       user_phone: profile?.phone,
       client_name: profile?.client_name || profile?.company || "",
-      organization_name: profile?.company,
       status: "open",
       source: "web",
       number: `#${Date.now().toString().slice(-6)}`,

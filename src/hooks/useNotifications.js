@@ -1,18 +1,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { io } from "socket.io-client";
-
-const SOCKET_URL = import.meta.env.VITE_WS_URL || "http://localhost:3001";
-
-let socket = null;
-
-function getSocket() {
-  if (!socket) {
-    socket = io(SOCKET_URL, { autoConnect: false, reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 3000 });
-  }
-  return socket;
-}
+import { connectSocket } from "@/services/socket";
 
 export function useNotifications(currentUser) {
   const { toast } = useToast();
@@ -49,8 +38,7 @@ export function useNotifications(currentUser) {
   }, []);
 
   useEffect(() => {
-    const s = getSocket();
-    if (!s.connected) s.connect();
+    const s = connectSocket();
 
     const handleTicketClaimed = (data) => {
       if (data.agent_id === currentUser?.id) return;

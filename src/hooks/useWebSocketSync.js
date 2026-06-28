@@ -1,23 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { io } from "socket.io-client";
+import { connectSocket, disconnectSocket, getSocketConnection } from "@/services/socket";
 import { useAuth } from "@/lib/AuthContext";
-
-const SOCKET_URL = import.meta.env.VITE_WS_URL || "http://localhost:3001";
-
-let socket = null;
-
-function getSocket() {
-  if (!socket) {
-    socket = io(SOCKET_URL, {
-      autoConnect: false,
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 3000,
-    });
-  }
-  return socket;
-}
 
 export function useWebSocketSync() {
   const queryClient = useQueryClient();
@@ -28,35 +12,31 @@ export function useWebSocketSync() {
       return;
     }
 
-    const s = getSocket();
+    const s = connectSocket();
 
-    if (!s.connected) {
-      s.connect();
-    }
-
-    const handleTicketCreated = (data) => {
+    const handleTicketCreated = () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
     const handleTicketUpdated = (data) => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
+      if (data?.id) queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
     };
 
-    const handleTicketClaimed = (data) => {
+    const handleTicketClaimed = () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
-    const handleTicketTransferred = (data) => {
+    const handleTicketTransferred = () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
-    const handleTicketAutoClosed = (data) => {
+    const handleTicketAutoClosed = () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
     const handleMessageCreated = (data) => {
-      queryClient.invalidateQueries({ queryKey: ["ticket-messages", data.ticket_id] });
+      if (data?.ticket_id) queryClient.invalidateQueries({ queryKey: ["ticket-messages", data.ticket_id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
@@ -74,22 +54,22 @@ export function useWebSocketSync() {
       s.off("ticket:transferred", handleTicketTransferred);
       s.off("ticket:auto-closed", handleTicketAutoClosed);
       s.off("message:created", handleMessageCreated);
-      s.disconnect();
+      disconnectSocket();
     };
   }, [isAuthenticated, user, queryClient]);
 
   const joinTicket = useCallback((ticketId) => {
-    const s = getSocket();
+    const s = getSocketConnection();
     s.emit("join:ticket", ticketId);
   }, []);
 
   const leaveTicket = useCallback((ticketId) => {
-    const s = getSocket();
+    const s = getSocketConnection();
     s.emit("leave:ticket", ticketId);
   }, []);
 
   return {
-    isConnected: socket?.connected || false,
+    isConnected: getSocketConnection()?.connected || false,
     joinTicket,
     leaveTicket,
   };
