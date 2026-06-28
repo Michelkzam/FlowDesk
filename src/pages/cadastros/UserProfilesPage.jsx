@@ -56,11 +56,15 @@ export default function UserProfilesPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("roles").select("*").order("name");
       if (error) throw error;
-      return (data || []).map(r => ({
-        ...r,
-        pages: typeof r.pages === "string" ? JSON.parse(r.pages) : (r.pages || []),
-        permissions: typeof r.permissions === "string" ? JSON.parse(r.permissions) : (r.permissions || []),
-      }));
+      return (data || []).map(r => {
+        let pages = r.pages || [];
+        if (typeof pages === "string") { try { pages = JSON.parse(pages); } catch { pages = []; } }
+        if (!Array.isArray(pages)) pages = [];
+        let permissions = r.permissions || [];
+        if (typeof permissions === "string") { try { permissions = JSON.parse(permissions); } catch { permissions = []; } }
+        if (!Array.isArray(permissions)) permissions = [];
+        return { ...r, pages, permissions };
+      });
     },
   });
 
@@ -78,11 +82,12 @@ export default function UserProfilesPage() {
 
   const createM = useMutation({
     mutationFn: async (d) => {
+      const pagesArray = Array.isArray(d.pages) ? d.pages : [];
       const { error } = await supabase.from("roles").insert({
         name: d.name,
         description: d.description,
-        pages: JSON.stringify(d.pages),
-        permissions: JSON.stringify(d.pages),
+        pages: JSON.stringify(pagesArray),
+        permissions: JSON.stringify(pagesArray),
         status: d.status,
       });
       if (error) throw error;
@@ -93,11 +98,12 @@ export default function UserProfilesPage() {
 
   const updateM = useMutation({
     mutationFn: async ({ id, data }) => {
+      const pagesArray = Array.isArray(data.pages) ? data.pages : [];
       const { error } = await supabase.from("roles").update({
         name: data.name,
         description: data.description,
-        pages: JSON.stringify(data.pages),
-        permissions: JSON.stringify(data.pages),
+        pages: JSON.stringify(pagesArray),
+        permissions: JSON.stringify(pagesArray),
         status: data.status,
       }).eq("id", id);
       if (error) throw error;
@@ -121,7 +127,8 @@ export default function UserProfilesPage() {
 
   const openEdit = (profile) => {
     setEditing(profile);
-    setForm({ name: profile.name, description: profile.description || "", pages: profile.pages || [], status: profile.status || "active" });
+    const pages = Array.isArray(profile.pages) ? profile.pages : [];
+    setForm({ name: profile.name, description: profile.description || "", pages, status: profile.status || "active" });
     setDialogOpen(true);
   };
 
