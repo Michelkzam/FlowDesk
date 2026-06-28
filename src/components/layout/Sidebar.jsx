@@ -39,6 +39,7 @@ const navItems = [
       { label: "Departamentos", icon: Building2, path: "/departamentos" },
       { label: "Equipes", icon: UsersRound, path: "/equipes" },
       { label: "Organizações", icon: Network, path: "/organizacoes" },
+      { label: "Perfis de Usuário", icon: Shield, path: "/cadastros/perfis" },
       { label: "Usuários", icon: Users, path: "/usuarios" },
     ]
   },

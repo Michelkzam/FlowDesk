@@ -56,6 +56,7 @@ import PainelAtendentes from './pages/relatorios/PainelAtendentes';
 import AgentSchedulePage from './pages/admin/AgentSchedulePage';
 import SincronizarPage from './pages/admin/SincronizarPage';
 import ClientesPage from './pages/cadastros/ClientesPage';
+import UserProfilesPage from './pages/cadastros/UserProfilesPage';
 import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
 
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="equipes" element={<TeamsPage />} />
         <Route path="departamentos" element={<DepartmentsPage />} />
         <Route path="usuarios" element={<UsersPage />} />
+        <Route path="cadastros/perfis" element={<UserProfilesPage />} />
         <Route path="organizacoes" element={<OrganizationsPage />} />
         <Route path="kb/categorias" element={<KBCategoriesPage />} />
         <Route path="kb/artigos" element={<KBArticlesPage />} />
