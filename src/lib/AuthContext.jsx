@@ -13,27 +13,32 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchProfile = useCallback(async (userId) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (error || !data) {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          full_name: authUser.user_metadata?.full_name || authUser.email,
-          role: authUser.user_metadata?.role || 'user',
-          status: 'active'
-        };
+      if (error || !data) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          return {
+            id: authUser.id,
+            email: authUser.email,
+            full_name: authUser.user_metadata?.full_name || authUser.email,
+            role: authUser.user_metadata?.role || 'user',
+            status: 'active'
+          };
+        }
+        return null;
       }
+
+      return data;
+    } catch (err) {
+      console.error('[Auth] Erro ao buscar perfil:', err);
       return null;
     }
-
-    return data;
   }, []);
 
   const fetchPermissions = useCallback(async (profileData) => {
@@ -47,25 +52,47 @@ export function AuthProvider({ children }) {
       setPermissions(fallbackPermissions);
       return;
     }
-    const { data } = await supabase
-      .from('roles')
-      .select('permissions')
-      .eq('id', profileData.role_id)
-      .single();
-    setPermissions(data?.permissions || []);
+    try {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('permissions')
+        .eq('id', profileData.role_id)
+        .single();
+      if (error) {
+        console.error('[Auth] Erro ao buscar permissões:', error);
+        const fallback = profileData.role === 'agent'
+          ? ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
+             "kb.create", "kb.edit", "kb.delete", "kb.publish", "reports.view"]
+          : ["tickets.create", "tickets.edit", "tickets.close"];
+        setPermissions(fallback);
+        return;
+      }
+      let perms = data?.permissions || [];
+      if (typeof perms === 'string') { try { perms = JSON.parse(perms); } catch { perms = []; } }
+      if (!Array.isArray(perms)) perms = [];
+      setPermissions(perms);
+    } catch (err) {
+      console.error('[Auth] Exceção ao buscar permissões:', err);
+      setPermissions([]);
+    }
   }, []);
 
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        setIsAuthenticated(true);
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-        await fetchPermissions(p);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          setIsAuthenticated(true);
+          const p = await fetchProfile(session.user.id);
+          setProfile(p);
+          await fetchPermissions(p);
+        }
+      } catch (err) {
+        console.error('[Auth] Erro na inicialização:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();
