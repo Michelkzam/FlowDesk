@@ -127,17 +127,8 @@ export default function UsersPage() {
 
   const deleteM = useMutation({
     mutationFn: async (id) => {
+      await supabase.rpc('admin_delete_user', { target_user_id: id });
       await db.entities.User.delete(id);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        await fetch(`${API_URL}/api/auth/delete-user`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ target_user_id: id })
-        });
-      } catch (_) {}
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); toast({ title: "Sucesso", description: "Usuário excluído!" }); },
   });
@@ -179,9 +170,14 @@ export default function UsersPage() {
       if (newPassword.length < 6) { toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres.", variant: "destructive" }); return; }
       if (newPassword !== confirmPassword) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
       try {
-        await supabase.auth.resetPasswordForEmail(editing.email, { redirectTo: `${window.location.origin}/reset-password` });
-        toast({ title: "Email de redefinição enviado!", description: `Para ${editing.email}. O usuário deve definir a nova senha pelo link.` });
-      } catch (err) { toast({ title: "Erro", description: err.message, variant: "destructive" }); }
+        await supabase.rpc('admin_update_user_password', { target_user_id: editing.id, new_password: newPassword });
+        toast({ title: "Senha alterada com sucesso!" });
+      } catch (err) {
+        try {
+          await supabase.auth.resetPasswordForEmail(editing.email, { redirectTo: `${window.location.origin}/reset-password` });
+          toast({ title: "Email de redefinição enviado!", description: `Para ${editing.email}` });
+        } catch (e) { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
+      }
     }
   };
 
