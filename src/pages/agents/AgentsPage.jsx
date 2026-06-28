@@ -69,10 +69,22 @@ export default function AgentsPage() {
   const openEdit = (item) => { setForm(item); setEditing(item); setDialogOpen(true); };
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    if (editing) updateMutation.mutate({ id: editing.id, data: form });
-    else createMutation.mutate(form);
+    const { data: existing } = await supabase.from('users').select('id').eq('email', form.email).maybeSingle();
+    if (editing) {
+      if (existing && existing.id !== editing.id) {
+        toast({ title: "Email já cadastrado", description: "Já existe outro usuário com este email.", variant: "destructive" });
+        return;
+      }
+      updateMutation.mutate({ id: editing.id, data: form });
+    } else {
+      if (existing) {
+        toast({ title: "Email já cadastrado", description: "Já existe um usuário com este email.", variant: "destructive" });
+        return;
+      }
+      createMutation.mutate(form);
+    }
   };
 
   const handlePasswordChange = async () => {
