@@ -2,8 +2,67 @@ import db from './connection.js';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+const AGENT_PERMISSIONS = [
+  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
+  "kb.create", "kb.edit", "kb.delete", "kb.publish",
+  "reports.view",
+];
+
+const USER_PERMISSIONS = [
+  "tickets.create", "tickets.edit", "tickets.close",
+];
+
 async function seed() {
   console.log('[DB] Iniciando seed...');
+
+  // Seed roles
+  const roles = [
+    {
+      name: 'Técnico',
+      description: 'Perfil padrão para técnicos de suporte',
+      permissions: AGENT_PERMISSIONS,
+    },
+    {
+      name: 'Usuário',
+      description: 'Perfil padrão para usuários comuns',
+      permissions: USER_PERMISSIONS,
+    },
+  ];
+
+  const roleIds = {};
+  for (const role of roles) {
+    let existing = await db('roles').where({ name: role.name }).first();
+    if (!existing) {
+      const [created] = await db('roles').insert({
+        id: uuidv4(),
+        name: role.name,
+        description: role.description,
+        permissions: JSON.stringify(role.permissions),
+        status: 'active'
+      }).returning('*');
+      roleIds[role.name] = created.id;
+      console.log(`[DB] Role "${role.name}" criada com ${role.permissions.length} permissões`);
+    } else {
+      roleIds[role.name] = existing.id;
+      console.log(`[DB] Role "${role.name}" já existe`);
+    }
+  }
+
+  // Assign roles to existing users without role_id
+  const agentRoleId = roleIds['Técnico'];
+  const userRoleId = roleIds['Usuário'];
+
+  const agentsUpdated = await db('users')
+    .where({ role: 'agent' })
+    .whereNull('role_id')
+    .update({ role_id: agentRoleId, updated_at: new Date() });
+  console.log(`[DB] ${agentsUpdated} técnico(s) vinculado(s) ao role "Técnico"`);
+
+  const usersUpdated = await db('users')
+    .where({ role: 'user' })
+    .whereNull('role_id')
+    .update({ role_id: userRoleId, updated_at: new Date() });
+  console.log(`[DB] ${usersUpdated} usuário(s) vinculado(s) ao role "Usuário"`);
 
   // Seed admin user
   const existingAdmin = await db('users').where({ email: 'admin@flowdesk.com' }).first();
@@ -63,6 +122,7 @@ async function seed() {
       password_hash: passwordHash,
       full_name: 'João Silva',
       role: 'agent',
+      role_id: agentRoleId,
       status: 'active'
     });
     console.log('[DB] Técnico criado: tecnico@flowdesk.com / tecnico123');
@@ -78,6 +138,7 @@ async function seed() {
       password_hash: passwordHash,
       full_name: 'Maria Santos',
       role: 'user',
+      role_id: userRoleId,
       status: 'active'
     });
     console.log('[DB] Usuário criado: usuario@exemplo.com / usuario123');

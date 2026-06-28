@@ -39,7 +39,14 @@ export function AuthProvider({ children }) {
   const fetchPermissions = useCallback(async (profileData) => {
     if (!profileData) { setPermissions([]); return; }
     if (profileData.role === 'admin') { setPermissions(ALL_PERMISSIONS); return; }
-    if (!profileData.role_id) { setPermissions([]); return; }
+    if (!profileData.role_id) {
+      const fallbackPermissions = profileData.role === 'agent'
+        ? ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
+           "kb.create", "kb.edit", "kb.delete", "kb.publish", "reports.view"]
+        : ["tickets.create", "tickets.edit", "tickets.close"];
+      setPermissions(fallbackPermissions);
+      return;
+    }
     const { data } = await supabase
       .from('roles')
       .select('permissions')
