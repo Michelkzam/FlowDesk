@@ -230,7 +230,7 @@ export default function TicketDetail({ isPopup = false }) {
         sender_type: "agent",
         sender_id: currentUser?.id,
         sender_name: currentUser?.full_name,
-        type: isNote ? "note" : "reply",
+        type: isNote ? "note" : "message",
         is_internal: isNote,
         body: message,
       };
@@ -238,14 +238,6 @@ export default function TicketDetail({ isPopup = false }) {
       let { error: msgError } = await supabase
         .from("ticket_messages")
         .insert(insertData);
-
-      if (msgError && msgError.message?.includes("body")) {
-        delete insertData.body;
-        insertData.message = message;
-        ({ error: msgError } = await supabase
-          .from("ticket_messages")
-          .insert(insertData));
-      }
 
       if (msgError) {
         console.error("[TicketDetail INSERT]", JSON.stringify(msgError), insertData);
