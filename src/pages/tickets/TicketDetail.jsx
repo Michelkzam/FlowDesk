@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
 
 import React, { useState, useRef, useEffect } from "react";
@@ -75,7 +76,16 @@ export default function TicketDetail({ isPopup = false }) {
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
     queryKey: ["ticket-messages", id],
-    queryFn: () => db.entities.TicketMessage.filter({ ticket_id: id }, "-created_date", 100),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .select("*")
+        .eq("ticket_id", id)
+        .order("created_at", { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
     refetchInterval: 300000,
   });
 
@@ -124,7 +134,12 @@ export default function TicketDetail({ isPopup = false }) {
   }, [ticket?.agent_id, blockedInfo, currentUser?.id]);
 
   const sendMutation = useMutation({
-    mutationFn: (data) => db.entities.TicketMessage.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from("ticket_messages")
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
@@ -209,7 +224,7 @@ export default function TicketDetail({ isPopup = false }) {
         });
       }
 
-      await db.entities.TicketMessage.create({
+      await supabase.from("ticket_messages").insert({
         ticket_id: id,
         body: message,
         sender_type: "agent",
@@ -249,7 +264,7 @@ export default function TicketDetail({ isPopup = false }) {
   const handleFinalize = async () => {
     try {
       if (finalizeData.solution.trim()) {
-        await db.entities.TicketMessage.create({
+        await supabase.from("ticket_messages").insert({
           ticket_id: id,
           body: `[Solução] ${finalizeData.solution}`,
           sender_type: "system",
@@ -284,7 +299,7 @@ export default function TicketDetail({ isPopup = false }) {
     if (!transferData.agentId || !transferData.note.trim()) return;
 
     try {
-      await db.entities.TicketMessage.create({
+      await supabase.from("ticket_messages").insert({
         ticket_id: id,
         body: `[Transferência] Ticket transferido para ${transferData.agentName}.\nMotivo: ${transferData.note}`,
         sender_type: "system",
