@@ -36,6 +36,7 @@ export const SYSTEM_PAGES = [
   { id: "atendimento.acesso_remoto", label: "Acesso Remoto", path: "/acesso-remoto", category: "Atendimento", icon: "Monitor" },
   { id: "atendimento.agendamentos", label: "Agendamentos", path: "/agendamentos", category: "Atendimento", icon: "Calendar" },
   { id: "atendimento.videoconferencia", label: "Videoconferência", path: "/videoconferencia", category: "Atendimento", icon: "Video" },
+  { id: "portal.usuario", label: "Portal do Usuário", path: "/meus-atendimentos", category: "Atendimento", icon: "Ticket" },
   { id: "kb.artigos", label: "Artigos", path: "/kb/artigos", category: "Base de Conhecimento", icon: "FileText" },
   { id: "kb.categorias", label: "Categorias KB", path: "/kb/categorias", category: "Base de Conhecimento", icon: "Tag" },
   { id: "kb.respostas", label: "Respostas Rápidas", path: "/kb/respostas", category: "Base de Conhecimento", icon: "Zap" },

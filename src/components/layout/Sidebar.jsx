@@ -24,6 +24,7 @@ const navItems = [
       { label: "Todos os Tickets", icon: ListOrdered, path: "/tickets/todos", pageId: "tickets.todos" },
       { label: "Histórico de Atendimentos", icon: History, path: "/tickets/historico", pageId: "tickets.historico" },
       { label: "Videoconferência", icon: Video, path: "/videoconferencia", pageId: "atendimento.videoconferencia" },
+      { label: "Portal do Usuário", icon: Ticket, path: "/meus-atendimentos", pageId: "portal.usuario" },
     ]
   },
   {

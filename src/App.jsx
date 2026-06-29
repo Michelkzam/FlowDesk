@@ -60,6 +60,7 @@ import UserProfilesPage from './pages/cadastros/UserProfilesPage';
 import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
 import ProfilePage from './pages/perfil/ProfilePage';
+import UserPortalAdmin from './pages/portal/UserPortalAdmin';
 
 import { useState, useEffect } from 'react';
 
@@ -150,6 +151,7 @@ function AppRoutes() {
         <Route path="acesso-remoto" element={<AcessoRemotoPage />} />
         <Route path="videoconferencia" element={<VideoconferenciaPage />} />
         <Route path="meu-perfil" element={<ProfilePage />} />
+        <Route path="meus-atendimentos" element={<UserPortalAdmin />} />
       </Route>
 
       {/* Popup route */}
