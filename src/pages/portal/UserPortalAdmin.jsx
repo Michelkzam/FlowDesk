@@ -412,22 +412,33 @@ export default function UserPortalAdmin() {
                         )}
                         {msgAttachments.length > 0 && (
                           <div className="flex flex-col gap-1.5">
-                            {msgAttachments.map((att, i) => (
-                              att.type?.startsWith("audio/") || att.isAudio ? (
-                                <div key={i} className="bg-card border border-border rounded-lg p-2">
-                                  <audio controls src={att.url} className="w-full h-8" />
-                                </div>
-                              ) : att.type?.startsWith("image/") ? (
-                                <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
-                                  <img src={att.url} alt={att.name} className="max-w-[250px] max-h-[200px] rounded-lg object-cover" />
-                                </a>
-                              ) : (
+                            {msgAttachments.map((att, i) => {
+                              const isAudio = att.type?.startsWith("audio/") || att.isAudio;
+                              const isImage = att.type?.startsWith("image/");
+                              if (isAudio) {
+                                return (
+                                  <div key={i} className="bg-card border border-border rounded-lg p-3 min-w-[200px]">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                      <span className="text-xs text-muted-foreground">🎵 Áudio</span>
+                                    </div>
+                                    <audio controls src={att.url} className="w-full h-10" preload="metadata" />
+                                  </div>
+                                );
+                              }
+                              if (isImage) {
+                                return (
+                                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                                    <img src={att.url} alt={att.name} className="max-w-[250px] max-h-[200px] rounded-lg object-cover" />
+                                  </a>
+                                );
+                              }
+                              return (
                                 <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
                                   className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
                                   <span className="truncate">{att.name}</span>
                                 </a>
-                              )
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
