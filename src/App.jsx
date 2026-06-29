@@ -8,6 +8,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import { ThemeProvider } from '@/lib/ThemeContext';
 import WelcomeOverlay from './components/shared/WelcomeOverlay';
+import { SYSTEM_PAGES } from '@/lib/constants';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
@@ -64,6 +65,13 @@ import UserPortalAdmin from './pages/portal/UserPortalAdmin';
 
 import { useState, useEffect } from 'react';
 
+function DashboardGuard() {
+  const { canAccessPage } = useAuth();
+  if (canAccessPage("dashboard")) return <Dashboard />;
+  const firstAllowed = SYSTEM_PAGES.find(p => p.id !== "dashboard" && canAccessPage(p.id));
+  return <Navigate to={firstAllowed?.path || "/meus-atendimentos"} replace />;
+}
+
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
 
@@ -90,7 +98,7 @@ function AppRoutes() {
           <AppLayout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
+        <Route index element={<DashboardGuard />} />
         <Route path="tickets/meus" element={<TicketList myTickets={true} />} />
         <Route path="tickets/todos" element={<TicketList />} />
         <Route path="tickets/historico" element={<TicketHistory />} />
