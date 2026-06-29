@@ -145,7 +145,6 @@ export default function UserPortalAdmin() {
         user_name: profile?.full_name || currentUser?.email,
         user_email: currentUser?.email,
         user_phone: profile?.phone || "",
-        client_name: profile?.client_name || "",
         status: "open",
         source: "web",
         number: `#${Date.now().toString().slice(-6)}`,
