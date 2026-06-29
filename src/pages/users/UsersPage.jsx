@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Shield, Eye, EyeOff, Mail, Settings, Check } from "lucide-react";
+import { UserPlus, Shield, Eye, EyeOff, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/lib/supabase";
@@ -22,16 +21,7 @@ const ROLE_BADGES = {
 };
 const ROLE_LABELS = { admin: "Administrador", agent: "Técnico", user: "Usuário" };
 
-const ALL_PERMISSIONS = [
-  "tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
-  "kb.create", "kb.edit", "kb.delete", "kb.publish",
-  "users.manage", "reports.view", "admin.access",
-];
-const PERMISSION_GROUPS = {
-  "Tickets": ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer"],
-  "Base de Conhecimento": ["kb.create", "kb.edit", "kb.delete", "kb.publish"],
-  "Sistema": ["users.manage", "reports.view", "admin.access"],
-};
+
 
 const defaultInviteForm = { email: "", phone: "+55 ", full_name: "", role: "user", role_id: "", client_id: "", organization_id: "", department: "" };
 
@@ -44,9 +34,6 @@ export default function UsersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rolesOpen, setRolesOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState(null);
-  const [roleForm, setRoleForm] = useState({ name: "", description: "", permissions: [] });
   const [filterRole, setFilterRole] = useState("all");
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -133,31 +120,6 @@ export default function UsersPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); toast({ title: "Sucesso", description: "Usuário excluído!" }); },
   });
 
-  const roleCreateM = useMutation({
-    mutationFn: d => db.entities.Role.create({ ...d, permissions: JSON.stringify(d.permissions) }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); closeRoleDialog(); toast({ title: "Sucesso", description: "Perfil criado!" }); },
-    onError: (e) => { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
-  });
-  const roleUpdateM = useMutation({
-    mutationFn: ({ id, data }) => db.entities.Role.update(id, { ...data, permissions: JSON.stringify(data.permissions) }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); closeRoleDialog(); toast({ title: "Sucesso", description: "Perfil atualizado!" }); },
-    onError: (e) => { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
-  });
-  const roleDeleteM = useMutation({
-    mutationFn: id => db.entities.Role.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["roles"] }); toast({ title: "Sucesso", description: "Perfil excluído!" }); },
-  });
-
-  const closeRoleDialog = () => { setRolesOpen(false); setEditingRole(null); setRoleForm({ name: "", description: "", permissions: [] }); };
-  const openRoleEdit = (r) => { setEditingRole(r); setRoleForm({ name: r.name, description: r.description || "", permissions: r.permissions || [] }); setRolesOpen(true); };
-  const openRoleCreate = () => { setEditingRole(null); setRoleForm({ name: "", description: "", permissions: [] }); setRolesOpen(true); };
-  const toggleRolePerm = (p) => setRoleForm(f => ({ ...f, permissions: f.permissions.includes(p) ? f.permissions.filter(x => x !== p) : [...f.permissions, p] }));
-  const toggleRoleGroup = (perms) => setRoleForm(f => {
-    const allSelected = perms.every(p => f.permissions.includes(p));
-    return { ...f, permissions: allSelected ? f.permissions.filter(p => !perms.includes(p)) : [...new Set([...f.permissions, ...perms])] };
-  });
-  const handleRoleSubmit = (e) => { e.preventDefault(); editingRole ? roleUpdateM.mutate({ id: editingRole.id, data: roleForm }) : roleCreateM.mutate(roleForm); };
-
   const openEdit = (user) => {
     setEditing(user);
     setEditForm({ role: user.role || "user", role_id: user.role_id || "", phone: user.phone || "", client_id: user.client_id || "", organization_id: user.organization_id || "", department: user.department || "", department_id: user.department_id || "" });
@@ -210,12 +172,6 @@ export default function UsersPage() {
         <button onClick={() => setFilterRole("user")} className={`p-3 rounded-lg border text-left transition-all ${filterRole === "user" ? "border-emerald-400 bg-emerald-50" : "border-border hover:bg-muted/50"}`}>
           <p className="text-xs text-muted-foreground">Usuários</p><p className="text-2xl font-bold text-emerald-600">{stats.user}</p>
         </button>
-      </div>
-
-      <div className="flex items-center gap-2 mb-4">
-        <Button variant="outline" size="sm" onClick={() => setRolesOpen(true)} className="gap-2">
-          <Settings className="w-4 h-4" /> Gerenciar Perfis
-        </Button>
       </div>
 
       <DataTable columns={columns} data={filteredUsers} isLoading={isLoading} onEdit={openEdit} onDelete={item => deleteM.mutate(item.id)} searchKeys={["full_name", "email", "department_name", "organization_name", "client_name"]} emptyMessage="Nenhum usuário encontrado" canEdit={can("users.manage")} canDelete={can("users.manage")} />
@@ -372,60 +328,6 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={updateM.isPending}>{updateM.isPending ? "Salvando..." : "Salvar"}</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Roles Management Dialog */}
-      <Dialog open={rolesOpen} onOpenChange={setRolesOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Settings className="w-5 h-5" /> Gerenciar Perfis de Acesso</DialogTitle></DialogHeader>
-          <Tabs defaultValue="list">
-            <TabsList className="mb-4">
-              <TabsTrigger value="list">Perfis</TabsTrigger>
-              <TabsTrigger value="form">{editingRole ? "Editar" : "Novo"}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="list" className="space-y-2">
-              {roles.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum perfil criado</p> : roles.map(r => (
-                <div key={r.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50">
-                  <div><p className="font-medium text-sm">{r.name}</p><p className="text-xs text-muted-foreground">{r.description || "Sem descrição"} — {(r.permissions || []).length} permissões</p></div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => openRoleEdit(r)}>Editar</Button>
-                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => roleDeleteM.mutate(r.id)}>Excluir</Button>
-                  </div>
-                </div>
-              ))}
-              <Button variant="outline" size="sm" onClick={openRoleCreate} className="w-full mt-2">+ Novo Perfil</Button>
-            </TabsContent>
-            <TabsContent value="form">
-              <form onSubmit={handleRoleSubmit} className="space-y-4">
-                <div className="space-y-1.5"><Label>Nome *</Label><Input required value={roleForm.name} onChange={e => setRoleForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Técnico Nível 1" /></div>
-                <div className="space-y-1.5"><Label>Descrição</Label><Input value={roleForm.description} onChange={e => setRoleForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do perfil" /></div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Permissões ({roleForm.permissions.length}/{ALL_PERMISSIONS.length})</Label>
-                  {Object.entries(PERMISSION_GROUPS).map(([group, perms]) => (
-                    <div key={group} className="space-y-1">
-                      <div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground uppercase">{group}</span>
-                        <button type="button" onClick={() => toggleRoleGroup(perms)} className="text-xs text-primary hover:underline">{perms.every(p => roleForm.permissions.includes(p)) ? "Desmarcar" : "Marcar todas"}</button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1 pl-2">
-                        {perms.map(p => (
-                          <label key={p} className="flex items-center gap-2 cursor-pointer text-xs py-0.5" onClick={() => toggleRolePerm(p)}>
-                            <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${roleForm.permissions.includes(p) ? "bg-primary border-primary text-white" : "border-border bg-background"}`}>
-                              {roleForm.permissions.includes(p) && <Check className="w-3 h-3" />}
-                            </span>{p}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={closeRoleDialog}>Cancelar</Button>
-                  <Button type="submit" disabled={roleCreateM.isPending || roleUpdateM.isPending}>{editingRole ? "Atualizar" : "Criar"}</Button>
-                </DialogFooter>
-              </form>
-            </TabsContent>
-          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
