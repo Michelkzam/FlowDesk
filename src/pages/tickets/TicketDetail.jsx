@@ -225,17 +225,30 @@ export default function TicketDetail({ isPopup = false }) {
         });
       }
 
-      const { error: msgError } = await supabase.from("ticket_messages").insert({
+      const insertData = {
         ticket_id: id,
-        body: message,
         sender_type: "agent",
         sender_id: currentUser?.id,
         sender_name: currentUser?.full_name,
         type: isNote ? "note" : "reply",
         is_internal: isNote,
-      });
+        body: message,
+      };
+
+      let { error: msgError } = await supabase
+        .from("ticket_messages")
+        .insert(insertData);
+
+      if (msgError && msgError.message?.includes("body")) {
+        delete insertData.body;
+        insertData.message = message;
+        ({ error: msgError } = await supabase
+          .from("ticket_messages")
+          .insert(insertData));
+      }
+
       if (msgError) {
-        console.error("[TicketDetail INSERT]", JSON.stringify(msgError));
+        console.error("[TicketDetail INSERT]", JSON.stringify(msgError), insertData);
         throw msgError;
       }
 
