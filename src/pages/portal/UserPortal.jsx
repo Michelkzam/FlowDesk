@@ -193,9 +193,15 @@ export default function UserPortal() {
 
   const { data: messages = [] } = useQuery({
     queryKey: ["ticket-messages", selectedTicket?.id],
-    queryFn: () => db.entities.TicketMessage.filter({ ticket_id: selectedTicket?.id }, "created_date", 200),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .eq("ticket_id", selectedTicket?.id);
+      if (error) return [];
+      return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
     enabled: !!selectedTicket?.id,
-    refetchInterval: 300000,
   });
 
   useEffect(() => {
@@ -203,7 +209,18 @@ export default function UserPortal() {
   }, [messages]);
 
   const sendMutation = useMutation({
-    mutationFn: data => db.entities.TicketMessage.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from("ticket_messages").insert({
+        ticket_id: data.ticket_id,
+        body: data.body,
+        sender_type: "user",
+        sender_id: data.sender_id,
+        sender_name: data.sender_name,
+        type: "message",
+        is_internal: false,
+      });
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", selectedTicket?.id] });
       setMessage("");

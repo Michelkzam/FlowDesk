@@ -1,4 +1,5 @@
 import { db } from '@/api/flowdeskClient';
+import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
 
 import { useState, useRef, useEffect } from "react";
@@ -38,8 +39,18 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["chat-messages", ticket.id],
-    queryFn: () => db.entities.ChatMessage.filter({ ticket_id: ticket.id }),
-    refetchInterval: 300000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .eq("ticket_id", ticket.id);
+      if (error) {
+        console.error("[ChatMessages]", error);
+        return [];
+      }
+      return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
+    refetchInterval: 5000,
   });
 
   useEffect(() => {
@@ -57,13 +68,16 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
   }, [messages]);
 
   const sendMutation = useMutation({
-    mutationFn: (msg) => db.entities.ChatMessage.create({
-      ticket_id: ticket.id,
-      sender_type: "agent",
-      sender_name: "Operador",
-      body: msg,
-      type: "message",
-    }),
+    mutationFn: async (msg) => {
+      const { error } = await supabase.from("ticket_messages").insert({
+        ticket_id: ticket.id,
+        sender_type: "agent",
+        sender_name: "Operador",
+        body: msg,
+        type: "message",
+      });
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
       setMessage("");
