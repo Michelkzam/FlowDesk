@@ -49,7 +49,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     }
     if (messages.length > prevMsgCountRef.current) {
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg.sender_type !== "operator") {
+      if (lastMsg.sender_type !== "agent") {
         playSystemSound('new_message');
       }
     }
@@ -59,10 +59,10 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
   const sendMutation = useMutation({
     mutationFn: (msg) => db.entities.ChatMessage.create({
       ticket_id: ticket.id,
-      sender_type: "operator",
+      sender_type: "agent",
       sender_name: "Operador",
-      message: msg,
-      channel: ticket.channel || "portal",
+      body: msg,
+      type: "message",
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
@@ -164,19 +164,19 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           </div>
         ) : (
           messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.sender_type === "operator" ? "justify-end" : "justify-start"}`}>
+            <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
               <div className="max-w-xs lg:max-w-md">
                 <div className={`rounded-2xl px-4 py-2.5 ${
-                  msg.sender_type === "operator"
+                  msg.sender_type === "agent"
                     ? "bg-primary text-primary-foreground rounded-tr-sm"
                     : msg.sender_type === "system"
                     ? "bg-muted/50 text-muted-foreground italic text-xs"
                     : "bg-muted rounded-tl-sm"
                 }`}>
-                  <p className="text-sm">{msg.message}</p>
+                  <p className="text-sm">{msg.body || msg.message}</p>
                 </div>
-                <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "operator" ? "text-right mr-1" : "ml-1"}`}>
-                  {msg.sender_name || (msg.sender_type === "operator" ? "Operador" : "Cliente")} • {format(new Date(msg.created_date), "HH:mm", { locale: ptBR })}
+                <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
+                  {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at || msg.created_date), "HH:mm", { locale: ptBR })}
                 </p>
               </div>
             </div>
