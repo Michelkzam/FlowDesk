@@ -74,8 +74,43 @@ export default function UserPortalAdmin() {
     queryKey: ["ticket-messages", selectedTicket?.id],
     queryFn: () => db.entities.TicketMessage.filter({ ticket_id: selectedTicket?.id }, "created_date", 200),
     enabled: !!selectedTicket?.id,
-    refetchInterval: 10000,
   });
+
+  // Realtime: escutar novas mensagens do ticket selecionado
+  useEffect(() => {
+    if (!selectedTicket?.id) return;
+
+    const channel = supabase
+      .channel(`ticket-messages-${selectedTicket.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ticket_messages", filter: `ticket_id=eq.${selectedTicket.id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ticket-messages", selectedTicket.id] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedTicket?.id, queryClient]);
+
+  // Realtime: escutar mudanças de status dos tickets
+  useEffect(() => {
+    if (!currentUser?.email) return;
+
+    const channel = supabase
+      .channel("my-tickets-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets", filter: `user_email=eq.${currentUser.email}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser.email] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser?.email, queryClient]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
