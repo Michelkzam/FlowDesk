@@ -79,7 +79,7 @@ export default function TicketDetail({ isPopup = false }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
         .eq("ticket_id", id);
       if (error) {
         console.error("[TicketMessages]", error);
