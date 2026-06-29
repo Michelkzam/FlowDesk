@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ChatInput from "@/components/chat/ChatInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -545,30 +546,59 @@ export default function TicketDetail({ isPopup = false }) {
                   <MessageSquare className="w-10 h-10 opacity-20 mb-2" />
                   <p className="text-sm">Nenhuma mensagem ainda</p>
                 </div>
-              ) : sortedMessages.map(msg => (
-                <div key={msg.id} className={cn("flex gap-3", msg.sender_type === "agent" ? "flex-row-reverse" : "")}>
-                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
-                    msg.sender_type === "agent" ? "bg-primary/20 text-primary" :
-                    msg.sender_type === "system" ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-700"
-                  )}>
-                    {(msg.sender_name || "?")[0]?.toUpperCase()}
-                  </div>
-                  <div className={cn("max-w-[75%]", msg.sender_type === "agent" ? "items-end" : "items-start", "flex flex-col gap-1")}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground font-medium">{msg.sender_name || "Sistema"}</span>
-                      {msg.is_internal && <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200"><Lock className="w-2.5 h-2.5 mr-1" />Nota Interna</Badge>}
-                      <span className="text-xs text-muted-foreground">{msg.created_date ? format(new Date(msg.created_date), "dd/MM HH:mm") : ""}</span>
-                    </div>
-                    <div className={cn("rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap",
-                      msg.is_internal ? "bg-amber-50 border border-amber-200 text-amber-900" :
-                      msg.sender_type === "agent" ? "bg-primary text-primary-foreground" :
-                      "bg-muted text-foreground"
+              ) : sortedMessages.map(msg => {
+                const msgAttachments = (() => {
+                  if (!msg.attachments) return [];
+                  if (typeof msg.attachments === "string") { try { return JSON.parse(msg.attachments); } catch { return []; } }
+                  return Array.isArray(msg.attachments) ? msg.attachments : [];
+                })();
+                return (
+                  <div key={msg.id} className={cn("flex gap-3", msg.sender_type === "agent" ? "flex-row-reverse" : "")}>
+                    <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
+                      msg.sender_type === "agent" ? "bg-primary/20 text-primary" :
+                      msg.sender_type === "system" ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-700"
                     )}>
-                      {msg.body}
+                      {(msg.sender_name || "?")[0]?.toUpperCase()}
+                    </div>
+                    <div className={cn("max-w-[75%]", msg.sender_type === "agent" ? "items-end" : "items-start", "flex flex-col gap-1")}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium">{msg.sender_name || "Sistema"}</span>
+                        {msg.is_internal && <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200"><Lock className="w-2.5 h-2.5 mr-1" />Nota Interna</Badge>}
+                        <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "dd/MM HH:mm") : ""}</span>
+                      </div>
+                      {msg.body && (
+                        <div className={cn("rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                          msg.is_internal ? "bg-amber-50 border border-amber-200 text-amber-900" :
+                          msg.sender_type === "agent" ? "bg-primary text-primary-foreground" :
+                          "bg-muted text-foreground"
+                        )}>
+                          {msg.body}
+                        </div>
+                      )}
+                      {msgAttachments.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          {msgAttachments.map((att, i) => (
+                            att.type?.startsWith("audio/") || att.isAudio ? (
+                              <div key={i} className="bg-card border border-border rounded-lg p-2">
+                                <audio controls src={att.url} className="w-full h-8" />
+                              </div>
+                            ) : att.type?.startsWith("image/") ? (
+                              <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                                <img src={att.url} alt={att.name} className="max-w-[250px] max-h-[200px] rounded-lg object-cover" />
+                              </a>
+                            ) : (
+                              <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
+                                <span className="truncate">{att.name}</span>
+                              </a>
+                            )
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
@@ -656,32 +686,9 @@ export default function TicketDetail({ isPopup = false }) {
                       <Lock className="w-3 h-3 inline mr-1" />Nota Interna
                     </button>
                   </div>
-                  <div className="flex gap-2">
-                    <textarea
-                      className={cn("flex-1 rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[60px]",
-                        isNote ? "border-amber-300 bg-amber-50/50" : "border-input bg-background"
-                      )}
-                      placeholder={isNote ? "Adicionar nota interna (visível apenas para agentes)..." : "Digite sua resposta... (use / para respostas predefinidas)"}
-                      value={message}
-                      onChange={e => setMessage(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) handleSend(); }}
-                    />
-                    <Button onClick={handleSend} disabled={!message.trim() || sendMutation.isPending}
-                      className={cn("self-end gap-1.5", isNote ? "bg-amber-500 hover:bg-amber-600" : "bg-primary hover:bg-primary/90")}>
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
                 </>
               )}
-              {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {attachments.map((f, i) => (
-                    <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Paperclip className="w-2.5 h-2.5" />{f.name}
-                      <button onClick={() => setAttachments(a => a.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive ml-0.5">×</button>
-                    </span>
-                  ))}
-                </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">
                 Ctrl+Enter para enviar ·{" "}
