@@ -1,4 +1,3 @@
-import { db } from '@/api/flowdeskClient';
 import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
 
@@ -16,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Send, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, User, Headphones, CircleDot } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,7 @@ function PriorityBadge({ priority }) {
 
 export default function UserPortalAdmin() {
   const { user: currentUser, profile } = useAuth();
+  const { toast } = useToast();
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({ title: "", description: "", priority: "normal" });
@@ -65,14 +66,32 @@ export default function UserPortalAdmin() {
   const queryClient = useQueryClient();
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["my-tickets", currentUser?.email],
-    queryFn: () => db.entities.Ticket.filter({ user_email: currentUser?.email }, "-created_date", 100),
-    enabled: !!currentUser?.email,
+    queryKey: ["my-tickets", currentUser?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentUser?.id,
   });
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
     queryKey: ["ticket-messages", selectedTicket?.id],
-    queryFn: () => db.entities.TicketMessage.filter({ ticket_id: selectedTicket?.id }, "created_date", 200),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .select("*")
+        .eq("ticket_id", selectedTicket.id)
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!selectedTicket?.id,
   });
 
@@ -96,49 +115,71 @@ export default function UserPortalAdmin() {
 
   // Realtime: escutar mudanças de status dos tickets
   useEffect(() => {
-    if (!currentUser?.email) return;
+    if (!currentUser?.id) return;
 
     const channel = supabase
       .channel("my-tickets-realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "tickets", filter: `user_email=eq.${currentUser.email}` },
+        { event: "*", schema: "public", table: "tickets", filter: `user_id=eq.${currentUser.id}` },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser.email] });
+          queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser.id] });
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentUser?.email, queryClient]);
+  }, [currentUser?.id, queryClient]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const createMutation = useMutation({
-    mutationFn: (data) => db.entities.Ticket.create({
-      ...data,
-      user_id: currentUser?.id,
-      user_name: profile?.full_name || currentUser?.email,
-      user_email: currentUser?.email,
-      user_phone: profile?.phone || "",
-      client_name: profile?.client_name || "",
-      status: "open",
-      source: "web",
-      number: `#${Date.now().toString().slice(-6)}`,
-    }),
+    mutationFn: async (data) => {
+      const ticketData = {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        user_id: currentUser?.id,
+        user_name: profile?.full_name || currentUser?.email,
+        user_email: currentUser?.email,
+        user_phone: profile?.phone || "",
+        client_name: profile?.client_name || "",
+        status: "open",
+        source: "web",
+        number: `#${Date.now().toString().slice(-6)}`,
+      };
+      const { data: result, error } = await supabase
+        .from("tickets")
+        .insert(ticketData)
+        .select()
+        .single();
+      if (error) {
+        console.error("[TicketCreate]", error);
+        throw new Error(error.message || "Erro ao criar ticket");
+      }
+      return result;
+    },
     onSuccess: (ticket) => {
-      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.email] });
+      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.id] });
       setNewTicketOpen(false);
       setTicketForm({ title: "", description: "", priority: "normal" });
       setSelectedTicket(ticket);
       playSystemSound('new_ticket');
     },
+    onError: (err) => {
+      toast({ title: "Erro ao criar ticket", description: err.message, variant: "destructive" });
+    },
   });
 
   const sendMutation = useMutation({
-    mutationFn: (data) => db.entities.TicketMessage.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from("ticket_messages")
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", selectedTicket?.id] });
       setMessage("");
@@ -146,9 +187,15 @@ export default function UserPortalAdmin() {
   });
 
   const closeTicketMutation = useMutation({
-    mutationFn: (ticketId) => db.entities.Ticket.update(ticketId, { status: "closed", closed_date: new Date().toISOString() }),
+    mutationFn: async (ticketId) => {
+      const { error } = await supabase
+        .from("tickets")
+        .update({ status: "closed", closed_date: new Date().toISOString() })
+        .eq("id", ticketId);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.email] });
+      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.id] });
       setSelectedTicket(prev => prev ? { ...prev, status: "closed" } : null);
     },
   });
@@ -160,18 +207,18 @@ export default function UserPortalAdmin() {
     const needsReopen = ["waiting", "resolved", "closed"].includes(selectedTicket.status);
 
     if (needsReopen) {
-      await db.entities.Ticket.update(selectedTicket.id, {
+      await supabase.from("tickets").update({
         status: "in_progress",
         last_user_response_date: now,
         last_response_date: now,
-      });
-      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.email] });
+      }).eq("id", selectedTicket.id);
+      queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.id] });
       setSelectedTicket(prev => prev ? { ...prev, status: "in_progress" } : null);
     } else {
-      await db.entities.Ticket.update(selectedTicket.id, {
+      await supabase.from("tickets").update({
         last_user_response_date: now,
         last_response_date: now,
-      });
+      }).eq("id", selectedTicket.id);
     }
 
     sendMutation.mutate({
