@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Send, Paperclip, Mic, MicOff, X, FileText, Play, Pause, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 const ALLOWED_TYPES = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -92,6 +93,7 @@ function AttachmentPreview({ file, onRemove }) {
 }
 
 export default function ChatInput({ onSend, disabled }) {
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -137,8 +139,25 @@ export default function ChatInput({ onSend, disabled }) {
 
   const startRecording = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({ title: "Áudio indisponível", description: "Seu navegador não suporta gravação de áudio. Use HTTPS.", variant: "destructive" });
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+      let mimeType = "audio/webm";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "audio/ogg";
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = "";
+        }
+      }
+
+      const mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -147,10 +166,17 @@ export default function ChatInput({ onSend, disabled }) {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
         audioBlobRef.current = blob;
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.onerror = (e) => {
+        console.error("[MediaRecorder Error]", e);
+        toast({ title: "Erro na gravação", description: "Ocorreu um erro durante a gravação.", variant: "destructive" });
+        setRecording(false);
         stream.getTracks().forEach(t => t.stop());
       };
 
@@ -160,6 +186,11 @@ export default function ChatInput({ onSend, disabled }) {
       recordingIntervalRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
     } catch (err) {
       console.error("Erro ao iniciar gravação:", err);
+      if (err.name === "NotAllowedError") {
+        toast({ title: "Permissão negada", description: "Permita o acesso ao microfone nas configurações do navegador.", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao gravar", description: err.message || "Não foi possível iniciar a gravação.", variant: "destructive" });
+      }
     }
   };
 
