@@ -79,14 +79,15 @@ export default function TicketDetail({ isPopup = false }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("*")
-        .eq("ticket_id", id)
-        .order("created_at", { ascending: true })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .eq("ticket_id", id);
+      if (error) {
+        console.error("[TicketMessages]", error);
+        return [];
+      }
+      return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     },
-    refetchInterval: 300000,
+    refetchInterval: 5000,
   });
 
   const { data: cannedResponses = [] } = useQuery({
