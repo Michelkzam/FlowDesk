@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Send, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, User, Headphones, CircleDot } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import ChatInput from "@/components/chat/ChatInput";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -200,8 +201,9 @@ export default function UserPortalAdmin() {
     },
   });
 
-  const handleSend = async () => {
-    if (!message.trim() || !selectedTicket) return;
+  const handleSend = async (text, msgAttachments) => {
+    const msgText = text || message;
+    if ((!msgText.trim() && (!msgAttachments || msgAttachments.length === 0)) || !selectedTicket) return;
 
     const now = new Date().toISOString();
     const needsReopen = ["waiting", "resolved", "closed"].includes(selectedTicket.status);
@@ -221,15 +223,36 @@ export default function UserPortalAdmin() {
       }).eq("id", selectedTicket.id);
     }
 
-    sendMutation.mutate({
+    const insertData = {
       ticket_id: selectedTicket.id,
-      body: message,
+      body: msgText,
       sender_type: "user",
       sender_id: currentUser?.id,
       sender_name: profile?.full_name || currentUser?.email,
       type: "message",
       is_internal: false,
-    });
+    };
+
+    if (msgAttachments && msgAttachments.length > 0) {
+      insertData.attachments = JSON.stringify(msgAttachments);
+    }
+
+    let { error: msgError } = await supabase.from("ticket_messages").insert(insertData);
+
+    if (msgError && msgError.message?.includes("attachments")) {
+      delete insertData.attachments;
+      insertData.body = msgText + (msgAttachments?.length > 0 ? "\n" + msgAttachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n") : "");
+      ({ error: msgError } = await supabase.from("ticket_messages").insert(insertData));
+    }
+
+    if (msgError) {
+      console.error("[UserPortal INSERT]", JSON.stringify(msgError));
+      toast({ title: "Erro", description: "Falha ao enviar mensagem.", variant: "destructive" });
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["ticket-messages", selectedTicket.id] });
+    setMessage("");
   };
 
   const handleCreateTicket = () => {
@@ -356,52 +379,68 @@ export default function UserPortalAdmin() {
                   <p className="text-xs text-muted-foreground mt-1">Envie uma mensagem para iniciar o atendimento</p>
                 </div>
               ) : (
-                messages.filter(m => !m.is_internal).map(msg => (
-                  <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700"
-                    )}>
-                      {(msg.sender_name || "?")[0]?.toUpperCase()}
-                    </div>
-                    <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {msg.created_date ? format(new Date(msg.created_date), "HH:mm") : ""}
-                        </span>
-                      </div>
+                messages.filter(m => !m.is_internal).map(msg => {
+                  const msgAttachments = (() => {
+                    if (!msg.attachments) return [];
+                    if (typeof msg.attachments === "string") { try { return JSON.parse(msg.attachments); } catch { return []; } }
+                    return Array.isArray(msg.attachments) ? msg.attachments : [];
+                  })();
+                  return (
+                    <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
                       <div className={cn(
-                        "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
-                        msg.sender_type === "user"
-                          ? "bg-primary text-primary-foreground rounded-tr-sm"
-                          : "bg-card border border-border text-foreground rounded-tl-sm"
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700"
                       )}>
-                        {msg.body || msg.message}
+                        {(msg.sender_name || "?")[0]?.toUpperCase()}
+                      </div>
+                      <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}
+                          </span>
+                        </div>
+                        {(msg.body || msg.message) && (
+                          <div className={cn(
+                            "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                            msg.sender_type === "user"
+                              ? "bg-primary text-primary-foreground rounded-tr-sm"
+                              : "bg-card border border-border text-foreground rounded-tl-sm"
+                          )}>
+                            {msg.body || msg.message}
+                          </div>
+                        )}
+                        {msgAttachments.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            {msgAttachments.map((att, i) => (
+                              att.type?.startsWith("audio/") || att.isAudio ? (
+                                <div key={i} className="bg-card border border-border rounded-lg p-2">
+                                  <audio controls src={att.url} className="w-full h-8" />
+                                </div>
+                              ) : att.type?.startsWith("image/") ? (
+                                <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                                  <img src={att.url} alt={att.name} className="max-w-[250px] max-h-[200px] rounded-lg object-cover" />
+                                </a>
+                              ) : (
+                                <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
+                                  <span className="truncate">{att.name}</span>
+                                </a>
+                              )
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input de mensagem */}
             {!["resolved", "closed"].includes(selectedTicket.status) ? (
-              <div className="border-t border-border p-3 bg-card flex gap-2 items-end">
-                <textarea
-                  className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
-                  placeholder="Digite sua mensagem..."
-                  value={message}
-                  rows={1}
-                  onChange={e => setMessage(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                />
-                <Button onClick={handleSend} disabled={!message.trim() || sendMutation.isPending}
-                  className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+              <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
             ) : (
               <div className="border-t border-border p-4 bg-muted/30 text-center">
                 <p className="text-sm text-muted-foreground">Este ticket foi finalizado.</p>

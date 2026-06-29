@@ -187,8 +187,9 @@ export default function TicketDetail({ isPopup = false }) {
     }
   });
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
+  const handleSend = async (text, msgAttachments) => {
+    const msgText = text || message;
+    if (!msgText.trim() && (!msgAttachments || msgAttachments.length === 0) && attachments.length === 0) return;
 
     try {
       const latestTickets = await db.entities.Ticket.filter({ id });
@@ -225,6 +226,19 @@ export default function TicketDetail({ isPopup = false }) {
         });
       }
 
+      let uploadedAttachments = msgAttachments || [];
+      if (attachments.length > 0 && uploadedAttachments.length === 0) {
+        for (const att of attachments) {
+          const ext = att.name.split(".").pop();
+          const path = `chat-attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, att, { contentType: att.type, upsert: false });
+          if (!uploadErr) {
+            const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+            uploadedAttachments.push({ name: att.name, url: urlData.publicUrl, type: att.type, size: att.size });
+          }
+        }
+      }
+
       const insertData = {
         ticket_id: id,
         sender_type: "agent",
@@ -232,24 +246,35 @@ export default function TicketDetail({ isPopup = false }) {
         sender_name: currentUser?.full_name,
         type: isNote ? "note" : "message",
         is_internal: isNote,
-        body: message,
+        body: msgText,
       };
+      if (uploadedAttachments.length > 0) {
+        insertData.attachments = JSON.stringify(uploadedAttachments);
+      }
 
       let { error: msgError } = await supabase
         .from("ticket_messages")
         .insert(insertData);
 
       if (msgError) {
-        console.error("[TicketDetail INSERT]", JSON.stringify(msgError), insertData);
-        throw msgError;
+        if (msgError.message?.includes("attachments")) {
+          delete insertData.attachments;
+          insertData.body = msgText + (uploadedAttachments.length > 0 ? "\n" + uploadedAttachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n") : "");
+          ({ error: msgError } = await supabase.from("ticket_messages").insert(insertData));
+        }
+        if (msgError) {
+          console.error("[TicketDetail INSERT]", JSON.stringify(msgError), insertData);
+          throw msgError;
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      broadcastMessageUpdate(id, message);
+      broadcastMessageUpdate(id, msgText);
       broadcastTicketUpdate(id, "message_sent");
       setMessage("");
+      setAttachments([]);
     } catch (error) {
       toast({ title: "Erro", description: "Falha ao enviar mensagem. Tente novamente.", variant: "destructive" });
     }
