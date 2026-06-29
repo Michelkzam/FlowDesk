@@ -119,6 +119,7 @@ export default function UserPortalAdmin() {
   const createMutation = useMutation({
     mutationFn: (data) => db.entities.Ticket.create({
       ...data,
+      user_id: currentUser?.id,
       user_name: profile?.full_name || currentUser?.email,
       user_email: currentUser?.email,
       user_phone: profile?.phone || "",

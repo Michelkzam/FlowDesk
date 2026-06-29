@@ -75,10 +75,14 @@ export function AuthProvider({ children }) {
       if (!Array.isArray(perms)) perms = [];
       setPermissions(perms);
 
-      let pageList = data?.pages || [];
-      if (typeof pageList === 'string') { try { pageList = JSON.parse(pageList); } catch { pageList = []; } }
-      if (!Array.isArray(pageList)) pageList = [];
-      setPages(pageList);
+      let pageList = data?.pages;
+      if (pageList === undefined || pageList === null) {
+        setPages(null);
+      } else {
+        if (typeof pageList === 'string') { try { pageList = JSON.parse(pageList); } catch { pageList = []; } }
+        if (!Array.isArray(pageList)) pageList = [];
+        setPages(pageList);
+      }
     } catch (err) {
       console.error('[Auth] Exceção ao buscar permissões:', err);
       setPermissions([]);
@@ -135,7 +139,8 @@ export function AuthProvider({ children }) {
 
   const canAccessPage = useCallback((pageId) => {
     if (profile?.role === 'admin') return true;
-    if (!pages || pages.length === 0) return true;
+    if (pages === null) return true;
+    if (pages.length === 0) return false;
     return pages.includes(pageId);
   }, [profile?.role, pages]);
 
