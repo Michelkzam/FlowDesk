@@ -689,14 +689,6 @@ export default function TicketDetail({ isPopup = false }) {
                   <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
                 </>
               )}
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Ctrl+Enter para enviar ·{" "}
-                <button onClick={() => setShowQuickReplies(v => !v)} className="underline hover:text-foreground inline-flex items-center gap-0.5"><Zap className="w-3 h-3" />Respostas rápidas</button>
-                {" "}·{" "}
-                <button onClick={() => fileInputRef.current?.click()} className="underline hover:text-foreground inline-flex items-center gap-0.5"><Paperclip className="w-3 h-3" />Anexar</button>
-                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={e => setAttachments(a => [...a, ...Array.from(e.target.files)])} />
-              </p>
             </div>
           </Card>
         </div>

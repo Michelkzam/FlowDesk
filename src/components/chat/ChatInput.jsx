@@ -1,8 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send, Paperclip, Mic, MicOff, X, FileText, Image, Play, Pause, Loader2 } from "lucide-react";
+import { Send, Paperclip, Mic, MicOff, X, FileText, Play, Pause, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ALLOWED_TYPES = {
@@ -104,11 +103,12 @@ export default function ChatInput({ onSend, disabled }) {
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const audioBlobRef = useRef(null);
 
   const uploadFile = async (file) => {
     const ext = file.name.split(".").pop();
     const path = `chat-attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data, error } = await supabase.storage.from("avatars").upload(path, file, {
+    const { error } = await supabase.storage.from("avatars").upload(path, file, {
       contentType: file.type,
       upsert: false,
     });
@@ -148,6 +148,7 @@ export default function ChatInput({ onSend, disabled }) {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        audioBlobRef.current = blob;
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(t => t.stop());
@@ -176,12 +177,14 @@ export default function ChatInput({ onSend, disabled }) {
       setRecording(false);
       clearInterval(recordingIntervalRef.current);
     }
+    audioBlobRef.current = null;
     setAudioBlob(null);
     setAudioUrl(null);
   };
 
   const handleSend = async () => {
-    if (!text.trim() && attachments.length === 0 && !audioBlob) return;
+    const currentAudioBlob = audioBlobRef.current;
+    if (!text.trim() && attachments.length === 0 && !currentAudioBlob) return;
 
     setUploading(true);
     try {
@@ -197,22 +200,26 @@ export default function ChatInput({ onSend, disabled }) {
         }
       }
 
-      if (audioBlob) {
+      if (currentAudioBlob) {
         const ext = "webm";
         const path = `chat-audio/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage.from("avatars").upload(path, audioBlob, {
+        const { error } = await supabase.storage.from("avatars").upload(path, currentAudioBlob, {
           contentType: "audio/webm",
           upsert: false,
         });
-        if (error) throw error;
+        if (error) {
+          console.error("[AudioUpload]", error);
+          throw error;
+        }
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-        uploadedAttachments.push({ name: `audio_${Date.now()}.webm`, url: urlData.publicUrl, type: "audio/webm", size: audioBlob.size, isAudio: true });
+        uploadedAttachments.push({ name: `audio_${Date.now()}.webm`, url: urlData.publicUrl, type: "audio/webm", size: currentAudioBlob.size, isAudio: true });
       }
 
       await onSend(text, uploadedAttachments.length > 0 ? uploadedAttachments : null);
 
       setText("");
       setAttachments([]);
+      audioBlobRef.current = null;
       setAudioBlob(null);
       setAudioUrl(null);
     } catch (err) {
