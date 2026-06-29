@@ -50,6 +50,7 @@ export const SYSTEM_PAGES = [
   { id: "relatorios.principal", label: "Relatórios", path: "/relatorios", category: "Relatórios", icon: "BarChart3" },
   { id: "relatorios.atendentes", label: "Painel Atendentes", path: "/relatorios/atendentes", category: "Relatórios", icon: "BarChart3" },
   { id: "admin.configuracoes", label: "Configurações", path: "/admin/configuracoes", category: "Sistema", icon: "Settings" },
+  { id: "admin.cronogramas", label: "Cronogramas", path: "/admin/cronogramas", category: "Sistema", icon: "Clock" },
   { id: "admin.escala", label: "Escalas de Trabalho", path: "/admin/escala", category: "Sistema", icon: "Clock" },
   { id: "admin.feriados", label: "Feriados", path: "/admin/feriados", category: "Sistema", icon: "Bell" },
   { id: "admin.sla", label: "Planos SLA", path: "/admin/sla", category: "Sistema", icon: "ShieldCheck" },

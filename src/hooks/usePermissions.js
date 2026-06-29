@@ -1,7 +1,7 @@
 import { useAuth } from '@/lib/AuthContext';
 
 export function usePermissions() {
-  const { permissions, isAdmin } = useAuth();
+  const { permissions, pages, isAdmin, canAccessPage } = useAuth();
 
   const can = (permission) => {
     if (isAdmin) return true;
@@ -11,5 +11,5 @@ export function usePermissions() {
   const canAny = (...perms) => perms.some(p => can(p));
   const canAll = (...perms) => perms.every(p => can(p));
 
-  return { can, canAny, canAll, permissions, isAdmin };
+  return { can, canAny, canAll, permissions, pages, isAdmin, canAccessPage };
 }

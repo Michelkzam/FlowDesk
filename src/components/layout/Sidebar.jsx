@@ -13,57 +13,57 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/" },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/", pageId: "dashboard" },
   {
     label: "Atendimento", icon: Ticket, children: [
-      { label: "Acesso Remoto", icon: Monitor, path: "/acesso-remoto" },
-      { label: "Agendamentos", icon: Calendar, path: "/agendamentos" },
-      { label: "Aprovações", icon: ShieldCheck, path: "/tickets/aprovacao" },
-      { label: "Inventário", icon: Monitor, path: "/inventario" },
-      { label: "Meus Tickets", icon: Inbox, path: "/tickets/meus" },
-      { label: "Todos os Tickets", icon: ListOrdered, path: "/tickets/todos" },
-      { label: "Histórico de Atendimentos", icon: History, path: "/tickets/historico" },
-      { label: "Videoconferência", icon: Video, path: "/videoconferencia" },
+      { label: "Acesso Remoto", icon: Monitor, path: "/acesso-remoto", pageId: "atendimento.acesso_remoto" },
+      { label: "Agendamentos", icon: Calendar, path: "/agendamentos", pageId: "atendimento.agendamentos" },
+      { label: "Aprovações", icon: ShieldCheck, path: "/tickets/aprovacao", pageId: "tickets.aprovacao" },
+      { label: "Inventário", icon: Monitor, path: "/inventario", pageId: "inventario" },
+      { label: "Meus Tickets", icon: Inbox, path: "/tickets/meus", pageId: "tickets.meus" },
+      { label: "Todos os Tickets", icon: ListOrdered, path: "/tickets/todos", pageId: "tickets.todos" },
+      { label: "Histórico de Atendimentos", icon: History, path: "/tickets/historico", pageId: "tickets.historico" },
+      { label: "Videoconferência", icon: Video, path: "/videoconferencia", pageId: "atendimento.videoconferencia" },
     ]
   },
   {
     label: "Base de Conhecimento", icon: BookOpen, permission: "kb.create", children: [
-      { label: "Artigos", icon: FileText, path: "/kb/artigos" },
-      { label: "Categorias", icon: Tag, path: "/kb/categorias" },
-      { label: "Respostas Rápidas", icon: Zap, path: "/kb/respostas" },
+      { label: "Artigos", icon: FileText, path: "/kb/artigos", pageId: "kb.artigos" },
+      { label: "Categorias", icon: Tag, path: "/kb/categorias", pageId: "kb.categorias" },
+      { label: "Respostas Rápidas", icon: Zap, path: "/kb/respostas", pageId: "kb.respostas" },
     ]
   },
   {
     label: "Cadastros", icon: Users, permission: "users.manage", children: [
-      { label: "Clientes", icon: Users, path: "/clientes" },
-      { label: "Departamentos", icon: Building2, path: "/departamentos" },
-      { label: "Equipes", icon: UsersRound, path: "/equipes" },
-      { label: "Organizações", icon: Network, path: "/organizacoes" },
-      { label: "Perfis de Usuário", icon: Shield, path: "/cadastros/perfis" },
-      { label: "Usuários", icon: Users, path: "/usuarios" },
+      { label: "Clientes", icon: Users, path: "/clientes", pageId: "cadastros.clientes" },
+      { label: "Departamentos", icon: Building2, path: "/departamentos", pageId: "cadastros.departamentos" },
+      { label: "Equipes", icon: UsersRound, path: "/equipes", pageId: "cadastros.equipes" },
+      { label: "Organizações", icon: Network, path: "/organizacoes", pageId: "cadastros.organizacoes" },
+      { label: "Perfis de Usuário", icon: Shield, path: "/cadastros/perfis", pageId: "cadastros.perfis" },
+      { label: "Usuários", icon: Users, path: "/usuarios", pageId: "cadastros.usuarios" },
     ]
   },
   {
     label: "Financeiro", icon: DollarSign, permission: "admin.access", children: [
-      { label: "Contratos", icon: FileSignature, path: "/contratos" },
-      { label: "Finanças", icon: TrendingUp, path: "/financeiro" },
+      { label: "Contratos", icon: FileSignature, path: "/contratos", pageId: "financeiro.contratos" },
+      { label: "Finanças", icon: TrendingUp, path: "/financeiro", pageId: "financeiro.financas" },
     ]
   },
   {
     label: "Relatórios", icon: BarChart3, permission: "reports.view", children: [
-      { label: "Cronogramas", icon: Clock, path: "/admin/cronogramas" },
-      { label: "Filtros de Tickets", icon: Filter, path: "/admin/filtros" },
-      { label: "Log de Auditoria", icon: ShieldCheck, path: "/admin/auditoria" },
-      { label: "Tópicos de Ajuda", icon: HelpCircle, path: "/admin/topicos" },
+      { label: "Cronogramas", icon: Clock, path: "/admin/cronogramas", pageId: "admin.cronogramas" },
+      { label: "Filtros de Tickets", icon: Filter, path: "/admin/filtros", pageId: "admin.filtros" },
+      { label: "Log de Auditoria", icon: ShieldCheck, path: "/admin/auditoria", pageId: "admin.auditoria" },
+      { label: "Tópicos de Ajuda", icon: HelpCircle, path: "/admin/topicos", pageId: "admin.topicos" },
     ]
   },
   {
     label: "Sistema", icon: Settings, permission: "admin.access", children: [
-      { label: "Configurações", icon: Settings, path: "/admin/configuracoes" },
-      { label: "Escalas de Trabalho", icon: Clock, path: "/admin/escala" },
-      { label: "Feriados", icon: Bell, path: "/admin/feriados" },
-      { label: "Planos SLA", icon: ShieldCheck, path: "/admin/sla" },
-      { label: "Sincronizar", icon: RefreshCw, path: "/admin/sincronizar" },
+      { label: "Configurações", icon: Settings, path: "/admin/configuracoes", pageId: "admin.configuracoes" },
+      { label: "Escalas de Trabalho", icon: Clock, path: "/admin/escala", pageId: "admin.escala" },
+      { label: "Feriados", icon: Bell, path: "/admin/feriados", pageId: "admin.feriados" },
+      { label: "Planos SLA", icon: ShieldCheck, path: "/admin/sla", pageId: "admin.sla" },
+      { label: "Sincronizar", icon: RefreshCw, path: "/admin/sincronizar", pageId: "admin.sincronizar" },
     ]
   },
 ];
@@ -223,18 +223,27 @@ function NavItem({ item, depth = 0, collapsed }) {
 
 export default function Sidebar({ collapsed, onToggleCollapse }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { logout, profile, can } = useAuth();
+  const { logout, profile, can, canAccessPage } = useAuth();
 
   const filteredNavItems = navItems.filter(item => {
     if (item.permission && !can(item.permission)) return false;
+    if (item.pageId && !canAccessPage(item.pageId)) return false;
     if (item.children) {
-      const visibleChildren = item.children.filter(c => !c.permission || can(c.permission));
+      const visibleChildren = item.children.filter(c => {
+        if (c.permission && !can(c.permission)) return false;
+        if (c.pageId && !canAccessPage(c.pageId)) return false;
+        return true;
+      });
       return visibleChildren.length > 0;
     }
     return true;
   }).map(item => {
     if (item.children) {
-      return { ...item, children: item.children.filter(c => !c.permission || can(c.permission)) };
+      return { ...item, children: item.children.filter(c => {
+        if (c.permission && !can(c.permission)) return false;
+        if (c.pageId && !canAccessPage(c.pageId)) return false;
+        return true;
+      }) };
     }
     return item;
   });

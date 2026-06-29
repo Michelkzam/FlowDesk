@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [permissions, setPermissions] = useState([]);
+  const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -42,20 +43,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   const fetchPermissions = useCallback(async (profileData) => {
-    if (!profileData) { setPermissions([]); return; }
-    if (profileData.role === 'admin') { setPermissions(ALL_PERMISSIONS); return; }
+    if (!profileData) { setPermissions([]); setPages([]); return; }
+    if (profileData.role === 'admin') { setPermissions(ALL_PERMISSIONS); setPages(null); return; }
     if (!profileData.role_id) {
       const fallbackPermissions = profileData.role === 'agent'
         ? ["tickets.create", "tickets.edit", "tickets.delete", "tickets.close", "tickets.assign", "tickets.transfer",
            "kb.create", "kb.edit", "kb.delete", "kb.publish", "reports.view"]
         : ["tickets.create", "tickets.edit", "tickets.close"];
       setPermissions(fallbackPermissions);
+      setPages([]);
       return;
     }
     try {
       const { data, error } = await supabase
         .from('roles')
-        .select('permissions')
+        .select('permissions, pages')
         .eq('id', profileData.role_id)
         .single();
       if (error) {
@@ -65,15 +67,22 @@ export function AuthProvider({ children }) {
              "kb.create", "kb.edit", "kb.delete", "kb.publish", "reports.view"]
           : ["tickets.create", "tickets.edit", "tickets.close"];
         setPermissions(fallback);
+        setPages([]);
         return;
       }
       let perms = data?.permissions || [];
       if (typeof perms === 'string') { try { perms = JSON.parse(perms); } catch { perms = []; } }
       if (!Array.isArray(perms)) perms = [];
       setPermissions(perms);
+
+      let pageList = data?.pages || [];
+      if (typeof pageList === 'string') { try { pageList = JSON.parse(pageList); } catch { pageList = []; } }
+      if (!Array.isArray(pageList)) pageList = [];
+      setPages(pageList);
     } catch (err) {
       console.error('[Auth] Exceção ao buscar permissões:', err);
       setPermissions([]);
+      setPages([]);
     }
   }, []);
 
@@ -124,6 +133,12 @@ export function AuthProvider({ children }) {
     return permissions.includes(permission);
   }, [profile?.role, permissions]);
 
+  const canAccessPage = useCallback((pageId) => {
+    if (profile?.role === 'admin') return true;
+    if (!pages || pages.length === 0) return true;
+    return pages.includes(pageId);
+  }, [profile?.role, pages]);
+
   const canAny = useCallback((...perms) => perms.some(p => can(p)), [can]);
   const canAll = useCallback((...perms) => perms.every(p => can(p)), [can]);
 
@@ -171,17 +186,20 @@ export function AuthProvider({ children }) {
     setUser(null);
     setProfile(null);
     setPermissions([]);
+    setPages([]);
     setIsAuthenticated(false);
   };
 
-  return (
+    return (
     <AuthContext.Provider value={{
       user,
       profile,
       permissions,
+      pages,
       loading,
       isAuthenticated,
       can,
+      canAccessPage,
       canAny,
       canAll,
       login,
