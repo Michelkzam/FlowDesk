@@ -138,21 +138,26 @@ export default function ChatInput({ onSend, disabled }) {
   };
 
   const startRecording = async () => {
+    console.log("[Audio] Iniciando gravação...");
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast({ title: "Áudio indisponível", description: "Seu navegador não suporta gravação de áudio. Use HTTPS.", variant: "destructive" });
+        console.error("[Audio] mediaDevices não disponível");
+        toast({ title: "Áudio indisponível", description: "Seu navegador não suporta gravação de áudio.", variant: "destructive" });
         return;
       }
 
+      console.log("[Audio] Solicitando permissão do microfone...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("[Audio] Permissão concedida, tracks:", stream.getAudioTracks().length);
 
       let mimeType = "audio/webm";
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
+      if (typeof MediaRecorder !== "undefined" && !MediaRecorder.isTypeSupported(mimeType)) {
         mimeType = "audio/ogg";
         if (!MediaRecorder.isTypeSupported(mimeType)) {
           mimeType = "";
         }
       }
+      console.log("[Audio] mimeType:", mimeType || "padrão");
 
       const mediaRecorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
@@ -162,11 +167,13 @@ export default function ChatInput({ onSend, disabled }) {
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
+        console.log("[Audio] Dados recebidos:", e.data.size, "bytes");
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
+        console.log("[Audio] Gravação finalizada, blob:", blob.size, "bytes");
         audioBlobRef.current = blob;
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
@@ -174,22 +181,25 @@ export default function ChatInput({ onSend, disabled }) {
       };
 
       mediaRecorder.onerror = (e) => {
-        console.error("[MediaRecorder Error]", e);
-        toast({ title: "Erro na gravação", description: "Ocorreu um erro durante a gravação.", variant: "destructive" });
+        console.error("[Audio] MediaRecorder error:", e.error);
+        toast({ title: "Erro na gravação", description: e.error?.message || "Erro desconhecido", variant: "destructive" });
         setRecording(false);
         stream.getTracks().forEach(t => t.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000);
+      console.log("[Audio] MediaRecorder iniciado, estado:", mediaRecorder.state);
       setRecording(true);
       setRecordingTime(0);
       recordingIntervalRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000);
     } catch (err) {
-      console.error("Erro ao iniciar gravação:", err);
+      console.error("[Audio] Erro:", err.name, err.message);
       if (err.name === "NotAllowedError") {
-        toast({ title: "Permissão negada", description: "Permita o acesso ao microfone nas configurações do navegador.", variant: "destructive" });
+        toast({ title: "Permissão negada", description: "Clique no ícone de cadeado na barra de endereço e permita o microfone.", variant: "destructive" });
+      } else if (err.name === "NotFoundError") {
+        toast({ title: "Sem microfone", description: "Nenhum microfone detectado no sistema.", variant: "destructive" });
       } else {
-        toast({ title: "Erro ao gravar", description: err.message || "Não foi possível iniciar a gravação.", variant: "destructive" });
+        toast({ title: "Erro ao gravar", description: `${err.name}: ${err.message}`, variant: "destructive" });
       }
     }
   };
