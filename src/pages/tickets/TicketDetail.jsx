@@ -225,7 +225,7 @@ export default function TicketDetail({ isPopup = false }) {
         });
       }
 
-      await supabase.from("ticket_messages").insert({
+      const { error: msgError } = await supabase.from("ticket_messages").insert({
         ticket_id: id,
         body: message,
         sender_type: "agent",
@@ -234,6 +234,10 @@ export default function TicketDetail({ isPopup = false }) {
         type: isNote ? "note" : "reply",
         is_internal: isNote,
       });
+      if (msgError) {
+        console.error("[TicketDetail INSERT]", JSON.stringify(msgError));
+        throw msgError;
+      }
 
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
