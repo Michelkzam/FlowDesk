@@ -3,8 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import db from '../db/connection.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 // GET /api/agents
 router.get('/', authenticate, async (req, res) => {
@@ -84,11 +90,18 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
 // DELETE /api/agents/:id
 router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
   try {
-    const deleted = await db('users').where({ id: req.params.id }).del();
+    const agent = await db('users').where({ id: req.params.id }).first();
 
-    if (!deleted) {
+    if (!agent) {
       return res.status(404).json({ message: 'Agente não encontrado' });
     }
+
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(req.params.id);
+    if (authError) {
+      console.error('Aviso: Erro ao deletar do Auth:', authError.message);
+    }
+
+    await db('users').where({ id: req.params.id }).del();
 
     res.json({ message: 'Agente excluído com sucesso' });
   } catch (error) {

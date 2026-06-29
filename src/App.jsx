@@ -59,6 +59,7 @@ import ClientesPage from './pages/cadastros/ClientesPage';
 import UserProfilesPage from './pages/cadastros/UserProfilesPage';
 import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
+import ProfilePage from './pages/perfil/ProfilePage';
 
 import { useState, useEffect } from 'react';
 
@@ -148,6 +149,7 @@ function AppRoutes() {
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="acesso-remoto" element={<AcessoRemotoPage />} />
         <Route path="videoconferencia" element={<VideoconferenciaPage />} />
+        <Route path="meu-perfil" element={<ProfilePage />} />
       </Route>
 
       {/* Popup route */}
