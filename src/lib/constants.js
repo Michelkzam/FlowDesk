@@ -60,6 +60,7 @@ export const SYSTEM_PAGES = [
   { id: "admin.topicos", label: "Tópicos de Ajuda", path: "/admin/topicos", category: "Sistema", icon: "HelpCircle" },
   { id: "admin.filtros", label: "Filtros de Tickets", path: "/admin/filtros", category: "Sistema", icon: "Filter" },
   { id: "admin.auditoria", label: "Log de Auditoria", path: "/admin/auditoria", category: "Sistema", icon: "ShieldCheck" },
+  { id: "admin.realtime-test", label: "Teste Realtime", path: "/admin/realtime-test", category: "Sistema", icon: "Radio" },
   { id: "inventario", label: "Inventário", path: "/inventario", category: "Cadastros", icon: "Monitor" },
 ];
 
