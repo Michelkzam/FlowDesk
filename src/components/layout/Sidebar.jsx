@@ -18,7 +18,6 @@ const navItems = [
   {
     label: "Atendimento", icon: Ticket, children: [
       { label: "Mensagens", icon: MessageSquare, path: "/chat", pageId: "chat.principal" },
-      { label: "Meus Atendimentos", icon: Inbox, path: "/chat/meus", pageId: "chat.meus" },
       { label: "Acesso Remoto", icon: Monitor, path: "/acesso-remoto", pageId: "atendimento.acesso_remoto" },
       { label: "Agendamentos", icon: Calendar, path: "/agendamentos", pageId: "atendimento.agendamentos" },
       { label: "Aprovações", icon: ShieldCheck, path: "/tickets/aprovacao", pageId: "tickets.aprovacao" },

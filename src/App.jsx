@@ -65,7 +65,6 @@ import UserPortalAdmin from './pages/portal/UserPortalAdmin';
 
 // Chat
 import Chats from './pages/chat/Chats';
-import MeusAtendimentos from './pages/chat/MeusAtendimentos';
 import Filas from './pages/chat/Filas';
 import HistoricoChat from './pages/chat/Historico';
 import RespostasRapidas from './pages/chat/RespostasRapidas';
@@ -172,7 +171,6 @@ function AppRoutes() {
 
         {/* Chat */}
         <Route path="chat" element={<Chats />} />
-        <Route path="chat/meus" element={<MeusAtendimentos />} />
         <Route path="chat/filas" element={<Filas />} />
         <Route path="chat/historico" element={<HistoricoChat />} />
         <Route path="chat/respostas" element={<RespostasRapidas />} />
