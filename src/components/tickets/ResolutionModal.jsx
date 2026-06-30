@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { db } from "@/api/flowdeskClient";
+import { supabase } from "@/lib/supabase";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
@@ -23,7 +23,11 @@ export default function ResolutionModal({
 }) {
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
-    queryFn: () => db.entities.Category.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*");
+      if (error) return [];
+      return data || [];
+    },
   });
 
   const solutionError = solution.trim().length > 0 && solution.trim().length < MIN_SOLUTION_LENGTH;

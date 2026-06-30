@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { db } from "@/api/flowdeskClient";
+import { supabase } from "@/lib/supabase";
 import { Clock, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +60,7 @@ export default function SLATimer({ createdDate, priority, status }) {
 
   const { data: slaPlans = [] } = useQuery({
     queryKey: ["sla-plans"],
-    queryFn: () => db.entities.SLAPlan.list(),
+    queryFn: async () => { const { data, error } = await supabase.from("sla_plans").select("*"); return error ? [] : (data || []); },
   });
 
   const slaPlan = slaPlans.find(p => p.is_default && p.status === "active") || slaPlans.find(p => p.status === "active");
@@ -131,7 +131,7 @@ export function SLATimerMini({ createdDate, priority }) {
 
   const { data: slaPlans = [] } = useQuery({
     queryKey: ["sla-plans"],
-    queryFn: () => db.entities.SLAPlan.list(),
+    queryFn: async () => { const { data, error } = await supabase.from("sla_plans").select("*"); return error ? [] : (data || []); },
   });
 
   const slaPlan = slaPlans.find(p => p.is_default && p.status === "active") || slaPlans.find(p => p.status === "active");
