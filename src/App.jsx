@@ -62,6 +62,7 @@ import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
 import ProfilePage from './pages/perfil/ProfilePage';
 import UserPortalAdmin from './pages/portal/UserPortalAdmin';
+import RealtimeTestPage from './pages/admin/RealtimeTestPage';
 
 import { useState, useEffect } from 'react';
 
@@ -154,6 +155,9 @@ function AppRoutes() {
         } />
         <Route path="admin/sincronizar" element={
           <ProtectedRoute requireAdmin><SincronizarPage /></ProtectedRoute>
+        } />
+        <Route path="admin/realtime-test" element={
+          <ProtectedRoute requireAdmin><RealtimeTestPage /></ProtectedRoute>
         } />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="acesso-remoto" element={<AcessoRemotoPage />} />
