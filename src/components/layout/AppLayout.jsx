@@ -2,18 +2,9 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
-import Intercom from "@/components/intercom/Intercom";
-import { useTicketSoundAlert } from "@/hooks/useTicketSoundAlert";
-import { useWebSocketSync } from "@/hooks/useWebSocketSync";
-import { useNotifications } from "@/hooks/useNotifications";
-import { useAuth } from "@/lib/AuthContext";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
-  const { user } = useAuth();
-  useTicketSoundAlert();
-  useWebSocketSync();
-  useNotifications(user);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -25,7 +16,6 @@ export default function AppLayout() {
             <Outlet />
           </div>
         </main>
-        <Intercom />
       </div>
     </div>
   );
