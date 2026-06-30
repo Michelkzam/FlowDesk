@@ -92,7 +92,6 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/portal" element={<UserPortal />} />
       <Route path="/cliente" element={<ClientPortalPage />} />
-      <Route path="/test-realtime" element={<RealtimeTestPage />} />
 
       {/* Protected routes */}
       <Route path="/" element={
