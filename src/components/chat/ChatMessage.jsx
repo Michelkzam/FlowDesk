@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { FileText, Download, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 

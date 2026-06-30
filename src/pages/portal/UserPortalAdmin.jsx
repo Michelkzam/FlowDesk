@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Send, Plus, Clock, CheckCircle, AlertCircle, Ticket, ArrowRight } from "lucide-react";
+import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ChatInput from "@/components/chat/ChatInput";
 import { format } from "date-fns";

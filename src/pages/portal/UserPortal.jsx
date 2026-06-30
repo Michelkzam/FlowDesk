@@ -432,7 +432,7 @@ export default function UserPortal() {
                     <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
-                        <span className="text-xs text-muted-foreground">{msg.created_date ? format(new Date(msg.created_date), "HH:mm") : ""}</span>
+                        <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
                       </div>
                       <div className={cn(
                         "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",

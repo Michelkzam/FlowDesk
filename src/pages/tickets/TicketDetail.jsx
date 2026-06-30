@@ -156,7 +156,7 @@ export default function TicketDetail({ isPopup = false }) {
   });
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(id, currentUser);
 
-  const sortedMessages = [...messages].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+  const sortedMessages = [...messages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -435,7 +435,7 @@ export default function TicketDetail({ isPopup = false }) {
               const Icon = s.icon;
               const isActive = ticket.status === s.key;
               const count = statusCounts[s.key] || 0;
-              const statusTickets = allTickets.filter(t => t.status === s.key).sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+              const statusTickets = allTickets.filter(t => t.status === s.key).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
               return (
                 <Popover key={s.key}>
                   <Tooltip>

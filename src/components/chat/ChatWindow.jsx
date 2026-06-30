@@ -187,10 +187,10 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     ? "bg-muted/50 text-muted-foreground italic text-xs"
                     : "bg-muted rounded-tl-sm"
                 }`}>
-                  <p className="text-sm">{msg.body || msg.message}</p>
+                  <p className="text-sm">{msg.body}</p>
                 </div>
                 <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
-                  {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at || msg.created_date), "HH:mm", { locale: ptBR })}
+                  {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
                 </p>
               </div>
             </div>
