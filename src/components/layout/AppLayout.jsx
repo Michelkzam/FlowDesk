@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import Intercom from "@/components/intercom/Intercom";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -16,6 +17,7 @@ export default function AppLayout() {
             <Outlet />
           </div>
         </main>
+        <Intercom />
       </div>
     </div>
   );

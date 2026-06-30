@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
-import { connectSocket, getSocketConnection } from "@/services/socket"
 import { useAuth } from "@/lib/AuthContext"
 
 const GROUPS = [
@@ -109,6 +108,24 @@ function CallScreen({ operator, callState, elapsed, onAnswer, onHold, onResume, 
   )
 }
 
+function useSocketRef() {
+  const socketRef = useRef(null)
+
+  const getSocket = useCallback(async () => {
+    if (socketRef.current) return socketRef.current
+    try {
+      const { connectSocket } = await import("@/services/socket")
+      socketRef.current = connectSocket()
+      return socketRef.current
+    } catch (e) {
+      console.warn('[Intercom] Socket unavailable:', e.message)
+      return null
+    }
+  }, [])
+
+  return getSocket
+}
+
 export default function Intercom() {
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState("team")
@@ -126,6 +143,7 @@ export default function Intercom() {
   const [callElapsed, setCallElapsed] = useState(0)
   const callTimerRef = useRef(null)
   const { user: currentUser } = useAuth()
+  const getSocket = useSocketRef()
 
   const { data: teamData = [] } = useQuery({
     queryKey: ["intercom-team"],
@@ -156,39 +174,42 @@ export default function Intercom() {
   }, [callState])
 
   const [typingUsers, setTypingUsers] = useState([])
-  const typingTimeoutRef = useRef(null)
 
   useEffect(() => {
-    let s;
-    try {
-      s = connectSocket();
-    } catch (e) {
-      console.warn('[Intercom] Falha ao conectar:', e.message);
-      return;
-    }
-    const handleMessage = (data) => {
-      if (data?.channel === activeChannel) {
-        setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])
+    if (!expanded) return
+    let mounted = true
+
+    getSocket().then(s => {
+      if (!s || !mounted) return
+      const handleMessage = (data) => {
+        if (data?.channel === activeChannel) {
+          setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])
+        }
       }
-    }
-    const handleTyping = (data) => {
-      if (data?.channel === activeChannel && data.user !== currentUser?.full_name) {
-        setTypingUsers(prev => {
-          if (prev.includes(data.user)) return prev
-          return [...prev, data.user]
-        })
-        setTimeout(() => {
-          setTypingUsers(prev => prev.filter(u => u !== data.user))
-        }, 3000)
+      const handleTyping = (data) => {
+        if (data?.channel === activeChannel && data.user !== currentUser?.full_name) {
+          setTypingUsers(prev => {
+            if (prev.includes(data.user)) return prev
+            return [...prev, data.user]
+          })
+          setTimeout(() => {
+            setTypingUsers(prev => prev.filter(u => u !== data.user))
+          }, 3000)
+        }
       }
-    }
-    s.on("intercom:message", handleMessage)
-    s.on("intercom:typing", handleTyping)
+      s.on("intercom:message", handleMessage)
+      s.on("intercom:typing", handleTyping)
+    })
+
     return () => {
-      s.off("intercom:message", handleMessage)
-      s.off("intercom:typing", handleTyping)
+      mounted = false
+      getSocket().then(s => {
+        if (!s) return
+        s.off("intercom:message")
+        s.off("intercom:typing")
+      })
     }
-  }, [activeChannel, currentUser])
+  }, [expanded, activeChannel, currentUser])
 
   const filteredTeam = teamData.filter((op) => {
     const matchSearch = op.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || op.role?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -205,19 +226,19 @@ export default function Intercom() {
   const handleResume = () => setCallState("active")
   const handleHangUp = () => { clearInterval(callTimerRef.current); setCallState(null); setCallTarget(null); setCallElapsed(0); setIsMutedMic(false) }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageInput.trim()) return
     const msg = { id: String(Date.now()), user: currentUser?.full_name || "Você", text: messageInput.trim(), time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), channel: activeChannel }
     setMessages(prev => [...prev, msg])
-    const s = getSocketConnection()
-    s.emit("intercom:message", msg)
+    const s = await getSocket()
+    if (s) s.emit("intercom:message", msg)
     setMessageInput("")
     setTypingUsers(prev => prev.filter(u => u !== currentUser?.full_name))
   }
 
-  const handleTyping = () => {
-    const s = getSocketConnection()
-    s.emit("intercom:typing", { user: currentUser?.full_name, channel: activeChannel })
+  const handleTyping = async () => {
+    const s = await getSocket()
+    if (s) s.emit("intercom:typing", { user: currentUser?.full_name, channel: activeChannel })
   }
 
   const channelMessages = messages.filter((m) => m.channel === activeChannel)
