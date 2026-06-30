@@ -1,7 +1,7 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,10 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { Clock, Headphones, CheckCircle, User, Phone, MessageSquare, Plus, Search } from "lucide-react";
-import ChatWindow from "@/components/chat/ChatWindow";
+import { Clock, Headphones, CheckCircle, User, Phone, MessageSquare, Plus, Search, ArrowLeft, Send } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
 
 const channelEmoji = { whatsapp: "🟢", telegram: "🔵", email: "📧", phone: "📞", portal: "🌐" };
 
@@ -112,12 +112,56 @@ export default function MeusAtendimentos() {
   const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [message, setMessage] = useState("");
+  const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 200),
   });
+
+  const { data: messages = [], isLoading: loadingMessages } = useQuery({
+    queryKey: ["chat-messages", selectedTicket?.id],
+    queryFn: async () => {
+      if (!selectedTicket?.id) return [];
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .eq("ticket_id", selectedTicket.id);
+      if (error) return [];
+      return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    },
+    enabled: !!selectedTicket?.id,
+    refetchInterval: 5000,
+  });
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (body) => {
+      const { error } = await supabase.from("ticket_messages").insert({
+        ticket_id: selectedTicket.id,
+        sender_type: "agent",
+        sender_name: "Operador",
+        body,
+        type: "message",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", selectedTicket?.id] });
+      setMessage("");
+    },
+  });
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    sendMessageMutation.mutate(message.trim());
+  };
 
   const createMutation = useMutation({
     mutationFn: (data) => db.entities.Ticket.create(data),
@@ -150,15 +194,97 @@ export default function MeusAtendimentos() {
 
   if (selectedTicket) {
     return (
-      <div className="flex flex-col h-[calc(100vh-32px)] pt-12 lg:pt-0">
-        <ChatWindow
-          ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-          onUpdate={(updated) => {
-            setSelectedTicket(updated);
-            queryClient.invalidateQueries({ queryKey: ["tickets"] });
-          }}
-        />
+      <div className="flex flex-col h-[calc(100vh-120px)] border border-border rounded-xl overflow-hidden bg-card">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card flex-shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedTicket(null)}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm truncate">{selectedTicket.client_name || "Sem cliente"}</span>
+              <span className="text-sm">{channelEmoji[selectedTicket.channel] || "🌐"}</span>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">{selectedTicket.title}</p>
+          </div>
+          <Badge variant="outline" className={`text-xs ${
+            selectedTicket.status === "open" ? "bg-red-100 text-red-700 border-red-200" :
+            selectedTicket.status === "in_progress" ? "bg-amber-100 text-amber-700 border-amber-200" :
+            "bg-emerald-100 text-emerald-700 border-emerald-200"
+          }`}>
+            {selectedTicket.status === "open" ? "Aguardando" :
+             selectedTicket.status === "in_progress" ? "Em Atendimento" :
+             selectedTicket.status === "resolved" ? "Resolvido" : "Fechado"}
+          </Badge>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {selectedTicket.description && (
+            <div className="flex justify-start">
+              <div className="max-w-xs lg:max-w-md">
+                <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5">
+                  <p className="text-sm">{selectedTicket.description}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-1">
+                  {selectedTicket.client_name || "Cliente"} • {format(new Date(selectedTicket.created_date), "HH:mm", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {loadingMessages ? (
+            <div className="space-y-3">
+              {Array(3).fill(0).map((_, i) => (
+                <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
+                  <Skeleton className="h-10 w-48 rounded-2xl" />
+                </div>
+              ))}
+            </div>
+          ) : messages.length === 0 && !selectedTicket.description ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda. Inicie a conversa!</p>
+            </div>
+          ) : (
+            messages.map(msg => (
+              <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
+                <div className="max-w-xs lg:max-w-md">
+                  <div className={`rounded-2xl px-4 py-2.5 ${
+                    msg.sender_type === "agent"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : msg.sender_type === "system"
+                      ? "bg-muted/50 text-muted-foreground italic text-xs"
+                      : "bg-muted rounded-tl-sm"
+                  }`}>
+                    <p className="text-sm">{msg.body}</p>
+                  </div>
+                  <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
+                    {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Message input */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-card">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Digite uma mensagem..."
+              className="flex-1 h-9"
+            />
+            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 h-9 px-3" disabled={!message.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }
