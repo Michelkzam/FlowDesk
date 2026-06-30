@@ -73,8 +73,13 @@ export default function TicketDetail({ isPopup = false }) {
 
   const { data: ticket, isLoading: loadingTicket } = useQuery({
     queryKey: ["ticket", id],
-    queryFn: () => db.entities.Ticket.filter({ id }),
-    select: data => data?.[0],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tickets").select("*").eq("id", id).single();
+      if (error) throw error;
+      if (data && data.created_at && !data.created_date) data.created_date = data.created_at;
+      return data;
+    },
+    retry: 2,
   });
 
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
@@ -95,12 +100,23 @@ export default function TicketDetail({ isPopup = false }) {
 
   const { data: cannedResponses = [] } = useQuery({
     queryKey: ["canned-responses"],
-    queryFn: () => db.entities.CannedResponse.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("canned_responses").select("*");
+      if (error) return [];
+      return data || [];
+    },
   });
 
   const { data: allTickets = [] } = useQuery({
     queryKey: ["tickets"],
-    queryFn: () => db.entities.Ticket.list("-created_date", 300),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(300);
+      if (error) return [];
+      return (data || []).map(t => {
+        if (t.created_at && !t.created_date) t.created_date = t.created_at;
+        return t;
+      });
+    },
     refetchInterval: 300000,
     refetchOnWindowFocus: true,
   });
@@ -122,8 +138,22 @@ export default function TicketDetail({ isPopup = false }) {
   }, [cannedResponses, ticket]);
 
   const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: () => db.auth.me() });
-  const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
-  const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: () => db.entities.Category.list() });
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("users").select("*").in("role", ["admin", "agent"]);
+      if (error) return [];
+      return data || [];
+    },
+  });
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*");
+      if (error) return [];
+      return data || [];
+    },
+  });
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(id, currentUser);
 
   const sortedMessages = [...messages].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
