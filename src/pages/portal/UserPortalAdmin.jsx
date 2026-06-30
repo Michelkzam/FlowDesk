@@ -7,18 +7,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Send, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, User, Headphones, CircleDot } from "lucide-react";
+import { MessageSquare, Send, Plus, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ChatInput from "@/components/chat/ChatInput";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 const statusConfig = {
@@ -67,14 +63,17 @@ export default function UserPortalAdmin() {
   const queryClient = useQueryClient();
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["my-tickets", currentUser?.id],
+    queryKey: ["my-tickets", currentUser?.id, profile?.role],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      let query = supabase.from("tickets").select("*");
+      if (profile?.role === "admin") {
+        // Admin vê todos
+      } else if (profile?.role === "agent") {
+        query = query.eq("agent_id", currentUser.id);
+      } else {
+        query = query.eq("user_id", currentUser.id);
+      }
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data || [];
     },
