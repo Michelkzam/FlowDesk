@@ -131,7 +131,7 @@ export default function Chats() {
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Contact list */}
-        <div className={`flex flex-col border-r border-border bg-card ${selectedTicket ? "hidden md:flex md:w-80 lg:w-96" : "w-full md:w-80 lg:w-96"} flex-shrink-0`}>
+        <div className={`flex flex-col border-r border-border bg-card ${selectedTicket ? "hidden md:flex md:w-56 lg:w-64" : "w-full md:w-56 lg:w-64"} flex-shrink-0`}>
           {/* Search */}
           <div className="p-3 border-b border-border">
             <div className="relative">
