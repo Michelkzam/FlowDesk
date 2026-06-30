@@ -38,7 +38,15 @@ export function useNotifications(currentUser) {
   }, []);
 
   useEffect(() => {
-    const s = connectSocket();
+    if (!currentUser) return;
+
+    let s;
+    try {
+      s = connectSocket();
+    } catch (e) {
+      console.warn('[Notifications] Falha ao conectar:', e.message);
+      return;
+    }
 
     const handleTicketClaimed = (data) => {
       if (data.agent_id === currentUser?.id) return;

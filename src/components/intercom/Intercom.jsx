@@ -159,7 +159,13 @@ export default function Intercom() {
   const typingTimeoutRef = useRef(null)
 
   useEffect(() => {
-    const s = connectSocket()
+    let s;
+    try {
+      s = connectSocket();
+    } catch (e) {
+      console.warn('[Intercom] Falha ao conectar:', e.message);
+      return;
+    }
     const handleMessage = (data) => {
       if (data?.channel === activeChannel) {
         setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])

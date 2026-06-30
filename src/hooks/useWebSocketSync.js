@@ -13,12 +13,20 @@ export function useWebSocketSync() {
       return;
     }
 
-    const s = connectSocket();
+    let s;
+    try {
+      s = connectSocket();
+    } catch (e) {
+      console.warn('[WS] Falha ao conectar:', e.message);
+      return;
+    }
 
-    setUserOnline({
-      id: user.id,
-      name: user.full_name || user.email,
-      role: user.role,
+    s.on("connect", () => {
+      setUserOnline({
+        id: user.id,
+        name: user.full_name || user.email,
+        role: user.role,
+      });
     });
 
     const handleTicketCreated = () => {
@@ -68,22 +76,26 @@ export function useWebSocketSync() {
       s.off("ticket:auto-closed", handleTicketAutoClosed);
       s.off("message:created", handleMessageCreated);
       s.off("users:online", handleUsersOnline);
-      disconnectSocket();
+      try { disconnectSocket(); } catch (e) {}
     };
   }, [isAuthenticated, user, queryClient]);
 
   const joinTicket = useCallback((ticketId) => {
-    const s = getSocketConnection();
-    s.emit("join:ticket", ticketId);
+    try {
+      const s = getSocketConnection();
+      s.emit("join:ticket", ticketId);
+    } catch (e) {}
   }, []);
 
   const leaveTicket = useCallback((ticketId) => {
-    const s = getSocketConnection();
-    s.emit("leave:ticket", ticketId);
+    try {
+      const s = getSocketConnection();
+      s.emit("leave:ticket", ticketId);
+    } catch (e) {}
   }, []);
 
   return {
-    isConnected: getSocketConnection()?.connected || false,
+    isConnected: (() => { try { return getSocketConnection()?.connected || false; } catch { return false; } })(),
     joinTicket,
     leaveTicket,
     onlineUsers,
