@@ -157,7 +157,7 @@ function AppRoutes() {
           <ProtectedRoute requireAdmin><SincronizarPage /></ProtectedRoute>
         } />
         <Route path="admin/realtime-test" element={
-          <ProtectedRoute requireAdmin><RealtimeTestPage /></ProtectedRoute>
+          <ProtectedRoute><RealtimeTestPage /></ProtectedRoute>
         } />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="acesso-remoto" element={<AcessoRemotoPage />} />
