@@ -62,7 +62,6 @@ import AcessoRemotoPage from './pages/atendimento/AcessoRemotoPage';
 import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
 import ProfilePage from './pages/perfil/ProfilePage';
 import UserPortalAdmin from './pages/portal/UserPortalAdmin';
-import RealtimeTestPage from './pages/admin/RealtimeTestPage';
 
 import { useState, useEffect } from 'react';
 
