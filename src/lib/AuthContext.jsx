@@ -160,11 +160,11 @@ export function AuthProvider({ children }) {
     return { user: data.user, profile: p };
   };
 
-  const register = async (email, password, full_name, role = 'user') => {
+  const register = async (email, password, full_name) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name, role } }
+      options: { data: { full_name, role: 'user' } }
     });
     if (error) throw error;
 
@@ -174,7 +174,7 @@ export function AuthProvider({ children }) {
         email,
         password_hash: 'supabase_auth',
         full_name,
-        role,
+        role: 'user',
         status: 'active'
       });
       setUser(data.user);

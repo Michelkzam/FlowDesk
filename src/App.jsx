@@ -103,7 +103,7 @@ function AppRoutes() {
         <Route path="tickets/todos" element={<TicketList />} />
         <Route path="tickets/historico" element={<TicketHistory />} />
         <Route path="tickets/aprovacao" element={<ApprovalQueue />} />
-        <Route path="tickets/novo" element={<TicketList />} />
+        <Route path="tickets/novo" element={<TicketList showNewDialog />} />
         <Route path="tickets/:id" element={<TicketDetail />} />
         <Route path="equipes" element={<TeamsPage />} />
         <Route path="departamentos" element={<DepartmentsPage />} />

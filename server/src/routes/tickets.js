@@ -9,7 +9,10 @@ const router = Router();
 // GET /api/tickets
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { status, priority, agent_id, limit = 100, offset = 0 } = req.query;
+    const { status, priority, agent_id, limit: rawLimit = 100, offset: rawOffset = 0 } = req.query;
+
+    const limit = Math.min(Math.max(1, parseInt(rawLimit) || 100), 200);
+    const offset = Math.max(0, parseInt(rawOffset) || 0);
 
     let query = db('tickets').select('*');
 
@@ -237,7 +240,8 @@ router.post('/:id/transfer', authenticate, async (req, res) => {
 // GET /api/tickets/:id/messages
 router.get('/:id/messages', authenticate, async (req, res) => {
   try {
-    const { limit = 100 } = req.query;
+    const { limit: rawLimit = 100 } = req.query;
+    const limit = Math.min(Math.max(1, parseInt(rawLimit) || 100), 500);
 
     const messages = await db('ticket_messages')
       .where({ ticket_id: req.params.id })

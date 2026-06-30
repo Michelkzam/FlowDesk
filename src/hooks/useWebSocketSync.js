@@ -15,6 +15,7 @@ export function useWebSocketSync() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -23,6 +24,10 @@ export function useWebSocketSync() {
 
     loadSocket().then(({ connectSocket, disconnectSocket, getSocketConnection, setUserOnline, setUserOffline }) => {
       const s = connectSocket();
+
+      s.on('connect', () => setIsConnected(true));
+      s.on('disconnect', () => setIsConnected(false));
+      s.on('connect_error', () => setIsConnected(false));
 
       s.on("connect", () => {
         setUserOnline({
@@ -101,7 +106,7 @@ export function useWebSocketSync() {
   }, []);
 
   return {
-    isConnected: false,
+    isConnected,
     joinTicket,
     leaveTicket,
     onlineUsers,

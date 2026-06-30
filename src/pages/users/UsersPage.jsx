@@ -75,14 +75,15 @@ export default function UsersPage() {
 
   const createM = useMutation({
     mutationFn: async d => {
-      const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.admin.createUser({
         email: d.email,
-        password: tempPassword,
-        options: { data: { full_name: d.full_name, role: d.role } }
+        password: crypto.randomUUID().slice(0, 12) + 'A1!',
+        email_confirm: true,
+        user_metadata: { full_name: d.full_name, role: d.role }
       });
       if (error) throw error;
-      const userId = data.user?.id || crypto.randomUUID();
+      const userId = data.user?.id;
+      if (!userId) throw new Error('Erro ao criar usuário');
       await supabase.from('users').upsert({
         id: userId, email: d.email, password_hash: 'supabase_auth',
         full_name: d.full_name, role: d.role, role_id: d.role_id || null,
@@ -92,11 +93,8 @@ export default function UsersPage() {
         perfil: d.role === 'admin' ? 'administrador' : d.role === 'agent' ? 'tecnico' : 'usuario',
         status: 'active'
       });
-      try {
-        await supabase.auth.resetPasswordForEmail(d.email, { redirectTo: `${window.location.origin}/reset-password` });
-      } catch (_) {}
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado! Email de redefinição de senha enviado." }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["all-users"] }); setInviteOpen(false); setInviteForm(defaultInviteForm); toast({ title: "Sucesso", description: "Usuário criado com sucesso!" }); },
     onError: (e) => { toast({ title: "Erro", description: e.message || "Tente novamente.", variant: "destructive" }); }
   });
 
@@ -127,19 +125,23 @@ export default function UsersPage() {
   };
 
   const handleSave = async () => {
-    await updateM.mutateAsync({ id: editing.id, data: editForm });
-    if (newPassword) {
-      if (newPassword.length < 6) { toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres.", variant: "destructive" }); return; }
-      if (newPassword !== confirmPassword) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
-      try {
-        await supabase.rpc('admin_update_user_password', { target_user_id: editing.id, new_password: newPassword });
-        toast({ title: "Senha alterada com sucesso!" });
-      } catch (err) {
+    try {
+      await updateM.mutateAsync({ id: editing.id, data: editForm });
+      if (newPassword) {
+        if (newPassword.length < 6) { toast({ title: "Senha muito curta", description: "Mínimo 6 caracteres.", variant: "destructive" }); return; }
+        if (newPassword !== confirmPassword) { toast({ title: "Senhas não coincidem", variant: "destructive" }); return; }
         try {
-          await supabase.auth.resetPasswordForEmail(editing.email, { redirectTo: `${window.location.origin}/reset-password` });
-          toast({ title: "Email de redefinição enviado!", description: `Para ${editing.email}` });
-        } catch (e) { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
+          await supabase.rpc('admin_update_user_password', { target_user_id: editing.id, new_password: newPassword });
+          toast({ title: "Senha alterada com sucesso!" });
+        } catch (err) {
+          try {
+            await supabase.auth.resetPasswordForEmail(editing.email, { redirectTo: `${window.location.origin}/reset-password` });
+            toast({ title: "Email de redefinição enviado!", description: `Para ${editing.email}` });
+          } catch (e) { toast({ title: "Erro", description: e.message, variant: "destructive" }); }
+        }
       }
+    } catch (e) {
+      toast({ title: "Erro", description: e.message || "Falha ao salvar.", variant: "destructive" });
     }
   };
 

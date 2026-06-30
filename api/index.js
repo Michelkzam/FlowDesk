@@ -7,6 +7,7 @@
 import { claimTicketHandler } from "./tickets/claim.js";
 import { transferTicketHandler } from "./tickets/transfer.js";
 import { autoCloseInactiveHandler } from "./cron/auto-close-inactive.js";
+import { authenticate, cronAuth } from "./middleware/auth.js";
 
 /**
  * Registra as rotas da API
@@ -20,12 +21,12 @@ export function registerRoutes(app, db) {
     next();
   });
 
-  // Rotas de tickets
-  app.post("/api/tickets/:id/claim", claimTicketHandler);
-  app.post("/api/tickets/:id/transfer", transferTicketHandler);
+  // Rotas de tickets (requer autenticação)
+  app.post("/api/tickets/:id/claim", authenticate, claimTicketHandler);
+  app.post("/api/tickets/:id/transfer", authenticate, transferTicketHandler);
 
-  // Rotas de cron
-  app.post("/api/cron/auto-close-inactive", autoCloseInactiveHandler);
+  // Rotas de cron (requer secret)
+  app.post("/api/cron/auto-close-inactive", cronAuth, autoCloseInactiveHandler);
 
   console.log("[API] Rotas registradas com sucesso");
 }

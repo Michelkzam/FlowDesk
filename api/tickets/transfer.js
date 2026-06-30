@@ -19,7 +19,9 @@
 
 export async function transferTicketHandler(req, res) {
   const { id } = req.params;
-  const { from_agent_id, from_agent_name, to_agent_id, to_agent_name, note } = req.body;
+  const { to_agent_id, to_agent_name, note } = req.body;
+  const from_agent_id = req.user.id;
+  const from_agent_name = req.user.full_name || req.user.email;
 
   if (!to_agent_id || !to_agent_name) {
     return res.status(400).json({

@@ -1,8 +1,14 @@
 import { io } from "socket.io-client";
+import { supabase } from "@/lib/supabase";
 
 const SOCKET_URL = import.meta.env.VITE_WS_URL || "http://localhost:3001";
 
 let socket = null;
+
+async function getToken() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
+}
 
 function getSocket() {
   if (!socket) {
@@ -11,6 +17,10 @@ function getSocket() {
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 3000,
+      auth: async (cb) => {
+        const token = await getToken();
+        cb({ token });
+      },
     });
   }
   return socket;

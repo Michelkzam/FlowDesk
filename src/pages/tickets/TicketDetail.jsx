@@ -170,10 +170,19 @@ export default function TicketDetail({ isPopup = false }) {
 
   const sendMutation = useMutation({
     mutationFn: async (data) => {
-      const { error } = await supabase
-        .from("ticket_messages")
-        .insert(data);
-      if (error) throw error;
+      const response = await fetch(`/api/tickets/${id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao enviar mensagem');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
@@ -273,38 +282,16 @@ export default function TicketDetail({ isPopup = false }) {
         }
       }
 
-      const insertData = {
-        ticket_id: id,
-        sender_type: "agent",
-        sender_id: currentUser?.id,
-        sender_name: currentUser?.full_name,
+      const messageBody = uploadedAttachments.length > 0 
+        ? msgText + "\n" + uploadedAttachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n")
+        : msgText;
+
+      await sendMutation.mutateAsync({
+        body: messageBody,
         type: isNote ? "note" : "message",
         is_internal: isNote,
-        body: msgText,
-      };
-      if (uploadedAttachments.length > 0) {
-        insertData.attachments = JSON.stringify(uploadedAttachments);
-      }
+      });
 
-      let { error: msgError } = await supabase
-        .from("ticket_messages")
-        .insert(insertData);
-
-      if (msgError) {
-        if (msgError.message?.includes("attachments")) {
-          delete insertData.attachments;
-          insertData.body = msgText + (uploadedAttachments.length > 0 ? "\n" + uploadedAttachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n") : "");
-          ({ error: msgError } = await supabase.from("ticket_messages").insert(insertData));
-        }
-        if (msgError) {
-          console.error("[TicketDetail INSERT]", JSON.stringify(msgError), insertData);
-          throw msgError;
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
-      queryClient.invalidateQueries({ queryKey: ["ticket", id] });
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
       broadcastMessageUpdate(id, msgText);
       broadcastTicketUpdate(id, "message_sent");
       setMessage("");
@@ -333,26 +320,19 @@ export default function TicketDetail({ isPopup = false }) {
   const handleFinalize = async () => {
     try {
       if (finalizeData.solution.trim()) {
-        await supabase.from("ticket_messages").insert({
-          ticket_id: id,
+        await sendMutation.mutateAsync({
           body: `[Solução] ${finalizeData.solution}`,
-          sender_type: "system",
-          sender_id: currentUser?.id,
-          sender_name: currentUser?.full_name || "Sistema",
           type: "system",
           is_internal: false,
         });
       }
 
-      await db.entities.Ticket.update(id, {
+      await updateMutation.mutateAsync({
         status: "resolved",
         closed_date: new Date().toISOString(),
         category_name: finalizeData.category || ticket?.category_name,
       });
 
-      queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
-      queryClient.invalidateQueries({ queryKey: ["ticket", id] });
-      queryClient.invalidateQueries({ queryKey: ["tickets"] });
       broadcastTicketUpdate(id, "finalized");
 
       setShowFinalizeDialog(false);
@@ -368,20 +348,24 @@ export default function TicketDetail({ isPopup = false }) {
     if (!transferData.agentId || !transferData.note.trim()) return;
 
     try {
-      await supabase.from("ticket_messages").insert({
-        ticket_id: id,
-        body: `[Transferência] Ticket transferido para ${transferData.agentName}.\nMotivo: ${transferData.note}`,
-        sender_type: "system",
-        sender_id: currentUser?.id,
-        sender_name: currentUser?.full_name || "Sistema",
-        type: "system",
-        is_internal: true,
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`/api/tickets/${id}/transfer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          to_agent_id: transferData.agentId,
+          to_agent_name: transferData.agentName,
+          note: transferData.note,
+        }),
       });
 
-      await db.entities.Ticket.update(id, {
-        agent_id: transferData.agentId,
-        agent_name: transferData.agentName,
-      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao transferir ticket');
+      }
 
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });

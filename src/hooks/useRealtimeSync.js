@@ -88,7 +88,11 @@ export function useSmartPolling(queryKey, fetchFn, options = {}) {
 
   useEffect(() => {
     if (data && lastDataRef.current) {
-      const hasChanged = JSON.stringify(data) !== JSON.stringify(lastDataRef.current);
+      const currentLength = Array.isArray(data) ? data.length : 0;
+      const lastLength = Array.isArray(lastDataRef.current) ? lastDataRef.current.length : 0;
+      const currentFirst = Array.isArray(data) && data.length > 0 ? data[0]?.updated_at || data[0]?.created_at : null;
+      const lastFirst = Array.isArray(lastDataRef.current) && lastDataRef.current.length > 0 ? lastDataRef.current[0]?.updated_at || lastDataRef.current[0]?.created_at : null;
+      const hasChanged = currentLength !== lastLength || currentFirst !== lastFirst;
       const newInterval = hasChanged ? activeInterval : baseInterval;
       if (intervalRef.current !== newInterval) {
         intervalRef.current = newInterval;

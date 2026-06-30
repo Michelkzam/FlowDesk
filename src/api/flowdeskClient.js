@@ -248,7 +248,7 @@ const entities = {
   CannedResponse: new CannedResponseClient(),
   AuditLog: new EntityClient('audit_logs'),
   ChatMessage: new EntityClient('ticket_messages'),
-  ChannelLink: new EntityClient('organizations'),
+  ChannelLink: new EntityClient('channel_links'),
   Role: new EntityClient('roles'),
   Contract: new EntityClient('contracts'),
   Schedule: new EntityClient('schedules'),

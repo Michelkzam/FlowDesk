@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Erro no login:', error.message);
-    res.status(500).json({ message: 'Erro interno no servidor', error: error.message });
+    res.status(500).json({ message: 'Erro interno no servidor' });
   }
 });
 

@@ -40,7 +40,7 @@ function exportCSV(tickets) {
   URL.revokeObjectURL(url);
 }
 
-export default function TicketList({ myTickets = false }) {
+export default function TicketList({ myTickets = false, showNewDialog = false, showClosed = false }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -55,6 +55,12 @@ export default function TicketList({ myTickets = false }) {
   const [viewMode, setViewMode] = useState(() => localStorage.getItem(viewModeKey) || "list");
   const [selected, setSelected] = useState(new Set());
   const { can } = usePermissions();
+
+  useEffect(() => {
+    if (showNewDialog) {
+      setNewOpen(true);
+    }
+  }, [showNewDialog]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -83,7 +89,7 @@ export default function TicketList({ myTickets = false }) {
   });
 
   const filtered = tickets.filter(t => {
-    if (t.status === "resolved" || t.status === "closed") return false;
+    if (!showClosed && (t.status === "resolved" || t.status === "closed")) return false;
     if (myTickets && currentUser && t.agent_id !== currentUser.id) return false;
     if (statusFilter !== "all" && t.status !== statusFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;

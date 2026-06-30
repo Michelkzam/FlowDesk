@@ -16,14 +16,8 @@
 
 export async function claimTicketHandler(req, res) {
   const { id } = req.params;
-  const { agent_id, agent_name } = req.body;
-
-  if (!agent_id || !agent_name) {
-    return res.status(400).json({
-      success: false,
-      message: "agent_id e agent_name são obrigatórios",
-    });
-  }
+  const agent_id = req.user.id;
+  const agent_name = req.user.full_name || req.user.email;
 
   const db = req.db;
 

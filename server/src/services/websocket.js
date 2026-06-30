@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
 let io = null;
 const onlineUsers = new Map();
@@ -11,8 +12,21 @@ export function initWebSocket(server) {
     }
   });
 
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(new Error('Autenticação necessária'));
+    }
+    try {
+      socket.user = jwt.verify(token, process.env.JWT_SECRET);
+      next();
+    } catch (e) {
+      next(new Error('Token inválido ou expirado'));
+    }
+  });
+
   io.on('connection', (socket) => {
-    console.log('[WS] Cliente conectado:', socket.id);
+    console.log('[WS] Cliente conectado:', socket.id, 'user:', socket.user?.email);
 
     socket.on('user:online', (userData) => {
       onlineUsers.set(socket.id, { ...userData, socketId: socket.id });
