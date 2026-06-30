@@ -28,10 +28,10 @@ const priorityColors = {
 };
 
 const filterTabs = [
-  { key: "all", label: "Todos", color: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
-  { key: "open", label: "Aguardando", color: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
-  { key: "in_progress", label: "Em Atendimento", color: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
-  { key: "resolved", label: "Finalizado", color: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
+  { key: "all", label: "Todos", icon: MessageSquare, color: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
+  { key: "open", label: "Aguardando", icon: Clock, color: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
+  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
+  { key: "resolved", label: "Finalizado", icon: CheckCircle, color: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
 ];
 
 export default function Chats() {
@@ -114,18 +114,19 @@ export default function Chats() {
 
       {/* Filter tabs */}
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card flex-shrink-0 flex-wrap">
-        {filterTabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveFilter(tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${activeFilter === tab.key ? tab.color : tab.inactive}`}
-          >
-            {tab.label}
-            <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${activeFilter === tab.key ? "bg-card/25" : "bg-black/10"}`}>
-              {counts[tab.key]}
-            </span>
-          </button>
-        ))}
+        {filterTabs.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveFilter(tab.key)}
+              title={tab.label}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${activeFilter === tab.key ? tab.color : tab.inactive}`}
+            >
+              <Icon className="w-4 h-4" />
+            </button>
+          );
+        })}
       </div>
 
       {/* Main area */}
