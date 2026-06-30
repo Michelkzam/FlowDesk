@@ -5,6 +5,12 @@
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/auto-close",
+      "schedule": "0 2 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

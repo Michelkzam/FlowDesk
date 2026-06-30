@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { openTicketWindow } from "@/lib/ticketWindow";
-import { broadcastTicketUpdate, broadcastMessageUpdate } from "@/hooks/useRealtimeSync";
+import { broadcastTicketEvent } from "@/services/realtime";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/lib/AuthContext";
 import SLATimer from "@/components/tickets/SLATimer";
@@ -292,8 +292,8 @@ export default function TicketDetail({ isPopup = false }) {
         is_internal: isNote,
       });
 
-      broadcastMessageUpdate(id, msgText);
-      broadcastTicketUpdate(id, "message_sent");
+      broadcastTicketEvent("message:created", { ticket_id: id, body: msgText });
+      broadcastTicketEvent("ticket:updated", { id });
       setMessage("");
       setAttachments([]);
     } catch (error) {
@@ -333,7 +333,7 @@ export default function TicketDetail({ isPopup = false }) {
         category_name: finalizeData.category || ticket?.category_name,
       });
 
-      broadcastTicketUpdate(id, "finalized");
+      broadcastTicketEvent("ticket:updated", { id, status: "resolved" });
 
       setShowFinalizeDialog(false);
       setFinalizeData({ category: "", solution: "" });
@@ -370,7 +370,7 @@ export default function TicketDetail({ isPopup = false }) {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", id] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      broadcastTicketUpdate(id, "transferred");
+      broadcastTicketEvent("ticket:transferred", { ticketId: id, to_agent_id: transferData.agentId });
 
       setShowTransferDialog(false);
       setTransferData({ agentId: "", agentName: "", note: "" });

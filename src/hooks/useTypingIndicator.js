@@ -1,63 +1,51 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  joinTicketChannel,
+  leaveTicketChannel,
+  onTicketEvent,
+  broadcastTypingStart,
+  broadcastTypingStop,
+} from "@/services/realtime";
 
 export function useTypingIndicator(ticketId, currentUser) {
   const [typingUsers, setTypingUsers] = useState([]);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
-  const socketRef = useRef(null);
 
   useEffect(() => {
-    let mounted = true;
-    import("@/services/socket").then(({ getSocketConnection }) => {
-      if (mounted) socketRef.current = getSocketConnection();
-    });
-    return () => { mounted = false; };
-  }, []);
+    if (!ticketId) return;
 
-  useEffect(() => {
-    if (!ticketId || !socketRef.current) return;
-    const s = socketRef.current;
+    joinTicketChannel(ticketId);
 
-    const handleTypingStart = (data) => {
-      if (data.ticketId === ticketId && data.userId !== currentUser?.id) {
-        setTypingUsers((prev) => {
-          if (prev.some((u) => u.userId === data.userId)) return prev;
-          return [...prev, { userId: data.userId, userName: data.userName }];
-        });
-      }
-    };
-
-    const handleTypingStop = (data) => {
-      if (data.ticketId === ticketId) {
+    const unsubs = [
+      onTicketEvent(ticketId, "typing:start", (data) => {
+        if (data.userId !== currentUser?.id) {
+          setTypingUsers((prev) => {
+            if (prev.some((u) => u.userId === data.userId)) return prev;
+            return [...prev, { userId: data.userId, userName: data.userName }];
+          });
+        }
+      }),
+      onTicketEvent(ticketId, "typing:stop", (data) => {
         setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
-      }
-    };
-
-    s.on("typing:start", handleTypingStart);
-    s.on("typing:stop", handleTypingStop);
+      }),
+    ];
 
     return () => {
-      s.off("typing:start", handleTypingStart);
-      s.off("typing:stop", handleTypingStop);
+      unsubs.forEach((fn) => fn());
       setTypingUsers([]);
+      leaveTicketChannel(ticketId);
     };
   }, [ticketId, currentUser?.id]);
 
   const startTyping = useCallback(() => {
     if (!ticketId || !currentUser || isTypingRef.current) return;
     isTypingRef.current = true;
-    const s = socketRef.current;
-    if (s) {
-      s.emit("typing:start", {
-        ticketId,
-        userId: currentUser.id,
-        userName: currentUser.full_name || currentUser.email,
-      });
-    }
+    broadcastTypingStart(ticketId, currentUser.id, currentUser.full_name || currentUser.email);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       isTypingRef.current = false;
-      if (s) s.emit("typing:stop", { ticketId, userId: currentUser.id });
+      broadcastTypingStop(ticketId, currentUser.id);
     }, 3000);
   }, [ticketId, currentUser]);
 
@@ -65,8 +53,7 @@ export function useTypingIndicator(ticketId, currentUser) {
     if (!ticketId || !currentUser) return;
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     isTypingRef.current = false;
-    const s = socketRef.current;
-    if (s) s.emit("typing:stop", { ticketId, userId: currentUser.id });
+    broadcastTypingStop(ticketId, currentUser.id);
   }, [ticketId, currentUser]);
 
   useEffect(() => {

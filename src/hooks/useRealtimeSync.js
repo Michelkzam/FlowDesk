@@ -15,31 +15,6 @@ function getBroadcastChannel() {
   return broadcastChannel;
 }
 
-export function broadcastTicketUpdate(ticketId, updateType, data) {
-  const channel = getBroadcastChannel();
-  if (channel) {
-    channel.postMessage({
-      type: "TICKET_UPDATE",
-      ticketId,
-      updateType,
-      data,
-      timestamp: Date.now(),
-    });
-  }
-}
-
-export function broadcastMessageUpdate(ticketId, message) {
-  const channel = getBroadcastChannel();
-  if (channel) {
-    channel.postMessage({
-      type: "MESSAGE_UPDATE",
-      ticketId,
-      message,
-      timestamp: Date.now(),
-    });
-  }
-}
-
 export function useRealtimeSync() {
   const queryClient = useQueryClient();
   const lastUpdateRef = useRef(0);

@@ -109,21 +109,22 @@ function CallScreen({ operator, callState, elapsed, onAnswer, onHold, onResume, 
 }
 
 function useSocketRef() {
-  const socketRef = useRef(null)
+  const channelRef = useRef(null)
 
-  const getSocket = useCallback(async () => {
-    if (socketRef.current) return socketRef.current
+  const getChannel = useCallback(async () => {
+    if (channelRef.current) return channelRef.current
     try {
-      const { connectSocket } = await import("@/services/socket")
-      socketRef.current = connectSocket()
-      return socketRef.current
+      const { connectRealtime } = await import("@/services/realtime")
+      const ch = connectRealtime()
+      channelRef.current = ch
+      return ch
     } catch (e) {
-      console.warn('[Intercom] Socket unavailable:', e.message)
+      console.warn('[Intercom] Realtime unavailable:', e.message)
       return null
     }
   }, [])
 
-  return getSocket
+  return getChannel
 }
 
 export default function Intercom() {
@@ -178,15 +179,20 @@ export default function Intercom() {
   useEffect(() => {
     if (!expanded) return
     let mounted = true
+    let unsubMessage = null
+    let unsubTyping = null
 
-    getSocket().then(s => {
-      if (!s || !mounted) return
-      const handleMessage = (data) => {
+    getSocket().then(async (ch) => {
+      if (!ch || !mounted) return
+      const { onGlobalEvent } = await import("@/services/realtime")
+      
+      unsubMessage = onGlobalEvent("intercom:message", (data) => {
         if (data?.channel === activeChannel) {
           setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])
         }
-      }
-      const handleTyping = (data) => {
+      })
+      
+      unsubTyping = onGlobalEvent("intercom:typing", (data) => {
         if (data?.channel === activeChannel && data.user !== currentUser?.full_name) {
           setTypingUsers(prev => {
             if (prev.includes(data.user)) return prev
@@ -196,18 +202,13 @@ export default function Intercom() {
             setTypingUsers(prev => prev.filter(u => u !== data.user))
           }, 3000)
         }
-      }
-      s.on("intercom:message", handleMessage)
-      s.on("intercom:typing", handleTyping)
+      })
     })
 
     return () => {
       mounted = false
-      getSocket().then(s => {
-        if (!s) return
-        s.off("intercom:message")
-        s.off("intercom:typing")
-      })
+      if (unsubMessage) unsubMessage()
+      if (unsubTyping) unsubTyping()
     }
   }, [expanded, activeChannel, currentUser])
 
@@ -230,15 +231,23 @@ export default function Intercom() {
     if (!messageInput.trim()) return
     const msg = { id: String(Date.now()), user: currentUser?.full_name || "Você", text: messageInput.trim(), time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), channel: activeChannel }
     setMessages(prev => [...prev, msg])
-    const s = await getSocket()
-    if (s) s.emit("intercom:message", msg)
+    try {
+      const { broadcastTicketEvent } = await import("@/services/realtime")
+      broadcastTicketEvent("intercom:message", msg)
+    } catch (e) {
+      console.warn('[Intercom] Broadcast failed:', e.message)
+    }
     setMessageInput("")
     setTypingUsers(prev => prev.filter(u => u !== currentUser?.full_name))
   }
 
   const handleTyping = async () => {
-    const s = await getSocket()
-    if (s) s.emit("intercom:typing", { user: currentUser?.full_name, channel: activeChannel })
+    try {
+      const { broadcastTicketEvent } = await import("@/services/realtime")
+      broadcastTicketEvent("intercom:typing", { user: currentUser?.full_name, channel: activeChannel })
+    } catch (e) {
+      console.warn('[Intercom] Broadcast failed:', e.message)
+    }
   }
 
   const channelMessages = messages.filter((m) => m.channel === activeChannel)
