@@ -61,7 +61,6 @@ export default function TicketDetail({ isPopup = false }) {
   const messagesEndRef = useRef(null);
   const { can } = usePermissions();
   const { isAdmin } = useAuth();
-  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(id, currentUser);
 
   useEffect(() => {
     if (isPopup) {
@@ -125,6 +124,7 @@ export default function TicketDetail({ isPopup = false }) {
   const { data: currentUser } = useQuery({ queryKey: ["me"], queryFn: () => db.auth.me() });
   const { data: agents = [] } = useQuery({ queryKey: ["agents"], queryFn: () => db.entities.Agent.list() });
   const { data: categories = [] } = useQuery({ queryKey: ["categories"], queryFn: () => db.entities.Category.list() });
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(id, currentUser);
 
   const sortedMessages = [...messages].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
 
