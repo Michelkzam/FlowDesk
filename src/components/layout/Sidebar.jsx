@@ -7,7 +7,8 @@ import {
   PanelLeftClose, PanelLeftOpen, LogOut, Tag, Clock, Filter,
   Building2, Inbox, ListOrdered, HelpCircle, Shield,
   Network, Calendar, Zap, FileText, Bell, TrendingUp, ShieldCheck,
-  Monitor, FileSignature, BarChart3, DollarSign, RefreshCw, Video, History
+  Monitor, FileSignature, BarChart3, DollarSign, RefreshCw, Video, History,
+  MessageSquare, ListTodo, Link2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -25,6 +26,17 @@ const navItems = [
       { label: "Histórico de Atendimentos", icon: History, path: "/tickets/historico", pageId: "tickets.historico" },
       { label: "Videoconferência", icon: Video, path: "/videoconferencia", pageId: "atendimento.videoconferencia" },
       { label: "Portal do Usuário", icon: Ticket, path: "/meus-atendimentos", pageId: "portal.usuario" },
+    ]
+  },
+  {
+    label: "Chat", icon: MessageSquare, children: [
+      { label: "Mensagens", icon: MessageSquare, path: "/chat", pageId: "chat.principal" },
+      { label: "Meus Atendimentos", icon: Inbox, path: "/chat/meus", pageId: "chat.meus" },
+      { label: "Filas", icon: ListTodo, path: "/chat/filas", pageId: "chat.filas" },
+      { label: "Histórico", icon: History, path: "/chat/historico", pageId: "chat.historico" },
+      { label: "Respostas Rápidas", icon: Zap, path: "/chat/respostas", pageId: "chat.respostas" },
+      { label: "Vincular WhatsApp", icon: Link2, path: "/chat/vincular-whatsapp", pageId: "chat.whatsapp" },
+      { label: "Vincular Telegram", icon: Link2, path: "/chat/vincular-telegram", pageId: "chat.telegram" },
     ]
   },
   {

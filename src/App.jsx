@@ -63,6 +63,15 @@ import VideoconferenciaPage from './pages/atendimento/VideoconferenciaPage';
 import ProfilePage from './pages/perfil/ProfilePage';
 import UserPortalAdmin from './pages/portal/UserPortalAdmin';
 
+// Chat
+import Chats from './pages/chat/Chats';
+import MeusAtendimentos from './pages/chat/MeusAtendimentos';
+import Filas from './pages/chat/Filas';
+import HistoricoChat from './pages/chat/Historico';
+import RespostasRapidas from './pages/chat/RespostasRapidas';
+import VincularWhatsApp from './pages/chat/VincularWhatsApp';
+import VincularTelegram from './pages/chat/VincularTelegram';
+
 import { useState, useEffect } from 'react';
 
 function DashboardGuard() {
@@ -160,6 +169,15 @@ function AppRoutes() {
         <Route path="videoconferencia" element={<VideoconferenciaPage />} />
         <Route path="meu-perfil" element={<ProfilePage />} />
         <Route path="meus-atendimentos" element={<UserPortalAdmin />} />
+
+        {/* Chat */}
+        <Route path="chat" element={<Chats />} />
+        <Route path="chat/meus" element={<MeusAtendimentos />} />
+        <Route path="chat/filas" element={<Filas />} />
+        <Route path="chat/historico" element={<HistoricoChat />} />
+        <Route path="chat/respostas" element={<RespostasRapidas />} />
+        <Route path="chat/vincular-whatsapp" element={<VincularWhatsApp />} />
+        <Route path="chat/vincular-telegram" element={<VincularTelegram />} />
       </Route>
 
       {/* Popup route */}
