@@ -89,7 +89,7 @@ export default function Chats() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-0px)]">
+    <div className="flex flex-col h-[calc(100vh-120px)] -m-4 md:-m-6">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card flex-shrink-0">
         <div className="flex items-center gap-3">
