@@ -272,7 +272,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
 
       <aside className={cn(
         "fixed top-0 left-0 h-full bg-sidebar border-r border-sidebar-border z-50 flex flex-col transition-all duration-300",
-        collapsed ? "w-14" : "w-44",
+        collapsed ? "w-16" : "w-60",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Header */}
