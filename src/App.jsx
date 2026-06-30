@@ -92,6 +92,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/portal" element={<UserPortal />} />
       <Route path="/cliente" element={<ClientPortalPage />} />
+      <Route path="/test-realtime" element={<RealtimeTestPage />} />
 
       {/* Protected routes */}
       <Route path="/" element={
@@ -155,9 +156,6 @@ function AppRoutes() {
         } />
         <Route path="admin/sincronizar" element={
           <ProtectedRoute requireAdmin><SincronizarPage /></ProtectedRoute>
-        } />
-        <Route path="admin/realtime-test" element={
-          <ProtectedRoute><RealtimeTestPage /></ProtectedRoute>
         } />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="acesso-remoto" element={<AcessoRemotoPage />} />
