@@ -1,11 +1,12 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { connectSocket, disconnectSocket, getSocketConnection } from "@/services/socket";
+import { connectSocket, disconnectSocket, getSocketConnection, setUserOnline, setUserOffline } from "@/services/socket";
 import { useAuth } from "@/lib/AuthContext";
 
 export function useWebSocketSync() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -13,6 +14,12 @@ export function useWebSocketSync() {
     }
 
     const s = connectSocket();
+
+    setUserOnline({
+      id: user.id,
+      name: user.full_name || user.email,
+      role: user.role,
+    });
 
     const handleTicketCreated = () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
@@ -40,20 +47,27 @@ export function useWebSocketSync() {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
+    const handleUsersOnline = (users) => {
+      setOnlineUsers(users);
+    };
+
     s.on("ticket:created", handleTicketCreated);
     s.on("ticket:updated", handleTicketUpdated);
     s.on("ticket:claimed", handleTicketClaimed);
     s.on("ticket:transferred", handleTicketTransferred);
     s.on("ticket:auto-closed", handleTicketAutoClosed);
     s.on("message:created", handleMessageCreated);
+    s.on("users:online", handleUsersOnline);
 
     return () => {
+      setUserOffline();
       s.off("ticket:created", handleTicketCreated);
       s.off("ticket:updated", handleTicketUpdated);
       s.off("ticket:claimed", handleTicketClaimed);
       s.off("ticket:transferred", handleTicketTransferred);
       s.off("ticket:auto-closed", handleTicketAutoClosed);
       s.off("message:created", handleMessageCreated);
+      s.off("users:online", handleUsersOnline);
       disconnectSocket();
     };
   }, [isAuthenticated, user, queryClient]);
@@ -72,5 +86,6 @@ export function useWebSocketSync() {
     isConnected: getSocketConnection()?.connected || false,
     joinTicket,
     leaveTicket,
+    onlineUsers,
   };
 }

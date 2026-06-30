@@ -1,12 +1,13 @@
 import { db } from '@/api/flowdeskClient';
 import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 
 import React, { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Send, Lock, MessageSquare, Check, CheckCircle2, Zap, Paperclip, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive } from "lucide-react";
+import { ChevronLeft, Lock, MessageSquare, Check, CheckCircle2, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive } from "lucide-react";
 import QuickReplyPicker from "@/components/shared/QuickReplyPicker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ChatInput from "@/components/chat/ChatInput";
+import ScreenCapture from "@/components/chat/ScreenCapture";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge, PriorityBadge } from "@/components/shared/StatusBadge";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -59,6 +61,7 @@ export default function TicketDetail({ isPopup = false }) {
   const messagesEndRef = useRef(null);
   const { can } = usePermissions();
   const { isAdmin } = useAuth();
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(id, currentUser);
 
   useEffect(() => {
     if (isPopup) {
@@ -610,6 +613,18 @@ export default function TicketDetail({ isPopup = false }) {
                   </div>
                 );
               })}
+              {typingUsers.length > 0 && (
+                <div className="flex items-center gap-2 text-muted-foreground text-xs py-1">
+                  <div className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span>
+                    {typingUsers.map((u) => u.userName).join(", ")} {typingUsers.length === 1 ? "está" : "estão"} digitando...
+                  </span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -697,7 +712,12 @@ export default function TicketDetail({ isPopup = false }) {
                       <Lock className="w-3 h-3 inline mr-1" />Nota Interna
                     </button>
                   </div>
-                  <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
+                  <div className="flex items-center gap-2">
+                    <ScreenCapture onCapture={(file) => setAttachments((prev) => [...prev, file])} />
+                    <div className="flex-1">
+                      <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
+                    </div>
+                  </div>
                 </>
               )}
             </div>

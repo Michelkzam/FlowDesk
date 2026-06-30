@@ -42,3 +42,23 @@ export function emitToAll(event, data) {
   const s = getSocket();
   s.emit(event, data);
 }
+
+export function setUserOnline(userData) {
+  const s = getSocket();
+  s.emit("user:online", userData);
+}
+
+export function setUserOffline() {
+  const s = getSocket();
+  s.emit("user:offline");
+}
+
+export function emitTypingStart(ticketId, userId, userName) {
+  const s = getSocket();
+  s.emit("typing:start", { ticketId, userId, userName });
+}
+
+export function emitTypingStop(ticketId, userId) {
+  const s = getSocket();
+  s.emit("typing:stop", { ticketId, userId });
+}

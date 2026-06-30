@@ -155,6 +155,9 @@ export default function Intercom() {
     return () => clearTimeout(t)
   }, [callState])
 
+  const [typingUsers, setTypingUsers] = useState([])
+  const typingTimeoutRef = useRef(null)
+
   useEffect(() => {
     const s = connectSocket()
     const handleMessage = (data) => {
@@ -162,9 +165,24 @@ export default function Intercom() {
         setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])
       }
     }
+    const handleTyping = (data) => {
+      if (data?.channel === activeChannel && data.user !== currentUser?.full_name) {
+        setTypingUsers(prev => {
+          if (prev.includes(data.user)) return prev
+          return [...prev, data.user]
+        })
+        setTimeout(() => {
+          setTypingUsers(prev => prev.filter(u => u !== data.user))
+        }, 3000)
+      }
+    }
     s.on("intercom:message", handleMessage)
-    return () => s.off("intercom:message", handleMessage)
-  }, [activeChannel])
+    s.on("intercom:typing", handleTyping)
+    return () => {
+      s.off("intercom:message", handleMessage)
+      s.off("intercom:typing", handleTyping)
+    }
+  }, [activeChannel, currentUser])
 
   const filteredTeam = teamData.filter((op) => {
     const matchSearch = op.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || op.role?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -188,6 +206,12 @@ export default function Intercom() {
     const s = getSocketConnection()
     s.emit("intercom:message", msg)
     setMessageInput("")
+    setTypingUsers(prev => prev.filter(u => u !== currentUser?.full_name))
+  }
+
+  const handleTyping = () => {
+    const s = getSocketConnection()
+    s.emit("intercom:typing", { user: currentUser?.full_name, channel: activeChannel })
   }
 
   const channelMessages = messages.filter((m) => m.channel === activeChannel)
@@ -308,12 +332,22 @@ export default function Intercom() {
                               <p className="mt-0.5 text-xs text-zinc-400">{msg.text}</p>
                             </div>
                           ))}
+                          {typingUsers.length > 0 && (
+                            <div className="flex items-center gap-2 text-zinc-500 text-[10px] py-1">
+                              <div className="flex gap-0.5">
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+                              </div>
+                              <span>{typingUsers.join(", ")} {typingUsers.length === 1 ? "está" : "estão"} digitando...</span>
+                            </div>
+                          )}
                           <div ref={messagesEndRef} />
                         </div>
                       </ScrollArea>
                       <Separator className="bg-zinc-800" />
                       <div className="flex items-center gap-2 px-3 py-2">
-                        <Input placeholder="Mensagem rápida..." value={messageInput} onChange={(e) => setMessageInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} className="h-8 flex-1 border-zinc-700 bg-zinc-800 text-xs text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-600" />
+                        <Input placeholder="Mensagem rápida..." value={messageInput} onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }} onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} className="h-8 flex-1 border-zinc-700 bg-zinc-800 text-xs text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-600" />
                         <Button size="icon" onClick={handleSendMessage} disabled={!messageInput.trim()} className="h-8 w-8 shrink-0 bg-zinc-700 text-zinc-300 hover:bg-zinc-600"><Send className="h-3.5 w-3.5" /></Button>
                       </div>
                     </TabsContent>

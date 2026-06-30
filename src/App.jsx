@@ -64,12 +64,21 @@ import ProfilePage from './pages/perfil/ProfilePage';
 import UserPortalAdmin from './pages/portal/UserPortalAdmin';
 
 import { useState, useEffect } from 'react';
+import { useWebSocketSync } from '@/hooks/useWebSocketSync';
+import { useNotifications } from '@/hooks/useNotifications';
 
 function DashboardGuard() {
   const { canAccessPage } = useAuth();
   if (canAccessPage("dashboard")) return <Dashboard />;
   const firstAllowed = SYSTEM_PAGES.find(p => p.id !== "dashboard" && canAccessPage(p.id));
   return <Navigate to={firstAllowed?.path || "/meus-atendimentos"} replace />;
+}
+
+function WebSocketProvider({ children }) {
+  useWebSocketSync();
+  const { user } = useAuth();
+  useNotifications(user);
+  return children;
 }
 
 function AppRoutes() {
@@ -198,10 +207,12 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <ToastProvider>
           <Router>
-            <AuthProvider>
-              <WelcomeGate />
-              <AppRoutes />
-            </AuthProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <WelcomeGate />
+            <AppRoutes />
+          </WebSocketProvider>
+        </AuthProvider>
           </Router>
           <Toaster />
         </ToastProvider>
