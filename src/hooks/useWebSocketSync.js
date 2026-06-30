@@ -1,7 +1,13 @@
 import { useEffect, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { connectSocket, disconnectSocket, getSocketConnection, setUserOnline, setUserOffline } from "@/services/socket";
 import { useAuth } from "@/lib/AuthContext";
+
+let socketModule = null;
+
+async function getSocket() {
+  if (!socketModule) socketModule = await import("@/services/socket");
+  return socketModule;
+}
 
 export function useWebSocketSync() {
   const queryClient = useQueryClient();

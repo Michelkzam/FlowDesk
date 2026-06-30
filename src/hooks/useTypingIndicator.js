@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getSocketConnection } from "@/services/socket";
 
 export function useTypingIndicator(ticketId, currentUser) {
   const [typingUsers, setTypingUsers] = useState([]);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!ticketId) return;
+    let mounted = true;
+    import("@/services/socket").then(({ getSocketConnection }) => {
+      if (mounted) socketRef.current = getSocketConnection();
+    });
+    return () => { mounted = false; };
+  }, []);
 
-    const s = getSocketConnection();
+  useEffect(() => {
+    if (!ticketId || !socketRef.current) return;
+    const s = socketRef.current;
 
     const handleTypingStart = (data) => {
       if (data.ticketId === ticketId && data.userId !== currentUser?.id) {
@@ -38,29 +45,28 @@ export function useTypingIndicator(ticketId, currentUser) {
 
   const startTyping = useCallback(() => {
     if (!ticketId || !currentUser || isTypingRef.current) return;
-
     isTypingRef.current = true;
-    const s = getSocketConnection();
-    s.emit("typing:start", {
-      ticketId,
-      userId: currentUser.id,
-      userName: currentUser.full_name || currentUser.email,
-    });
-
+    const s = socketRef.current;
+    if (s) {
+      s.emit("typing:start", {
+        ticketId,
+        userId: currentUser.id,
+        userName: currentUser.full_name || currentUser.email,
+      });
+    }
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       isTypingRef.current = false;
-      s.emit("typing:stop", { ticketId, userId: currentUser.id });
+      if (s) s.emit("typing:stop", { ticketId, userId: currentUser.id });
     }, 3000);
   }, [ticketId, currentUser]);
 
   const stopTyping = useCallback(() => {
     if (!ticketId || !currentUser) return;
-
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     isTypingRef.current = false;
-    const s = getSocketConnection();
-    s.emit("typing:stop", { ticketId, userId: currentUser.id });
+    const s = socketRef.current;
+    if (s) s.emit("typing:stop", { ticketId, userId: currentUser.id });
   }, [ticketId, currentUser]);
 
   useEffect(() => {
