@@ -311,20 +311,27 @@ export default function MeusAtendimentos() {
       {/* Filter buttons */}
       <div className="flex gap-2 flex-wrap">
         {[
-          { key: "all", label: "Todos", cls: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
-          { key: "open", label: "Aguardando", cls: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
-          { key: "in_progress", label: "Em Atendimento", cls: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
-          { key: "waiting", label: "Na Espera", cls: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
-          { key: "resolved", label: "Atendidos Hoje", cls: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
-        ].map(f => (
-          <button
-            key={f.key}
-            onClick={() => setActiveFilter(f.key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activeFilter === f.key ? f.cls : f.inactive}`}
-          >
-            {f.label}
-          </button>
-        ))}
+          { key: "all", icon: MessageSquare, label: "Todos", cls: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
+          { key: "open", icon: Clock, label: "Aguardando", cls: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
+          { key: "in_progress", icon: Headphones, label: "Em Atendimento", cls: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
+          { key: "waiting", icon: Clock, label: "Na Espera", cls: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+          { key: "resolved", icon: CheckCircle, label: "Atendidos Hoje", cls: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
+        ].map(f => {
+          const Icon = f.icon;
+          const count = f.key === "all" ? tickets.length :
+            f.key === "resolved" ? tickets.filter(t => t.status === "resolved" || t.status === "closed").length :
+            tickets.filter(t => t.status === f.key).length;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              title={f.label}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${activeFilter === f.key ? f.cls : f.inactive}`}
+            >
+              <Icon className="w-4 h-4" />
+            </button>
+          );
+        })}
       </div>
 
       {/* Kanban columns */}
