@@ -1,9 +1,10 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,11 +42,23 @@ export default function Chats() {
   const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
   const queryClient = useQueryClient();
   const initialStatusRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 200),
   });
+
+  useEffect(() => {
+    const ticketId = searchParams.get("ticket");
+    if (ticketId && tickets.length > 0 && !selectedTicket) {
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        initialStatusRef.current = ticket.status;
+        setSelectedTicket(ticket);
+      }
+    }
+  }, [searchParams, tickets, selectedTicket]);
 
   const createMutation = useMutation({
     mutationFn: (data) => db.entities.Ticket.create(data),
