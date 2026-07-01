@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Plus, Search, Download, Pencil, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -48,6 +49,7 @@ export default function ClientesPage() {
   const [form, setForm] = useState(emptyForm);
   const qc = useQueryClient();
   const { can } = usePermissions();
+  const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -67,11 +69,13 @@ export default function ClientesPage() {
 
   const createM = useMutation({
     mutationFn: data => db.entities.Client.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); toast({ title: "Sucesso", description: "Empresa criada com sucesso!" }); },
+    onError: (err) => { console.error("[Clientes]", err); toast({ title: "Erro", description: "Falha ao criar empresa: " + (err.message || "Erro desconhecido"), variant: "destructive" }); },
   });
   const updateM = useMutation({
     mutationFn: ({ id, data }) => db.entities.Client.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); toast({ title: "Sucesso", description: "Empresa atualizada com sucesso!" }); },
+    onError: (err) => { console.error("[Clientes]", err); toast({ title: "Erro", description: "Falha ao atualizar: " + (err.message || "Erro desconhecido"), variant: "destructive" }); },
   });
   const deleteM = useMutation({
     mutationFn: id => db.entities.Client.delete(id),
