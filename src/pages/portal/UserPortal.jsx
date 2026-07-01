@@ -2,10 +2,10 @@ import { db } from '@/api/flowdeskClient';
 import { supabase } from '@/lib/supabase';
 import { playSystemSound } from '@/lib/soundSystem';
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight, Mail, Lock, Loader2, Eye, EyeOff, Paperclip } from "lucide-react";
+import { MessageSquare, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight, Mail, Lock, Loader2, Eye, EyeOff, Paperclip, Inbox, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -182,6 +182,7 @@ function WelcomeScreen({ user, onStart }) {
 export default function UserPortal() {
   const [profile, setProfile] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -301,6 +302,16 @@ export default function UserPortal() {
     });
   };
 
+  const statusCounts = React.useMemo(() => {
+    const counts = { open: 0, in_progress: 0, resolved: 0, closed: 0 };
+    tickets.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+    return counts;
+  }, [tickets]);
+
+  const filteredTickets = statusFilter
+    ? tickets.filter(t => t.status === statusFilter)
+    : tickets;
+
   const startNewChat = () => {
     createTicketMutation.mutate({
       title: `Chat - ${profile?.company || currentUser?.full_name}`,
@@ -333,20 +344,43 @@ export default function UserPortal() {
 
       <div className="flex flex-1 min-h-0">
         <div className={cn("flex flex-col border-r border-border bg-card flex-shrink-0", selectedTicket ? "hidden md:flex md:w-64 lg:w-72" : "w-full md:w-64 lg:w-72")}>
-          <div className="p-3 border-b border-border">
+          <div className="p-3 border-b border-border space-y-3">
             <Button onClick={startNewChat} disabled={createTicketMutation.isPending} className="w-full bg-primary hover:bg-primary/90 gap-2 h-9">
               <MessageSquare className="w-4 h-4" />{createTicketMutation.isPending ? "Iniciando..." : "Novo Chat ao Vivo"}
             </Button>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => setStatusFilter(null)} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all", !statusFilter ? "bg-primary/10 text-primary ring-1 ring-primary/30" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <Inbox className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-primary text-primary-foreground">{tickets.length}</span>
+                </div>
+                <span className="text-[10px] font-medium">Total</span>
+              </button>
+              <button onClick={() => setStatusFilter("open")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all", statusFilter === "open" ? "bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <Headphones className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-yellow-500 text-white">{statusCounts.open + statusCounts.in_progress}</span>
+                </div>
+                <span className="text-[10px] font-medium">Abertos</span>
+              </button>
+              <button onClick={() => setStatusFilter("resolved")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all", statusFilter === "resolved" ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-emerald-500 text-white">{statusCounts.resolved + statusCounts.closed}</span>
+                </div>
+                <span className="text-[10px] font-medium">Resolvidos</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoading ? <div className="p-3 space-y-2">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
-            : tickets.length === 0 ? (
+            : filteredTickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-16 text-center px-4">
                 <MessageSquare className="w-10 h-10 text-muted-foreground/30 mb-3" />
                 <p className="text-sm font-medium text-muted-foreground">Nenhuma conversa</p>
-                <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Chat" para iniciar</p>
+                <p className="text-xs text-muted-foreground mt-1">{statusFilter ? "Nenhum ticket neste status" : "Clique em \"Novo Chat\" para iniciar"}</p>
               </div>
-            ) : tickets.map(ticket => (
+            ) : filteredTickets.map(ticket => (
               <button key={ticket.id} onClick={() => setSelectedTicket(ticket)} className={cn("w-full text-left px-4 py-3.5 border-b border-border hover:bg-muted/40 transition-colors", selectedTicket?.id === ticket.id && "bg-primary/8 border-l-2 border-l-primary")}>
                 <div className="flex items-start justify-between gap-2 mb-1"><span className="text-sm font-medium line-clamp-1 flex-1">{ticket.title}</span></div>
                 <div className="flex items-center justify-between">
