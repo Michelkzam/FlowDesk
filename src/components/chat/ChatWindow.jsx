@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, ArrowRightLeft, Inbox } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -216,6 +216,27 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             onClick={() => setShowTransferDialog(true)}
           >
             <ArrowRightLeft className="w-3 h-3" /> Transferir
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => {
+              if (confirm("Deseja retornar este ticket à caixa de entrada?")) {
+                updateStatusMutation.mutate("open");
+                supabase.from("tickets").update({
+                  agent_id: null,
+                  agent_name: null,
+                  status: "open",
+                  updated_at: new Date().toISOString(),
+                }).eq("id", ticket.id).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                  queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+                });
+              }
+            }}
+          >
+            <Inbox className="w-3 h-3" /> Retornar à Fila
           </Button>
           <Select value={ticket.status} onValueChange={(v) => updateStatusMutation.mutate(v)}>
             <SelectTrigger className={`h-7 text-xs border-0 ${status.class} font-medium w-auto gap-1`}>
