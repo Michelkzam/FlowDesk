@@ -39,7 +39,7 @@ function parseAttachments(msg) {
       const url = match[2].trim();
       const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
       if (!alreadyHas) {
-        inlineAttachments.push({ name, url, type: guessType(name) });
+        inlineAttachments.push({ name, url });
       }
     } else {
       textLines.push(line);
@@ -49,27 +49,18 @@ function parseAttachments(msg) {
   return { text: textLines.join("\n").trim(), attachments: inlineAttachments };
 }
 
-function guessType(name) {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
-  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return "image/" + ext === "jpg" ? "jpeg" : ext;
-  if (["mp4","webm"].includes(ext)) return "video/" + ext;
-  if (["mp3","wav","ogg"].includes(ext) || name.startsWith("audio_")) return "audio/webm";
-  if (["pdf"].includes(ext)) return "application/pdf";
-  return "application/octet-stream";
-}
-
 function MessageBody({ body, attachments }) {
   const allAttachments = attachments || [];
-
   if (!body && allAttachments.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2">
       {body && <p className="whitespace-pre-wrap">{body}</p>}
       {allAttachments.map((att, i) => {
-        const isImage = att.type?.startsWith("image/");
-        const isVideo = att.type?.startsWith("video/");
-        const isAudio = att.type?.startsWith("audio/") || att.isAudio;
+        const ext = att.name?.split(".").pop()?.toLowerCase() || "";
+        const isImage = att.type?.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext);
+        const isVideo = att.type?.startsWith("video/") || ["mp4","webm"].includes(ext);
+        const isAudio = att.type?.startsWith("audio/") || att.isAudio || ["mp3","wav","ogg"].includes(ext) || att.name?.startsWith("audio_");
         if (isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
         if (isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
         if (isAudio) return <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
@@ -130,37 +121,16 @@ function LoginScreen({ onLogin }) {
           <h1 className="text-2xl font-bold">Central de Suporte</h1>
           <p className="text-muted-foreground mt-1 text-sm">Faça login para acessar o suporte</p>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-          {error && (
-            <div className="text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-sm">{error}</div>}
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-muted-foreground" /> Email
-            </Label>
-            <Input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-            />
+            <Label className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /> Email</Label>
+            <Input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" />
           </div>
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-muted-foreground" /> Senha
-            </Label>
+            <Label className="flex items-center gap-2"><Lock className="w-4 h-4 text-muted-foreground" /> Senha</Label>
             <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <Input type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
               <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -178,11 +148,7 @@ function LoginScreen({ onLogin }) {
 function WelcomeScreen({ user, onStart }) {
   const [company, setCompany] = useState(user?.company || "");
   const [phone, setPhone] = useState(user?.phone || "");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onStart({ company, phone });
-  };
+  const handleSubmit = (e) => { e.preventDefault(); onStart({ company, phone }); };
 
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -192,37 +158,19 @@ function WelcomeScreen({ user, onStart }) {
             <MessageSquare className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Central de Suporte</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Olá, {user?.full_name?.split(" ")[0] || "bem-vindo"}! Antes de começar, confirme seus dados.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Olá, {user?.full_name?.split(" ")[0] || "bem-vindo"}! Confirme seus dados.</p>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-muted-foreground" /> Nome da Empresa
-            </Label>
-            <Input
-              required
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-              placeholder="Ex: Empresa XYZ Ltda"
-            />
+            <Label className="flex items-center gap-2"><Building2 className="w-4 h-4 text-muted-foreground" /> Nome da Empresa</Label>
+            <Input required value={company} onChange={e => setCompany(e.target.value)} placeholder="Ex: Empresa XYZ Ltda" />
           </div>
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-muted-foreground" /> Telefone de Contato
-            </Label>
-            <Input
-              required
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="(00) 00000-0000"
-            />
+            <Label className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" /> Telefone de Contato</Label>
+            <Input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
           </div>
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 gap-2">
-            Entrar no Chat <ArrowRight className="w-4 h-4" />
-          </Button>
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 gap-2">Entrar no Chat <ArrowRight className="w-4 h-4" /></Button>
         </form>
-
         <button onClick={() => supabase.auth.signOut().then(() => window.location.href = "/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mx-auto">
           <LogOut className="w-4 h-4" /> Sair
         </button>
@@ -234,7 +182,6 @@ function WelcomeScreen({ user, onStart }) {
 export default function UserPortal() {
   const [profile, setProfile] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -243,10 +190,6 @@ export default function UserPortal() {
     queryFn: () => db.auth.me(),
     retry: false,
   });
-
-  const handleLogin = async (user, profileData) => {
-    await refetch();
-  };
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["my-tickets", currentUser?.email],
@@ -267,15 +210,21 @@ export default function UserPortal() {
     enabled: !!selectedTicket?.id,
   });
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const sendMutation = useMutation({
     mutationFn: async (data) => {
+      let bodyText = data.body || "";
+      const atts = data.attachments || [];
+
+      if (atts.length > 0) {
+        const attLines = atts.map(a => `📎 ${a.name}: ${a.url}`).join("\n");
+        bodyText = bodyText ? bodyText + "\n" + attLines : attLines;
+      }
+
       const insertData = {
         ticket_id: data.ticket_id,
-        body: data.body,
+        body: bodyText,
         sender_type: "user",
         sender_id: data.sender_id,
         sender_name: data.sender_name,
@@ -283,15 +232,14 @@ export default function UserPortal() {
         is_internal: false,
       };
 
-      if (data.attachments && data.attachments.length > 0) {
-        insertData.attachments = JSON.stringify(data.attachments);
+      if (atts.length > 0) {
+        insertData.attachments = JSON.stringify(atts);
       }
 
       let { error } = await supabase.from("ticket_messages").insert(insertData);
 
       if (error && error.message?.includes("attachments")) {
         delete insertData.attachments;
-        insertData.body = data.body + (data.attachments?.length > 0 ? "\n" + data.attachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n") : "");
         ({ error } = await supabase.from("ticket_messages").insert(insertData));
       }
 
@@ -299,7 +247,6 @@ export default function UserPortal() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ticket-messages", selectedTicket?.id] });
-      setMessage("");
     },
   });
 
@@ -330,17 +277,12 @@ export default function UserPortal() {
   });
 
   const handleSend = async (text, attachments) => {
-    const msgText = text || message;
+    const msgText = text || "";
     if ((!msgText.trim() && (!attachments || attachments.length === 0)) || !selectedTicket) return;
 
     const now = new Date().toISOString();
     const needsReopen = ["waiting", "resolved"].includes(selectedTicket.status);
-
-    const updateData = {
-      last_user_response_date: now,
-      last_response_date: now,
-    };
-
+    const updateData = { last_user_response_date: now, last_response_date: now };
     if (needsReopen) {
       updateData.status = "in_progress";
       setSelectedTicket(prev => prev ? { ...prev, status: "in_progress" } : null);
@@ -353,12 +295,9 @@ export default function UserPortal() {
     sendMutation.mutate({
       ticket_id: selectedTicket.id,
       body: msgText,
-      sender_type: "user",
       sender_id: currentUser?.id,
       sender_name: currentUser?.full_name || currentUser?.email,
-      type: "message",
-      is_internal: false,
-      attachments: attachments || null,
+      attachments: attachments || [],
     });
   };
 
@@ -369,25 +308,15 @@ export default function UserPortal() {
     });
   };
 
-  if (loadingUser) {
-    return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
-  }
-
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
-  if (!profile) {
-    return <WelcomeScreen user={currentUser} onStart={setProfile} />;
-  }
+  if (loadingUser) return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
+  if (!currentUser) return <LoginScreen onLogin={() => refetch()} />;
+  if (!profile) return <WelcomeScreen user={currentUser} onStart={setProfile} />;
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <MessageSquare className="w-4 h-4 text-white" />
-          </div>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><MessageSquare className="w-4 h-4 text-white" /></div>
           <div>
             <h1 className="text-sm font-bold text-foreground">Central de Suporte</h1>
             <p className="text-xs text-muted-foreground">{profile.company} · {profile.phone}</p>
@@ -395,91 +324,51 @@ export default function UserPortal() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-              <User className="w-3.5 h-3.5 text-primary" />
-            </div>
+            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center"><User className="w-3.5 h-3.5 text-primary" /></div>
             <span className="text-sm font-medium hidden sm:block">{currentUser?.full_name || currentUser?.email}</span>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500" onClick={() => supabase.auth.signOut().then(() => window.location.href = "/")} title="Sair">
-            <LogOut className="w-4 h-4" />
-          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500" onClick={() => supabase.auth.signOut().then(() => window.location.href = "/")} title="Sair"><LogOut className="w-4 h-4" /></Button>
         </div>
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <div className={cn(
-          "flex flex-col border-r border-border bg-card flex-shrink-0",
-          selectedTicket ? "hidden md:flex md:w-64 lg:w-72" : "w-full md:w-64 lg:w-72"
-        )}>
+        <div className={cn("flex flex-col border-r border-border bg-card flex-shrink-0", selectedTicket ? "hidden md:flex md:w-64 lg:w-72" : "w-full md:w-64 lg:w-72")}>
           <div className="p-3 border-b border-border">
-            <Button
-              onClick={startNewChat}
-              disabled={createTicketMutation.isPending}
-              className="w-full bg-primary hover:bg-primary/90 gap-2 h-9"
-            >
-              <MessageSquare className="w-4 h-4" />
-              {createTicketMutation.isPending ? "Iniciando..." : "Novo Chat ao Vivo"}
+            <Button onClick={startNewChat} disabled={createTicketMutation.isPending} className="w-full bg-primary hover:bg-primary/90 gap-2 h-9">
+              <MessageSquare className="w-4 h-4" />{createTicketMutation.isPending ? "Iniciando..." : "Novo Chat ao Vivo"}
             </Button>
           </div>
-
           <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="p-3 space-y-2">
-                {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
-              </div>
-            ) : tickets.length === 0 ? (
+            {isLoading ? <div className="p-3 space-y-2">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            : tickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-16 text-center px-4">
                 <MessageSquare className="w-10 h-10 text-muted-foreground/30 mb-3" />
                 <p className="text-sm font-medium text-muted-foreground">Nenhuma conversa</p>
                 <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Chat" para iniciar</p>
               </div>
-            ) : (
-              tickets.map(ticket => (
-                <button
-                  key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className={cn(
-                    "w-full text-left px-4 py-3.5 border-b border-border hover:bg-muted/40 transition-colors",
-                    selectedTicket?.id === ticket.id && "bg-primary/8 border-l-2 border-l-primary"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-sm font-medium line-clamp-1 flex-1">{ticket.title}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <TicketStatusBadge status={ticket.status} />
-                    <span className="text-xs text-muted-foreground">
-                      {ticket.created_date ? format(new Date(ticket.created_date), "dd/MM HH:mm", { locale: ptBR }) : ""}
-                    </span>
-                  </div>
-                </button>
-              ))
-            )}
+            ) : tickets.map(ticket => (
+              <button key={ticket.id} onClick={() => setSelectedTicket(ticket)} className={cn("w-full text-left px-4 py-3.5 border-b border-border hover:bg-muted/40 transition-colors", selectedTicket?.id === ticket.id && "bg-primary/8 border-l-2 border-l-primary")}>
+                <div className="flex items-start justify-between gap-2 mb-1"><span className="text-sm font-medium line-clamp-1 flex-1">{ticket.title}</span></div>
+                <div className="flex items-center justify-between">
+                  <TicketStatusBadge status={ticket.status} />
+                  <span className="text-xs text-muted-foreground">{ticket.created_date ? format(new Date(ticket.created_date), "dd/MM HH:mm", { locale: ptBR }) : ""}</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
         {selectedTicket ? (
           <div className="flex-1 flex flex-col min-w-0">
             <div className="px-4 py-3 border-b border-border bg-card flex items-center gap-3 flex-shrink-0">
-              <button onClick={() => setSelectedTicket(null)} className="md:hidden p-1 rounded-lg hover:bg-muted">
-                <ArrowRight className="w-5 h-5 rotate-180" />
-              </button>
+              <button onClick={() => setSelectedTicket(null)} className="md:hidden p-1 rounded-lg hover:bg-muted"><ArrowRight className="w-5 h-5 rotate-180" /></button>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{selectedTicket.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <TicketStatusBadge status={selectedTicket.status} />
-                </div>
+                <div className="flex items-center gap-2 mt-0.5"><TicketStatusBadge status={selectedTicket.status} /></div>
               </div>
               {!["resolved", "closed"].includes(selectedTicket.status) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
-                  onClick={() => closeTicketMutation.mutate(selectedTicket.id)}
-                  disabled={closeTicketMutation.isPending}
-                >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Finalizar Chat
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-red-200 text-red-600 hover:bg-red-50" onClick={() => closeTicketMutation.mutate(selectedTicket.id)} disabled={closeTicketMutation.isPending}>
+                  <CheckCircle className="w-3.5 h-3.5" /> Finalizar Chat
                 </Button>
               )}
             </div>
@@ -491,35 +380,25 @@ export default function UserPortal() {
                   <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda</p>
                   <p className="text-xs text-muted-foreground mt-1">Digite uma mensagem para iniciar o atendimento</p>
                 </div>
-              ) : (
-                messages.filter(m => !m.is_internal).map(msg => {
-                  const { text, attachments: atts } = parseAttachments(msg);
-                  return (
-                    <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
-                      <div className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700"
-                      )}>
-                        {(msg.sender_name || "?")[0]?.toUpperCase()}
+              ) : messages.filter(m => !m.is_internal).map(msg => {
+                const { text, attachments: atts } = parseAttachments(msg);
+                return (
+                  <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
+                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0", msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700")}>
+                      {(msg.sender_name || "?")[0]?.toUpperCase()}
+                    </div>
+                    <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
+                        <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
                       </div>
-                      <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
-                          <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
-                        </div>
-                        <div className={cn(
-                          "rounded-2xl px-4 py-2.5 text-sm",
-                          msg.sender_type === "user"
-                            ? "bg-primary text-primary-foreground rounded-tr-sm"
-                            : "bg-card border border-border text-foreground rounded-tl-sm"
-                        )}>
-                          <MessageBody body={text} attachments={atts} />
-                        </div>
+                      <div className={cn("rounded-2xl px-4 py-2.5 text-sm", msg.sender_type === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border text-foreground rounded-tl-sm")}>
+                        <MessageBody body={text} attachments={atts} />
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
@@ -528,9 +407,7 @@ export default function UserPortal() {
             ) : (
               <div className="border-t border-border p-4 bg-muted/30 text-center">
                 <p className="text-sm text-muted-foreground">Chat finalizado. Obrigado pelo contato!</p>
-                <Button variant="outline" size="sm" className="mt-2" onClick={() => setSelectedTicket(null)}>
-                  Voltar para conversas
-                </Button>
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => setSelectedTicket(null)}>Voltar para conversas</Button>
               </div>
             )}
           </div>
