@@ -15,61 +15,49 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ChatInput from "@/components/chat/ChatInput";
 
-const ATTACHMENT_REGEX = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
 
-function renderMessageBody(body) {
-  if (!body) return null;
+function parseBody(body) {
+  if (!body) return { text: "", attachments: [] };
   const lines = body.split("\n");
   const textLines = [];
   const attachments = [];
-
   for (const line of lines) {
-    const match = line.match(ATTACHMENT_REGEX);
+    const match = line.match(ATTACHMENT_LINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
       const ext = name.split(".").pop()?.toLowerCase();
-      const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
-      const isVideo = ["mp4","webm","ogg"].includes(ext);
-      const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
-      attachments.push({ name, url, ext, isImage, isVideo, isAudio });
+      attachments.push({
+        name, url,
+        isImage: ["png","jpg","jpeg","gif","webp"].includes(ext),
+        isVideo: ["mp4","webm"].includes(ext),
+        isAudio: ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_"),
+      });
     } else {
       textLines.push(line);
     }
   }
+  return { text: textLines.join("\n").trim(), attachments };
+}
 
-  const text = textLines.join("\n").trim();
-
-  return (
-    <div className="flex flex-col gap-2">
-      {text && <p className="whitespace-pre-wrap">{text}</p>}
-      {attachments.map((att, i) => {
-        if (att.isImage) {
-          return (
-            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
-              <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-            </a>
-          );
-        }
-        if (att.isVideo) {
-          return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-        }
-        if (att.isAudio) {
-          return (
-            <div key={i} className="bg-muted/50 border border-border rounded-lg p-2 min-w-[200px]">
-              <span className="text-xs text-muted-foreground mb-1 block">🎵 {att.name}</span>
-              <audio controls src={att.url} className="w-full h-10" preload="metadata" />
-            </div>
-          );
-        }
-        return (
-          <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
-            📎 {att.name}
-          </a>
-        );
-      })}
+function MediaAttachment({ att }) {
+  if (att.isImage) return (
+    <a href={att.url} target="_blank" rel="noopener noreferrer">
+      <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+    </a>
+  );
+  if (att.isVideo) return <video controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+  if (att.isAudio) return (
+    <div className="min-w-[200px]">
+      <audio controls src={att.url} className="w-full h-10" preload="metadata" />
     </div>
+  );
+  return (
+    <a href={att.url} target="_blank" rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors text-xs">
+      📎 {att.name}
+    </a>
   );
 }
 
@@ -485,30 +473,37 @@ export default function UserPortal() {
                   <p className="text-xs text-muted-foreground mt-1">Digite uma mensagem para iniciar o atendimento</p>
                 </div>
               ) : (
-                messages.filter(m => !m.is_internal).map(msg => (
-                  <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700"
-                    )}>
-                      {(msg.sender_name || "?")[0]?.toUpperCase()}
-                    </div>
-                    <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
-                        <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
-                      </div>
+                messages.filter(m => !m.is_internal).map(msg => {
+                    const { text, attachments } = parseBody(msg.body);
+                    return (
+                    <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
                       <div className={cn(
-                        "rounded-2xl px-4 py-2.5 text-sm",
-                        msg.sender_type === "user"
-                          ? "bg-primary text-primary-foreground rounded-tr-sm"
-                          : "bg-card border border-border text-foreground rounded-tl-sm"
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700"
                       )}>
-                        {renderMessageBody(msg.body)}
+                        {(msg.sender_name || "?")[0]?.toUpperCase()}
+                      </div>
+                      <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
+                          <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
+                        </div>
+                        <div className={cn(
+                          "rounded-2xl px-4 py-2.5 text-sm",
+                          msg.sender_type === "user"
+                            ? "bg-primary text-primary-foreground rounded-tr-sm"
+                            : "bg-card border border-border text-foreground rounded-tl-sm"
+                        )}>
+                          {text && <p className="whitespace-pre-wrap">{text}</p>}
+                        </div>
+                        {attachments.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            {attachments.map((att, i) => <MediaAttachment key={i} att={att} />)}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))
+                  );})
               )}
               <div ref={messagesEndRef} />
             </div>

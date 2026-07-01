@@ -3,61 +3,53 @@ import { format } from "date-fns";
 import { FileText, Download, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ATTACHMENT_REGEX = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
 
-function renderMessageBody(body) {
-  if (!body) return null;
+function parseBody(body) {
+  if (!body) return { text: "", attachments: [] };
   const lines = body.split("\n");
   const textLines = [];
   const attachments = [];
-
   for (const line of lines) {
-    const match = line.match(ATTACHMENT_REGEX);
+    const match = line.match(ATTACHMENT_LINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
       const ext = name.split(".").pop()?.toLowerCase();
-      const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
-      const isVideo = ["mp4","webm","ogg"].includes(ext);
-      const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
-      attachments.push({ name, url, ext, isImage, isVideo, isAudio });
+      attachments.push({
+        name, url,
+        isImage: ["png","jpg","jpeg","gif","webp"].includes(ext),
+        isVideo: ["mp4","webm"].includes(ext),
+        isAudio: ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_"),
+      });
     } else {
       textLines.push(line);
     }
   }
+  return { text: textLines.join("\n").trim(), attachments };
+}
 
-  const text = textLines.join("\n").trim();
-
+function MediaAttachment({ att }) {
+  if (att.isImage) return (
+    <a href={att.url} target="_blank" rel="noopener noreferrer">
+      <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+    </a>
+  );
+  if (att.isVideo) return <video controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+  if (att.isAudio) {
+    return <AudioPlayer url={att.url} />;
+  }
   return (
-    <div className="flex flex-col gap-2">
-      {text && <p className="whitespace-pre-wrap">{text}</p>}
-      {attachments.map((att, i) => {
-        if (att.isImage) {
-          return (
-            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
-              <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-            </a>
-          );
-        }
-        if (att.isVideo) {
-          return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-        }
-        if (att.isAudio) {
-          return (
-            <div key={i} className="bg-muted/50 border border-border rounded-lg p-2 min-w-[200px]">
-              <span className="text-xs text-muted-foreground mb-1 block">🎵 {att.name}</span>
-              <audio controls src={att.url} className="w-full h-10" preload="metadata" />
-            </div>
-          );
-        }
-        return (
-          <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
-            📎 {att.name}
-          </a>
-        );
-      })}
-    </div>
+    <a href={att.url} target="_blank" rel="noopener noreferrer"
+      className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <FileText className="w-4 h-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium truncate">{att.name}</p>
+      </div>
+      <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+    </a>
   );
 }
 
@@ -158,6 +150,8 @@ export default function ChatMessage({ msg, isOwn }) {
     );
   }
 
+  const { text: msgText, attachments: inlineAttachments } = parseBody(msg.body || msg.message);
+
   return (
     <div className={cn("flex gap-2.5", isOwn ? "flex-row-reverse" : "")}>
       <div className={cn(
@@ -173,20 +167,20 @@ export default function ChatMessage({ msg, isOwn }) {
             {msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}
           </span>
         </div>
-        {(msg.body || msg.message) && (
+        {msgText && (
           <div className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm",
+            "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
             isOwn
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-card border border-border text-foreground rounded-tl-sm"
           )}>
-            {renderMessageBody(msg.body || msg.message)}
+            {msgText}
           </div>
         )}
-        {attachments.length > 0 && (
+        {inlineAttachments.length > 0 && (
           <div className={cn("flex flex-col gap-1.5", isOwn ? "items-end" : "items-start")}>
-            {attachments.map((att, i) => (
-              <AttachmentBubble key={i} attachment={att} />
+            {inlineAttachments.map((att, i) => (
+              <MediaAttachment key={i} att={att} />
             ))}
           </div>
         )}

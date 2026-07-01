@@ -20,62 +20,30 @@ import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const ATTACHMENT_REGEX = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
 
-function renderMessageBody(body) {
-  if (!body) return null;
+function parseBody(body) {
+  if (!body) return { text: "", attachments: [] };
   const lines = body.split("\n");
   const textLines = [];
   const attachments = [];
-
   for (const line of lines) {
-    const match = line.match(ATTACHMENT_REGEX);
+    const match = line.match(ATTACHMENT_LINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
       const ext = name.split(".").pop()?.toLowerCase();
-      const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
-      const isVideo = ["mp4","webm","ogg"].includes(ext);
-      const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
-      attachments.push({ name, url, ext, isImage, isVideo, isAudio });
+      attachments.push({
+        name, url,
+        isImage: ["png","jpg","jpeg","gif","webp"].includes(ext),
+        isVideo: ["mp4","webm"].includes(ext),
+        isAudio: ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_"),
+      });
     } else {
       textLines.push(line);
     }
   }
-
-  const text = textLines.join("\n").trim();
-
-  return (
-    <div className="flex flex-col gap-2">
-      {text && <p className="text-sm whitespace-pre-wrap">{text}</p>}
-      {attachments.map((att, i) => {
-        if (att.isImage) {
-          return (
-            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
-              <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-            </a>
-          );
-        }
-        if (att.isVideo) {
-          return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-        }
-        if (att.isAudio) {
-          return (
-            <div key={i} className="bg-muted/50 border border-border rounded-lg p-2 min-w-[200px]">
-              <span className="text-xs text-muted-foreground mb-1 block">🎵 {att.name}</span>
-              <audio controls src={att.url} className="w-full h-10" preload="metadata" />
-            </div>
-          );
-        }
-        return (
-          <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
-            📎 {att.name}
-          </a>
-        );
-      })}
-    </div>
-  );
+  return { text: textLines.join("\n").trim(), attachments };
 }
 
 const channelEmoji = {
@@ -597,7 +565,24 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     ? "bg-muted/50 text-muted-foreground italic text-xs"
                     : "bg-muted rounded-tl-sm"
                 }`}>
-                  {msg.body && renderMessageBody(msg.body)}
+                  {(() => {
+                    const { text: msgText, attachments: inlineAtts } = parseBody(msg.body);
+                    return (
+                      <>
+                        {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}
+                        {inlineAtts.length > 0 && (
+                          <div className="flex flex-col gap-1.5 mt-1">
+                            {inlineAtts.map((att, i) => {
+                              if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
+                              if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+                              if (att.isAudio) return <audio key={i} controls src={att.url} className="w-full h-10" />;
+                              return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs underline">📎 {att.name}</a>;
+                            })}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
                   {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
