@@ -584,11 +584,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     : "bg-muted rounded-tl-sm"
                 }`}>
                   {(() => {
-                    const body = msg.body;
-                    if (!body) return null;
-                    const hasAttachment = body.includes("📎");
-                    if (!hasAttachment) return <p className="text-sm whitespace-pre-wrap">{body}</p>;
-                    const { text: msgText, attachments: inlineAtts } = parseBody(body);
+                    const { text: msgText, attachments: inlineAtts } = parseBody(msg);                    if (!msgText && inlineAtts.length === 0) return null;
                     return (
                       <>
                         {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}

@@ -38,8 +38,8 @@ function parseBody(msg) {
       const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
       if (Array.isArray(atts)) {
         atts.forEach(a => {
-          const t = guessType(a.name || "");
-          inlineAttachments.push({ name: a.name, url: a.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || a.isAudio });
+          const t = guessType(a.name || a.url?.split("/").pop() || "");
+          inlineAttachments.push({ name: a.name || a.url?.split("/").pop() || "arquivo", url: a.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || a.isAudio });
         });
       }
     } catch {}
@@ -47,14 +47,21 @@ function parseBody(msg) {
   const lines = bodyText.split("\n");
   const textLines = [];
   for (const line of lines) {
-    const match = line.match(ATTACHMENT_LINE);
+    const trimmed = line.trim();
+    const match = trimmed.match(ATTACHMENT_LINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
-      const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
-      if (!alreadyHas) {
+      if (!inlineAttachments.some(a => a.url === url || a.name === name)) {
         const t = guessType(name);
         inlineAttachments.push({ name, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
+      }
+    } else if (trimmed.match(/^https?:\/\/\S+$/) && !trimmed.includes(" ") && trimmed.match(/\.(png|jpg|jpeg|gif|webp|mp4|webm|mp3|wav|ogg|pdf|doc|docx)/i)) {
+      const url = trimmed;
+      if (!inlineAttachments.some(a => a.url === url)) {
+        const fileName = url.split("/").pop().split("?")[0] || "arquivo";
+        const t = guessType(fileName);
+        inlineAttachments.push({ name: fileName, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
       }
     } else {
       textLines.push(line);
