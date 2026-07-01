@@ -566,7 +566,11 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     : "bg-muted rounded-tl-sm"
                 }`}>
                   {(() => {
-                    const { text: msgText, attachments: inlineAtts } = parseBody(msg.body);
+                    const body = msg.body;
+                    if (!body) return null;
+                    const hasAttachment = body.includes("📎");
+                    if (!hasAttachment) return <p className="text-sm whitespace-pre-wrap">{body}</p>;
+                    const { text: msgText, attachments: inlineAtts } = parseBody(body);
                     return (
                       <>
                         {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}
@@ -576,7 +580,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                               if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
                               if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
                               if (att.isAudio) return <audio key={i} controls src={att.url} className="w-full h-10" />;
-                              return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs underline">📎 {att.name}</a>;
+                              return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs underline">{att.name}</a>;
                             })}
                           </div>
                         )}

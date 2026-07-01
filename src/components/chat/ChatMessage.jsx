@@ -5,51 +5,34 @@ import { cn } from "@/lib/utils";
 
 const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
 
-function parseBody(body) {
-  if (!body) return { text: "", attachments: [] };
+function MessageBody({ body }) {
+  if (!body) return null;
   const lines = body.split("\n");
-  const textLines = [];
-  const attachments = [];
-  for (const line of lines) {
-    const match = line.match(ATTACHMENT_LINE);
-    if (match) {
-      const name = match[1].trim();
-      const url = match[2].trim();
-      const ext = name.split(".").pop()?.toLowerCase();
-      attachments.push({
-        name, url,
-        isImage: ["png","jpg","jpeg","gif","webp"].includes(ext),
-        isVideo: ["mp4","webm"].includes(ext),
-        isAudio: ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_"),
-      });
-    } else {
-      textLines.push(line);
-    }
-  }
-  return { text: textLines.join("\n").trim(), attachments };
-}
+  const hasAttachments = lines.some(l => ATTACHMENT_LINE.test(l));
 
-function MediaAttachment({ att }) {
-  if (att.isImage) return (
-    <a href={att.url} target="_blank" rel="noopener noreferrer">
-      <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-    </a>
-  );
-  if (att.isVideo) return <video controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-  if (att.isAudio) {
-    return <AudioPlayer url={att.url} />;
+  if (!hasAttachments) {
+    return <p className="whitespace-pre-wrap">{body}</p>;
   }
+
   return (
-    <a href={att.url} target="_blank" rel="noopener noreferrer"
-      className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-        <FileText className="w-4 h-4 text-primary" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium truncate">{att.name}</p>
-      </div>
-      <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-    </a>
+    <div className="flex flex-col gap-2">
+      {lines.map((line, i) => {
+        const match = line.match(ATTACHMENT_LINE);
+        if (!match) {
+          return line ? <p key={i} className="whitespace-pre-wrap">{line}</p> : null;
+        }
+        const name = match[1].trim();
+        const url = match[2].trim();
+        const ext = name.split(".").pop()?.toLowerCase();
+        const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
+        const isVideo = ["mp4","webm"].includes(ext);
+        const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
+        if (isImage) return <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
+        if (isVideo) return <video key={i} controls src={url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+        if (isAudio) return <audio key={i} controls src={url} className="w-full h-10" />;
+        return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs underline">{name}</a>;
+      })}
+    </div>
   );
 }
 
@@ -150,8 +133,6 @@ export default function ChatMessage({ msg, isOwn }) {
     );
   }
 
-  const { text: msgText, attachments: inlineAttachments } = parseBody(msg.body || msg.message);
-
   return (
     <div className={cn("flex gap-2.5", isOwn ? "flex-row-reverse" : "")}>
       <div className={cn(
@@ -167,21 +148,14 @@ export default function ChatMessage({ msg, isOwn }) {
             {msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}
           </span>
         </div>
-        {msgText && (
+        {(msg.body || msg.message) && (
           <div className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+            "rounded-2xl px-4 py-2.5 text-sm",
             isOwn
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-card border border-border text-foreground rounded-tl-sm"
           )}>
-            {msgText}
-          </div>
-        )}
-        {inlineAttachments.length > 0 && (
-          <div className={cn("flex flex-col gap-1.5", isOwn ? "items-end" : "items-start")}>
-            {inlineAttachments.map((att, i) => (
-              <MediaAttachment key={i} att={att} />
-            ))}
+            <MessageBody body={msg.body || msg.message} />
           </div>
         )}
       </div>
