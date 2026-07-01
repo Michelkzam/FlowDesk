@@ -1,5 +1,6 @@
 import { db } from '@/api/flowdeskClient';
 import { playSystemSound } from '@/lib/soundSystem';
+import { supabase } from '@/lib/supabase';
 
 import { useState, useRef, useEffect } from "react";
 
@@ -44,10 +45,22 @@ export default function Chats() {
   const initialStatusRef = useRef(null);
   const [searchParams] = useSearchParams();
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase.from("users").select("*").eq("id", user.id).single();
+      return data;
+    },
+  });
+
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => db.entities.Ticket.list("-created_date", 200),
   });
+
+  const myTickets = currentUser ? tickets.filter(t => t.agent_id === currentUser.id) : [];
 
   useEffect(() => {
     const ticketId = searchParams.get("ticket");
@@ -71,13 +84,13 @@ export default function Chats() {
   });
 
   const counts = {
-    all: tickets.length,
-    open: tickets.filter(t => t.status === "open").length,
-    in_progress: tickets.filter(t => t.status === "in_progress").length,
-    resolved: tickets.filter(t => t.status === "resolved" || t.status === "closed").length,
+    all: myTickets.length,
+    open: myTickets.filter(t => t.status === "open").length,
+    in_progress: myTickets.filter(t => t.status === "in_progress").length,
+    resolved: myTickets.filter(t => t.status === "resolved" || t.status === "closed").length,
   };
 
-  const filtered = tickets.filter(t => {
+  const filtered = myTickets.filter(t => {
     const matchSearch = !search ||
       (t.title || "").toLowerCase().includes(search.toLowerCase()) ||
       (t.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
