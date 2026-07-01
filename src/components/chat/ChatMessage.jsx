@@ -1,36 +1,58 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { FileText, Download, Play, Pause } from "lucide-react";
+import { Play, Pause, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+function parseAttachments(msg) {
+  const inlineAttachments = [];
+  let bodyText = msg.body || msg.message || "";
 
-function MessageBody({ body }) {
-  if (!body) return null;
-  const lines = body.split("\n");
-  const hasAttachments = lines.some(l => ATTACHMENT_LINE.test(l));
-
-  if (!hasAttachments) {
-    return <p className="whitespace-pre-wrap">{body}</p>;
+  if (msg.attachments) {
+    try {
+      const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
+      if (Array.isArray(atts)) {
+        atts.forEach(a => inlineAttachments.push(a));
+      }
+    } catch {}
   }
+
+  const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+  const lines = bodyText.split("\n");
+  const textLines = [];
+
+  for (const line of lines) {
+    const match = line.match(ATTACHMENT_LINE);
+    if (match) {
+      const name = match[1].trim();
+      const url = match[2].trim();
+      const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
+      if (!alreadyHas) {
+        inlineAttachments.push({ name, url });
+      }
+    } else {
+      textLines.push(line);
+    }
+  }
+
+  return { text: textLines.join("\n").trim(), attachments: inlineAttachments };
+}
+
+function MessageBody({ body, attachments }) {
+  const allAttachments = attachments || [];
+  if (!body && allAttachments.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2">
-      {lines.map((line, i) => {
-        const match = line.match(ATTACHMENT_LINE);
-        if (!match) {
-          return line ? <p key={i} className="whitespace-pre-wrap">{line}</p> : null;
-        }
-        const name = match[1].trim();
-        const url = match[2].trim();
-        const ext = name.split(".").pop()?.toLowerCase();
-        const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
-        const isVideo = ["mp4","webm"].includes(ext);
-        const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
-        if (isImage) return <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt={name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
-        if (isVideo) return <video key={i} controls src={url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-        if (isAudio) return <audio key={i} controls src={url} className="w-full h-10" />;
-        return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs underline">{name}</a>;
+      {body && <p className="whitespace-pre-wrap">{body}</p>}
+      {allAttachments.map((att, i) => {
+        const ext = att.name?.split(".").pop()?.toLowerCase() || "";
+        const isImage = att.type?.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext);
+        const isVideo = att.type?.startsWith("video/") || ["mp4","webm"].includes(ext);
+        const isAudio = att.type?.startsWith("audio/") || att.isAudio || ["mp3","wav","ogg"].includes(ext) || att.name?.startsWith("audio_");
+        if (isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
+        if (isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+        if (isAudio) return <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
+        return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><Paperclip className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{att.name}</span></a>;
       })}
     </div>
   );
@@ -80,45 +102,8 @@ function AudioPlayer({ url }) {
   );
 }
 
-function AttachmentBubble({ attachment }) {
-  const isImage = attachment.type?.startsWith("image/");
-  const isAudio = attachment.type?.startsWith("audio/") || attachment.isAudio;
-
-  if (isAudio) {
-    return <AudioPlayer url={attachment.url} />;
-  }
-
-  if (isImage) {
-    return (
-      <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-        <img src={attachment.url} alt={attachment.name} className="max-w-[250px] max-h-[200px] rounded-lg object-cover" />
-      </a>
-    );
-  }
-
-  return (
-    <a href={attachment.url} target="_blank" rel="noopener noreferrer"
-      className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-        <FileText className="w-4 h-4 text-primary" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium truncate">{attachment.name}</p>
-        <p className="text-[10px] text-muted-foreground">{(attachment.size / 1024).toFixed(1)} KB</p>
-      </div>
-      <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-    </a>
-  );
-}
-
 export default function ChatMessage({ msg, isOwn }) {
-  const attachments = (() => {
-    if (!msg.attachments) return [];
-    if (typeof msg.attachments === "string") {
-      try { return JSON.parse(msg.attachments); } catch { return []; }
-    }
-    return Array.isArray(msg.attachments) ? msg.attachments : [];
-  })();
+  const { text, attachments } = parseAttachments(msg);
 
   const isAgent = msg.sender_type === "agent";
   const isSystem = msg.sender_type === "system";
@@ -127,7 +112,7 @@ export default function ChatMessage({ msg, isOwn }) {
     return (
       <div className="flex justify-center my-2">
         <div className="bg-muted/50 text-muted-foreground italic text-xs px-3 py-1.5 rounded-full">
-          {msg.body || msg.message}
+          {text || msg.body || msg.message}
         </div>
       </div>
     );
@@ -148,14 +133,14 @@ export default function ChatMessage({ msg, isOwn }) {
             {msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}
           </span>
         </div>
-        {(msg.body || msg.message) && (
+        {(text || attachments.length > 0) && (
           <div className={cn(
             "rounded-2xl px-4 py-2.5 text-sm",
             isOwn
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-card border border-border text-foreground rounded-tl-sm"
           )}>
-            <MessageBody body={msg.body || msg.message} />
+            <MessageBody body={text} attachments={attachments} />
           </div>
         )}
       </div>
