@@ -212,13 +212,14 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const fileUrl = urlData?.publicUrl;
 
       await supabase.from("ticket_messages").insert({
         ticket_id: ticket.id,
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: `📎 Arquivo: ${file.name}`,
+        body: fileUrl || `📎 Arquivo: ${file.name}`,
         type: "message",
         is_internal: false,
       });
@@ -274,13 +275,14 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const audioUrl = urlData?.publicUrl;
 
       await supabase.from("ticket_messages").insert({
         ticket_id: ticket.id,
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: `🎵 Áudio gravado`,
+        body: audioUrl || "🎵 Áudio gravado",
         type: "message",
         is_internal: false,
       });
@@ -316,12 +318,15 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
           if (uploadError) throw uploadError;
 
+          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+          const imageUrl = urlData?.publicUrl;
+
           await supabase.from("ticket_messages").insert({
             ticket_id: ticket.id,
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: `🖼️ Print da tela`,
+            body: imageUrl || "🖼️ Print da tela",
             type: "message",
             is_internal: false,
           });
@@ -374,12 +379,15 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
           if (uploadError) throw uploadError;
 
+          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+          const videoUrl = urlData?.publicUrl;
+
           await supabase.from("ticket_messages").insert({
             ticket_id: ticket.id,
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: `🎬 Gravação de tela`,
+            body: videoUrl || "🎬 Gravação de tela",
             type: "message",
             is_internal: false,
           });
@@ -531,7 +539,19 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     ? "bg-muted/50 text-muted-foreground italic text-xs"
                     : "bg-muted rounded-tl-sm"
                 }`}>
-                  <p className="text-sm">{msg.body}</p>
+                  {msg.body && msg.body.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
+                    <a href={msg.body} target="_blank" rel="noopener noreferrer">
+                      <img src={msg.body} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+                    </a>
+                  ) : msg.body && msg.body.match(/\.(mp4|webm|ogg)$/i) ? (
+                    <video controls src={msg.body} className="max-w-[250px] max-h-[200px] rounded-lg" />
+                  ) : msg.body && msg.body.match(/\.(mp3|wav|ogg|webm)$/i) ? (
+                    <audio controls src={msg.body} className="w-full h-10" />
+                  ) : msg.body && msg.body.startsWith("http") ? (
+                    <a href={msg.body} target="_blank" rel="noopener noreferrer" className="text-sm underline">{msg.body}</a>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                  )}
                 </div>
                 <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
                   {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
