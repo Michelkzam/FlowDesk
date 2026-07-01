@@ -68,12 +68,12 @@ export default function ClientesPage() {
   });
 
   const createM = useMutation({
-    mutationFn: data => db.entities.Client.create(data),
+    mutationFn: data => db.entities.Client.create({ ...data, name: data.razao_social || data.nome_fantasia || "Sem nome" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); toast({ title: "Sucesso", description: "Empresa criada com sucesso!" }); },
     onError: (err) => { console.error("[Clientes]", err); toast({ title: "Erro", description: "Falha ao criar empresa: " + (err.message || "Erro desconhecido"), variant: "destructive" }); },
   });
   const updateM = useMutation({
-    mutationFn: ({ id, data }) => db.entities.Client.update(id, data),
+    mutationFn: ({ id, data }) => db.entities.Client.update(id, { ...data, name: data.razao_social || data.nome_fantasia || "Sem nome" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["clients"] }); closeDialog(); toast({ title: "Sucesso", description: "Empresa atualizada com sucesso!" }); },
     onError: (err) => { console.error("[Clientes]", err); toast({ title: "Erro", description: "Falha ao atualizar: " + (err.message || "Erro desconhecido"), variant: "destructive" }); },
   });
