@@ -6,7 +6,7 @@ import {
   BookOpen, Settings, ChevronDown, ChevronRight, Menu, X,
   PanelLeftClose, PanelLeftOpen, LogOut, Tag, Clock, Filter,
   Building2, Inbox, ListOrdered, HelpCircle, Shield,
-  Network, Calendar, Zap, FileText, Bell, TrendingUp, ShieldCheck,
+  Calendar, Zap, FileText, Bell, ShieldCheck,
   Monitor, FileSignature, BarChart3, DollarSign, RefreshCw, Video, History,
   MessageSquare
 } from "lucide-react";
@@ -18,15 +18,37 @@ const navItems = [
   {
     label: "Atendimento", icon: Ticket, children: [
       { label: "Mensagens", icon: MessageSquare, path: "/chat", pageId: "chat.principal" },
+      { label: "Meus Tickets", icon: Inbox, path: "/tickets/meus", pageId: "tickets.meus" },
+      { label: "Todos os Tickets", icon: ListOrdered, path: "/tickets/todos", pageId: "tickets.todos" },
+      { label: "Histórico", icon: History, path: "/tickets/historico", pageId: "tickets.historico" },
       { label: "Acesso Remoto", icon: Monitor, path: "/acesso-remoto", pageId: "atendimento.acesso_remoto" },
+      { label: "Videoconferência", icon: Video, path: "/videoconferencia", pageId: "atendimento.videoconferencia" },
       { label: "Agendamentos", icon: Calendar, path: "/agendamentos", pageId: "atendimento.agendamentos" },
       { label: "Aprovações", icon: ShieldCheck, path: "/tickets/aprovacao", pageId: "tickets.aprovacao" },
       { label: "Inventário", icon: Monitor, path: "/inventario", pageId: "inventario" },
-      { label: "Meus Tickets", icon: Inbox, path: "/tickets/meus", pageId: "tickets.meus" },
-      { label: "Todos os Tickets", icon: ListOrdered, path: "/tickets/todos", pageId: "tickets.todos" },
-      { label: "Histórico de Atendimentos", icon: History, path: "/tickets/historico", pageId: "tickets.historico" },
-      { label: "Videoconferência", icon: Video, path: "/videoconferencia", pageId: "atendimento.videoconferencia" },
       { label: "Portal do Usuário", icon: Ticket, path: "/meus-atendimentos", pageId: "portal.usuario" },
+    ]
+  },
+  {
+    label: "Cadastros", icon: Users, permission: "users.manage", children: [
+      { label: "Empresas", icon: Building2, path: "/clientes", pageId: "cadastros.clientes" },
+      { label: "Departamentos", icon: Building2, path: "/departamentos", pageId: "cadastros.departamentos" },
+      { label: "Equipes", icon: UsersRound, path: "/equipes", pageId: "cadastros.equipes" },
+      { label: "Perfil do Usuário", icon: Shield, path: "/cadastros/perfis", pageId: "cadastros.perfis" },
+      { label: "Usuários do Sistema", icon: Users, path: "/usuarios", pageId: "cadastros.usuarios" },
+    ]
+  },
+  {
+    label: "Financeiro", icon: DollarSign, permission: "admin.access", children: [
+      { label: "Gestão de Contratos", icon: FileSignature, path: "/contratos", pageId: "financeiro.contratos" },
+    ]
+  },
+  {
+    label: "Relatórios", icon: BarChart3, permission: "reports.view", children: [
+      { label: "Cronogramas", icon: Clock, path: "/admin/cronogramas", pageId: "admin.cronogramas" },
+      { label: "Filtro de Tickets", icon: Filter, path: "/admin/filtros", pageId: "admin.filtros" },
+      { label: "Log de Auditoria", icon: ShieldCheck, path: "/admin/auditoria", pageId: "admin.auditoria" },
+      { label: "Tópico de Ajuda", icon: HelpCircle, path: "/admin/topicos", pageId: "admin.topicos" },
     ]
   },
   {
@@ -34,30 +56,6 @@ const navItems = [
       { label: "Artigos", icon: FileText, path: "/kb/artigos", pageId: "kb.artigos" },
       { label: "Categorias", icon: Tag, path: "/kb/categorias", pageId: "kb.categorias" },
       { label: "Respostas Rápidas", icon: Zap, path: "/kb/respostas", pageId: "kb.respostas" },
-    ]
-  },
-  {
-    label: "Cadastros", icon: Users, permission: "users.manage", children: [
-      { label: "Clientes", icon: Users, path: "/clientes", pageId: "cadastros.clientes" },
-      { label: "Departamentos", icon: Building2, path: "/departamentos", pageId: "cadastros.departamentos" },
-      { label: "Equipes", icon: UsersRound, path: "/equipes", pageId: "cadastros.equipes" },
-      { label: "Organizações", icon: Network, path: "/organizacoes", pageId: "cadastros.organizacoes" },
-      { label: "Perfis de Usuário", icon: Shield, path: "/cadastros/perfis", pageId: "cadastros.perfis" },
-      { label: "Usuários", icon: Users, path: "/usuarios", pageId: "cadastros.usuarios" },
-    ]
-  },
-  {
-    label: "Financeiro", icon: DollarSign, permission: "admin.access", children: [
-      { label: "Contratos", icon: FileSignature, path: "/contratos", pageId: "financeiro.contratos" },
-      { label: "Finanças", icon: TrendingUp, path: "/financeiro", pageId: "financeiro.financas" },
-    ]
-  },
-  {
-    label: "Relatórios", icon: BarChart3, permission: "reports.view", children: [
-      { label: "Cronogramas", icon: Clock, path: "/admin/cronogramas", pageId: "admin.cronogramas" },
-      { label: "Filtros de Tickets", icon: Filter, path: "/admin/filtros", pageId: "admin.filtros" },
-      { label: "Log de Auditoria", icon: ShieldCheck, path: "/admin/auditoria", pageId: "admin.auditoria" },
-      { label: "Tópicos de Ajuda", icon: HelpCircle, path: "/admin/topicos", pageId: "admin.topicos" },
     ]
   },
   {
