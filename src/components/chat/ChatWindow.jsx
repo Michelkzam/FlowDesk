@@ -166,6 +166,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
       setShowTransferDialog(false);
       setTransferData({ agentId: "", agentName: "", note: "" });
+      if (onClose) onClose();
     },
   });
 
