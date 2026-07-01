@@ -91,6 +91,17 @@ function NavItem({ item, depth = 0, collapsed }) {
   const timeoutRef = useRef(null);
   const isActive = item.path && (item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path));
 
+  useEffect(() => {
+    if (isChildActive && !open) {
+      setOpen(true);
+      const saved = getOpenMenus();
+      if (!saved.includes(item.label)) {
+        saved.push(item.label);
+        saveOpenMenus(saved);
+      }
+    }
+  }, [isChildActive, item.label]);
+
   const toggleOpen = () => {
     setOpen(prev => {
       const saved = getOpenMenus();
