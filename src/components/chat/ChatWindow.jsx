@@ -587,7 +587,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             <span className="text-4xl font-bold text-white animate-pulse">{screenRecordCountdown}</span>
           </div>
         )}
-        <div className="flex items-center gap-1">
+        <form onSubmit={handleSend} className="flex items-center gap-1">
           <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" onClick={handleAttachFile} title="Anexar arquivo">
             <Paperclip className="w-4 h-4" />
           </Button>
@@ -609,7 +609,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 h-9 px-3" disabled={!message.trim()}>
             <Send className="w-4 h-4" />
           </Button>
-        </div>
+        </form>
       </div>
 
       {/* Transfer Dialog */}
