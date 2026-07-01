@@ -71,10 +71,7 @@ const navItems = [
 
 function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
   const location = useLocation();
-  const isChildActive = item.children?.some(c =>
-    c.path ? location.pathname.startsWith(c.path) : false
-  );
-  const open = item.children ? (openMenu === item.label || isChildActive) : false;
+  const open = item.children ? openMenu === item.label : false;
   const [hovered, setHovered] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0 });
   const itemRef = useRef(null);
@@ -106,6 +103,9 @@ function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
 
   if (item.children) {
     if (collapsed && depth === 0) {
+      const hasActiveChild = item.children?.some(c =>
+        c.path ? location.pathname.startsWith(c.path) : false
+      );
       return (
         <div
           ref={itemRef}
@@ -116,7 +116,7 @@ function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
           <button
             className={cn(
               "w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
-              isChildActive
+              hasActiveChild
                 ? "bg-sidebar-primary text-sidebar-primary-foreground"
                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             )}
