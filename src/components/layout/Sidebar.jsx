@@ -69,47 +69,22 @@ const navItems = [
   },
 ];
 
-function getOpenMenus() {
-  try { return JSON.parse(localStorage.getItem("sidebarOpenMenus") || "[]"); } catch { return []; }
-}
-function saveOpenMenus(menus) {
-  localStorage.setItem("sidebarOpenMenus", JSON.stringify(menus));
-}
-
-function NavItem({ item, depth = 0, collapsed }) {
+function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
   const location = useLocation();
   const isChildActive = item.children?.some(c =>
     c.path ? location.pathname.startsWith(c.path) : false
   );
-  const [open, setOpen] = useState(() => {
-    const saved = getOpenMenus();
-    return saved.includes(item.label) || isChildActive;
-  });
+  const open = item.children ? (openMenu === item.label || isChildActive) : false;
   const [hovered, setHovered] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0 });
   const itemRef = useRef(null);
   const timeoutRef = useRef(null);
   const isActive = item.path && (item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path));
 
-  useEffect(() => {
-    if (isChildActive && !open) {
-      setOpen(true);
-      const saved = getOpenMenus();
-      if (!saved.includes(item.label)) {
-        saved.push(item.label);
-        saveOpenMenus(saved);
-      }
-    }
-  }, [isChildActive, item.label]);
-
   const toggleOpen = () => {
-    setOpen(prev => {
-      const saved = getOpenMenus();
-      const next = !prev;
-      if (next) { if (!saved.includes(item.label)) { saved.push(item.label); saveOpenMenus(saved); } }
-      else { saveOpenMenus(saved.filter(l => l !== item.label)); }
-      return next;
-    });
+    if (item.children) {
+      setOpenMenu(prev => prev === item.label ? null : item.label);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -235,6 +210,7 @@ function NavItem({ item, depth = 0, collapsed }) {
 
 export default function Sidebar({ collapsed, onToggleCollapse }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
   const { logout, profile, can, canAccessPage } = useAuth();
 
   const filteredNavItems = navItems.filter(item => {
@@ -323,7 +299,7 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
         {/* Nav */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {filteredNavItems.map(item => (
-            <NavItem key={item.label} item={item} collapsed={collapsed} />
+            <NavItem key={item.label} item={item} collapsed={collapsed} openMenu={openMenu} setOpenMenu={setOpenMenu} />
           ))}
         </nav>
 
