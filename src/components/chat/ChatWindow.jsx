@@ -263,7 +263,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: fileUrl || `📎 Arquivo: ${file.name}`,
+        body: `📎 ${file.name}: ${fileUrl}`,
         type: "message",
         is_internal: false,
       });
@@ -326,7 +326,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: audioUrl || "🎵 Áudio gravado",
+        body: `📎 audio_${Date.now()}.webm: ${audioUrl}`,
         type: "message",
         is_internal: false,
       });
@@ -370,7 +370,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: imageUrl || "🖼️ Print da tela",
+            body: `📎 screenshot_${Date.now()}.png: ${imageUrl}`,
             type: "message",
             is_internal: false,
           });
@@ -431,7 +431,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: videoUrl || "🎬 Gravação de tela",
+            body: `📎 recording_${Date.now()}.webm: ${videoUrl}`,
             type: "message",
             is_internal: false,
           });
