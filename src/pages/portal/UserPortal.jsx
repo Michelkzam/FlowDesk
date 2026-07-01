@@ -5,7 +5,7 @@ import { playSystemSound } from '@/lib/soundSystem';
 import { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Send, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { MessageSquare, LogOut, User, Clock, CheckCircle, AlertCircle, Phone, Building2, ArrowRight, Mail, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import ChatInput from "@/components/chat/ChatInput";
 
 const statusConfig = {
   open: { label: "Aberto", cls: "bg-blue-100 text-blue-700", icon: AlertCircle },
@@ -253,8 +254,9 @@ export default function UserPortal() {
     },
   });
 
-  const handleSend = async () => {
-    if (!message.trim() || !selectedTicket) return;
+  const handleSend = async (text, attachments) => {
+    const msgText = text || message;
+    if ((!msgText.trim() && (!attachments || attachments.length === 0)) || !selectedTicket) return;
 
     const now = new Date().toISOString();
     const needsReopen = ["waiting", "resolved"].includes(selectedTicket.status);
@@ -273,9 +275,13 @@ export default function UserPortal() {
     queryClient.invalidateQueries({ queryKey: ["my-tickets", currentUser?.email] });
     queryClient.invalidateQueries({ queryKey: ["tickets"] });
 
+    const messageBody = attachments && attachments.length > 0
+      ? msgText + "\n" + attachments.map(a => `📎 ${a.name}: ${a.url}`).join("\n")
+      : msgText;
+
     sendMutation.mutate({
       ticket_id: selectedTicket.id,
-      body: message,
+      body: messageBody,
       sender_type: "user",
       sender_id: currentUser?.id,
       sender_name: currentUser?.full_name || currentUser?.email,
@@ -463,20 +469,7 @@ export default function UserPortal() {
 
             {/* Input */}
             {!["resolved", "closed"].includes(selectedTicket.status) ? (
-              <div className="border-t border-border p-3 bg-card flex gap-2 items-end">
-                <textarea
-                  className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
-                  placeholder="Digite sua mensagem..."
-                  value={message}
-                  rows={1}
-                  onChange={e => setMessage(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                />
-                <Button onClick={handleSend} disabled={!message.trim() || sendMutation.isPending}
-                  className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+              <ChatInput onSend={handleSend} disabled={sendMutation.isPending} />
             ) : (
               <div className="border-t border-border p-4 bg-muted/30 text-center">
                 <p className="text-sm text-muted-foreground">Chat finalizado. Obrigado pelo contato!</p>

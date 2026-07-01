@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip, Mic, MicOff, X, FileText, Play, Pause, Loader2 } from "lucide-react";
+import { Send, Paperclip, Mic, MicOff, X, FileText, Play, Pause, Loader2, Camera, Video, VideoOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -101,11 +101,14 @@ export default function ChatInput({ onSend, disabled }) {
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioBlobRef = useRef(null);
+  const videoChunksRef = useRef([]);
 
   const uploadFile = async (file) => {
     const ext = file.name.split(".").pop();
@@ -223,6 +226,116 @@ export default function ChatInput({ onSend, disabled }) {
     setAudioUrl(null);
   };
 
+  const handleScreenshot = useCallback(async () => {
+    setIsCapturing(true);
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { mediaSource: "screen" },
+      });
+
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      await video.play();
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+
+      stream.getTracks().forEach((track) => track.stop());
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      const file = new File([blob], `screenshot-${Date.now()}.png`, { type: "image/png" });
+      const preview = URL.createObjectURL(blob);
+
+      setAttachments(prev => [...prev, { file, name: file.name, size: file.size, type: file.type, preview, uploading: false }]);
+
+      toast({
+        title: "Screenshot capturada",
+        description: "A imagem foi anexada à mensagem.",
+      });
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        toast({
+          title: "Erro ao capturar tela",
+          description: "Não foi possível capturar a tela.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [toast]);
+
+  const startVideoRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { mediaSource: "screen" },
+        audio: true,
+      });
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm;codecs=vp9",
+      });
+
+      videoChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(videoChunksRef.current, { type: "video/webm" });
+        const file = new File([blob], `recording-${Date.now()}.webm`, { type: "video/webm" });
+
+        setAttachments(prev => [...prev, { file, name: file.name, size: file.size, type: file.type, preview: null, uploading: false }]);
+
+        toast({
+          title: "Gravação finalizada",
+          description: "O vídeo foi anexado à mensagem.",
+        });
+      };
+
+      stream.getTracks().forEach((track) => {
+        track.onended = () => {
+          if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            setIsVideoRecording(false);
+          }
+        };
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000);
+      setIsVideoRecording(true);
+
+      toast({
+        title: "Gravação iniciada",
+        description: "Clique novamente para parar a gravação.",
+      });
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        toast({
+          title: "Erro ao iniciar gravação",
+          description: "Não foi possível iniciar a gravação da tela.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [toast]);
+
+  const stopVideoRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsVideoRecording(false);
+    }
+  }, []);
+
   const handleSend = async () => {
     const currentAudioBlob = audioBlobRef.current;
     if (!text.trim() && attachments.length === 0 && !currentAudioBlob) return;
@@ -296,15 +409,23 @@ export default function ChatInput({ onSend, disabled }) {
         </div>
       )}
 
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-1 items-center">
         <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={handleFileSelect} />
 
-        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={disabled || recording || uploading}>
+        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={disabled || recording || uploading} title="Anexar arquivo">
           <Paperclip className="w-4 h-4" />
         </Button>
 
-        <Button variant="outline" size="icon" className={cn("h-10 w-10 shrink-0", recording && "bg-red-100 border-red-300 text-red-600")} onClick={recording ? stopRecording : startRecording} disabled={disabled || uploading}>
+        <Button variant="outline" size="icon" className={cn("h-10 w-10 shrink-0", recording && "bg-red-100 border-red-300 text-red-600")} onClick={recording ? stopRecording : startRecording} disabled={disabled || uploading} title="Gravar áudio">
           <Mic className="w-4 h-4" />
+        </Button>
+
+        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleScreenshot} disabled={disabled || isCapturing || uploading} title="Capturar tela">
+          {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+        </Button>
+
+        <Button variant="outline" size="icon" className={cn("h-10 w-10 shrink-0", isVideoRecording && "bg-red-100 border-red-300 text-red-600")} onClick={isVideoRecording ? stopVideoRecording : startVideoRecording} disabled={disabled || uploading} title="Gravar tela">
+          {isVideoRecording ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
         </Button>
 
         <textarea
