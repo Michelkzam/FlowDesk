@@ -7,11 +7,16 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -33,6 +38,8 @@ const statusConfig = {
 
 export default function ChatWindow({ ticket, onClose, onUpdate }) {
   const [message, setMessage] = useState("");
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [transferData, setTransferData] = useState({ agentId: "", agentName: "", note: "" });
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
   const prevMsgCountRef = useRef(null);
@@ -51,6 +58,15 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
       return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     },
     refetchInterval: 5000,
+  });
+
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("users").select("id, full_name, email, status").in("role", ["admin", "agent"]);
+      if (error) return [];
+      return (data || []).filter(a => a.status === "active");
+    },
   });
 
   useEffect(() => {
@@ -116,6 +132,52 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     },
   });
 
+  const transferMutation = useMutation({
+    mutationFn: async ({ toAgentId, toAgentName, note }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { data: userProfile } = await supabase.from("users").select("full_name").eq("id", user.id).single();
+      const fromAgentName = userProfile?.full_name || user.email || "Operador";
+
+      const { error: msgError } = await supabase.from("ticket_messages").insert({
+        ticket_id: ticket.id,
+        body: `[Transferência] Ticket transferido de ${fromAgentName} para ${toAgentName}.\n\nMotivo: ${note}`,
+        sender_type: "system",
+        sender_id: user.id,
+        sender_name: fromAgentName,
+        type: "system",
+        is_internal: true,
+      });
+      if (msgError) throw msgError;
+
+      const { error: updateError } = await supabase
+        .from("tickets")
+        .update({
+          agent_id: toAgentId,
+          agent_name: toAgentName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", ticket.id);
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+      setShowTransferDialog(false);
+      setTransferData({ agentId: "", agentName: "", note: "" });
+    },
+  });
+
+  const handleTransfer = () => {
+    if (!transferData.agentId || !transferData.note.trim()) return;
+    transferMutation.mutate({
+      toAgentId: transferData.agentId,
+      toAgentName: transferData.agentName,
+      note: transferData.note,
+    });
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -147,6 +209,14 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           <p className="text-xs text-muted-foreground truncate">{ticket.title}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setShowTransferDialog(true)}
+          >
+            <ArrowRightLeft className="w-3 h-3" /> Transferir
+          </Button>
           <Select value={ticket.status} onValueChange={(v) => updateStatusMutation.mutate(v)}>
             <SelectTrigger className={`h-7 text-xs border-0 ${status.class} font-medium w-auto gap-1`}>
               <StatusIcon className="w-3 h-3" />
@@ -237,6 +307,59 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           </Button>
         </form>
       </div>
+
+      {/* Transfer Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5" /> Transferir Ticket
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Transferir para *</Label>
+              <Select value={transferData.agentId || "none"} onValueChange={v => {
+                if (v === "none") {
+                  setTransferData(p => ({ ...p, agentId: "", agentName: "" }));
+                } else {
+                  const ag = agents.find(a => a.id === v);
+                  setTransferData(p => ({ ...p, agentId: v, agentName: ag?.full_name || "" }));
+                }
+              }}>
+                <SelectTrigger><SelectValue placeholder="Selecione o técnico..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Selecione...</SelectItem>
+                  {agents.filter(a => a.id !== ticket.agent_id).map(a => (
+                    <SelectItem key={a.id} value={a.id}>{a.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Motivo da Transferência *</Label>
+              <Textarea
+                placeholder="Descreva o motivo da transferência..."
+                value={transferData.note}
+                onChange={e => setTransferData(p => ({ ...p, note: e.target.value }))}
+                className="h-24"
+              />
+              <p className="text-xs text-muted-foreground">Esta nota será registrada como nota interna no ticket.</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowTransferDialog(false)}>Cancelar</Button>
+            <Button
+              onClick={handleTransfer}
+              disabled={!transferData.agentId || !transferData.note.trim() || transferMutation.isPending}
+              className="gap-1.5"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              {transferMutation.isPending ? "Transferindo..." : "Confirmar Transferência"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
