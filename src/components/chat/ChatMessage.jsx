@@ -3,6 +3,17 @@ import { format } from "date-fns";
 import { Play, Pause, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+function guessType(name) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/" + (ext === "jpg" ? "jpeg" : ext);
+  if (["mp4","webm","avi","mov"].includes(ext)) return "video/" + ext;
+  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/webm";
+  if (["pdf"].includes(ext)) return "application/pdf";
+  if (["doc","docx"].includes(ext)) return "application/msword";
+  if (["xls","xlsx"].includes(ext)) return "application/vnd.ms-excel";
+  return "application/octet-stream";
+}
+
 function parseAttachments(msg) {
   const inlineAttachments = [];
   let bodyText = msg.body || msg.message || "";
@@ -11,7 +22,7 @@ function parseAttachments(msg) {
     try {
       const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
       if (Array.isArray(atts)) {
-        atts.forEach(a => inlineAttachments.push(a));
+        atts.forEach(a => inlineAttachments.push({ ...a, type: a.type || guessType(a.name || "") }));
       }
     } catch {}
   }
@@ -27,7 +38,7 @@ function parseAttachments(msg) {
       const url = match[2].trim();
       const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
       if (!alreadyHas) {
-        inlineAttachments.push({ name, url });
+        inlineAttachments.push({ name, url, type: guessType(name) });
       }
     } else {
       textLines.push(line);
