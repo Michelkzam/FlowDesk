@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Search, Download, ExternalLink, LayoutList, Columns, Calendar, X, CheckSquare, Square, History, Lock } from "lucide-react";
+import { Plus, Search, Download, ExternalLink, LayoutList, Columns, Calendar, X, CheckSquare, Square, History, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -236,12 +236,18 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
                 {filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground text-sm">Nenhum ticket encontrado</TableCell></TableRow>
                 ) : filtered.map(t => {
-                  const isInProgressByOther = t.status === "in_progress" && currentUser && t.agent_id !== currentUser.id;
+                  const isAssignedToOther = t.agent_id && currentUser && t.agent_id !== currentUser.id;
+                  const isAssignedToMe = t.agent_id && currentUser && t.agent_id === currentUser.id;
+                  const isUnassigned = !t.agent_id;
                   return (
                   <TableRow key={t.id}
-                    className={`hover:bg-muted/20 transition-colors cursor-pointer ${selected.has(t.id) ? "bg-primary/5" : ""} ${isInProgressByOther ? "opacity-60 bg-zinc-50 dark:bg-zinc-900/50" : ""}`}
-                    onClick={() => openTicketWindow(t.id)}>
-                    <TableCell className="py-2.5" onClick={e => { e.stopPropagation(); toggleOne(t.id); }}>
+                    className={`transition-colors ${
+                      isAssignedToOther 
+                        ? "opacity-50 bg-zinc-50 dark:bg-zinc-900/30 cursor-not-allowed" 
+                        : "hover:bg-muted/20 cursor-pointer"
+                    } ${selected.has(t.id) ? "bg-primary/5" : ""}`}
+                    onClick={() => !isAssignedToOther && openTicketWindow(t.id)}>
+                    <TableCell className="py-2.5" onClick={e => { e.stopPropagation(); !isAssignedToOther && toggleOne(t.id); }}>
                       {selected.has(t.id)
                         ? <CheckSquare className="w-4 h-4 text-primary" />
                         : <Square className="w-4 h-4 text-muted-foreground" />}
@@ -249,10 +255,12 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
                     <TableCell className="py-2.5 text-xs font-mono text-muted-foreground">{t.number || "#—"}</TableCell>
                     <TableCell className="py-2.5">
                       <div className="max-w-[250px]">
-                        <p className={`text-sm font-medium truncate ${isInProgressByOther ? "text-muted-foreground" : ""}`}>{t.title}</p>
+                        <p className={`text-sm font-medium truncate ${isAssignedToOther ? "text-muted-foreground" : ""}`}>{t.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {sourceEmoji[t.source]} {t.help_topic_name || ""}
-                          {isInProgressByOther && <span className="ml-1 text-blue-500">• Em atendimento</span>}
+                          {isAssignedToOther && <span className="ml-1 text-blue-500 font-medium">🔒 Atendido por: {t.agent_name}</span>}
+                          {isAssignedToMe && <span className="ml-1 text-emerald-500 font-medium">✓ Seu atendimento</span>}
+                          {isUnassigned && <span className="ml-1 text-yellow-500">• Aguardando atendimento</span>}
                         </p>
                       </div>
                     </TableCell>
@@ -271,13 +279,18 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
                     </TableCell>
                     <TableCell className="py-2.5"><StatusBadge value={t.status} /></TableCell>
                     <TableCell className="py-2.5 text-sm">
-                      {isInProgressByOther ? (
-                        <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1 animate-pulse">
+                      {isAssignedToOther ? (
+                        <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1">
                           <Lock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                           <div className="flex flex-col">
                             <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wide">Atendido por</span>
                             <span className="text-blue-700 dark:text-blue-300 font-bold text-xs">{t.agent_name || "—"}</span>
                           </div>
+                        </div>
+                      ) : isAssignedToMe ? (
+                        <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2 py-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-emerald-700 dark:text-emerald-300 font-bold text-xs">Você</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">{t.agent_name || "—"}</span>
