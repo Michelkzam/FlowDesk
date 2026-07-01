@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, Inbox } from "lucide-react";
+import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, Inbox, Paperclip, Mic, Camera, Video, Square, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -38,6 +38,13 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
   const [message, setMessage] = useState("");
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [transferData, setTransferData] = useState({ agentId: "", agentName: "", note: "" });
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [isRecordingScreen, setIsRecordingScreen] = useState(false);
+  const [screenRecordCountdown, setScreenRecordCountdown] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
   const prevMsgCountRef = useRef(null);
@@ -187,6 +194,216 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     sendMutation.mutate(message.trim());
   };
 
+  const handleAttachFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const filePath = `chat-attachments/${ticket.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      await supabase.from("ticket_messages").insert({
+        ticket_id: ticket.id,
+        sender_type: "agent",
+        sender_id: session?.user?.id,
+        sender_name: "Operador",
+        body: `📎 Arquivo: ${file.name}`,
+        type: "message",
+        is_internal: false,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+    } catch (error) {
+      console.error("[Chat] Erro ao enviar arquivo:", error);
+    }
+    e.target.value = "";
+  };
+
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecordingAudio(true);
+    } catch (error) {
+      console.error("[Chat] Erro ao iniciar gravação:", error);
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorderRef.current && isRecordingAudio) {
+      mediaRecorderRef.current.stop();
+      setIsRecordingAudio(false);
+    }
+  };
+
+  const sendAudioRecording = async () => {
+    if (!audioBlob) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const filePath = `chat-audio/${ticket.id}/${Date.now()}.webm`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, audioBlob, { contentType: "audio/webm" });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      await supabase.from("ticket_messages").insert({
+        ticket_id: ticket.id,
+        sender_type: "agent",
+        sender_id: session?.user?.id,
+        sender_name: "Operador",
+        body: `🎵 Áudio gravado`,
+        type: "message",
+        is_internal: false,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+      setAudioBlob(null);
+    } catch (error) {
+      console.error("[Chat] Erro ao enviar áudio:", error);
+    }
+  };
+
+  const handleScreenCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      await video.play();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      stream.getTracks().forEach(t => t.stop());
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const filePath = `chat-screenshots/${ticket.id}/${Date.now()}.png`;
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(filePath, blob, { contentType: "image/png" });
+
+          if (uploadError) throw uploadError;
+
+          await supabase.from("ticket_messages").insert({
+            ticket_id: ticket.id,
+            sender_type: "agent",
+            sender_id: session?.user?.id,
+            sender_name: "Operador",
+            body: `🖼️ Print da tela`,
+            type: "message",
+            is_internal: false,
+          });
+
+          queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+        } catch (error) {
+          console.error("[Chat] Erro ao enviar print:", error);
+        }
+      }, "image/png");
+    } catch (error) {
+      console.error("[Chat] Erro ao capturar tela:", error);
+    }
+  };
+
+  const startScreenRecording = async () => {
+    let countdown = 3;
+    setScreenRecordCountdown(countdown);
+
+    const interval = setInterval(() => {
+      countdown--;
+      setScreenRecordCountdown(countdown);
+      if (countdown === 0) {
+        clearInterval(interval);
+        beginScreenRecording();
+      }
+    }, 1000);
+  };
+
+  const beginScreenRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        stream.getTracks().forEach(t => t.stop());
+
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const filePath = `chat-videos/${ticket.id}/${Date.now()}.webm`;
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(filePath, blob, { contentType: "video/webm" });
+
+          if (uploadError) throw uploadError;
+
+          await supabase.from("ticket_messages").insert({
+            ticket_id: ticket.id,
+            sender_type: "agent",
+            sender_id: session?.user?.id,
+            sender_name: "Operador",
+            body: `🎬 Gravação de tela`,
+            type: "message",
+            is_internal: false,
+          });
+
+          queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+        } catch (error) {
+          console.error("[Chat] Erro ao enviar gravação:", error);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecordingScreen(true);
+    } catch (error) {
+      console.error("[Chat] Erro ao iniciar gravação de tela:", error);
+    }
+  };
+
+  const stopScreenRecording = () => {
+    if (mediaRecorderRef.current && isRecordingScreen) {
+      mediaRecorderRef.current.stop();
+      setIsRecordingScreen(false);
+    }
+  };
+
   const status = statusConfig[ticket.status] || statusConfig.open;
   const StatusIcon = status.icon;
 
@@ -328,7 +545,61 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
       {/* Message input */}
       <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-card">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept="*/*"
+        />
+        {isRecordingScreen && (
+          <div className="flex items-center gap-2 mb-2 p-2 bg-red-100 border border-red-300 rounded-lg">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-xs text-red-700 font-medium">Gravando tela...</span>
+            <Button size="sm" variant="destructive" className="h-6 text-xs ml-auto" onClick={stopScreenRecording}>
+              <Square className="w-3 h-3 mr-1" /> Parar
+            </Button>
+          </div>
+        )}
+        {isRecordingAudio && (
+          <div className="flex items-center gap-2 mb-2 p-2 bg-red-100 border border-red-300 rounded-lg">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <span className="text-xs text-red-700 font-medium">Gravando áudio...</span>
+            <Button size="sm" variant="destructive" className="h-6 text-xs ml-auto" onClick={stopAudioRecording}>
+              <Square className="w-3 h-3 mr-1" /> Parar
+            </Button>
+          </div>
+        )}
+        {audioBlob && !isRecordingAudio && (
+          <div className="flex items-center gap-2 mb-2 p-2 bg-blue-100 border border-blue-300 rounded-lg">
+            <Mic className="w-4 h-4 text-blue-600" />
+            <span className="text-xs text-blue-700 font-medium">Áudio gravado</span>
+            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => setAudioBlob(null)}>
+              <X className="w-3 h-3 mr-1" /> Cancelar
+            </Button>
+            <Button size="sm" className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={sendAudioRecording}>
+              <Send className="w-3 h-3 mr-1" /> Enviar
+            </Button>
+          </div>
+        )}
+        {screenRecordCountdown > 0 && (
+          <div className="flex items-center justify-center mb-2 p-4 bg-black/80 rounded-lg">
+            <span className="text-4xl font-bold text-white animate-pulse">{screenRecordCountdown}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1">
+          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" onClick={handleAttachFile} title="Anexar arquivo">
+            <Paperclip className="w-4 h-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className={`h-9 w-9 ${isRecordingAudio ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`} onClick={isRecordingAudio ? stopAudioRecording : startAudioRecording} title="Gravar áudio">
+            <Mic className="w-4 h-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" onClick={handleScreenCapture} title="Print da tela">
+            <Camera className="w-4 h-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className={`h-9 w-9 ${isRecordingScreen ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`} onClick={isRecordingScreen ? stopScreenRecording : startScreenRecording} title="Gravar tela">
+            <Video className="w-4 h-4" />
+          </Button>
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -338,7 +609,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 h-9 px-3" disabled={!message.trim()}>
             <Send className="w-4 h-4" />
           </Button>
-        </form>
+        </div>
       </div>
 
       {/* Transfer Dialog */}
