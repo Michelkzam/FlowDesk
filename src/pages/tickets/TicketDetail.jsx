@@ -791,13 +791,13 @@ export default function TicketDetail({ isPopup = false }) {
                     updateMutation.mutate({ agent_id: "", agent_name: "" });
                   } else {
                     const ag = agents.find(a => a.id === v);
-                    openTransferDialog(v, ag?.name || "");
+                    openTransferDialog(v, ag?.full_name || ag?.name || "");
                   }
                 }}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sem agente" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem agente</SelectItem>
-                    {agents.filter(a => a.status === "active").map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                    {agents.filter(a => a.status === "active").map(a => <SelectItem key={a.id} value={a.id}>{a.full_name || a.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
