@@ -409,8 +409,8 @@ export default function ChatInput({ onSend, disabled }) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-1 items-center">
+      <div className="flex gap-2 items-end">
+        <div className="flex gap-1 items-center shrink-0">
           <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={handleFileSelect} />
 
           <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={disabled || recording || uploading} title="Anexar arquivo">
@@ -430,22 +430,20 @@ export default function ChatInput({ onSend, disabled }) {
           </Button>
         </div>
 
-        <div className="flex gap-2 items-end">
-          <textarea
-            className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
-            placeholder={recording ? "Gravando áudio..." : "Digite sua mensagem..."}
-            value={text}
-            rows={1}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            disabled={disabled || recording}
-          />
+        <textarea
+          className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
+          placeholder={recording ? "Gravando áudio..." : "Digite sua mensagem..."}
+          value={text}
+          rows={1}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          disabled={disabled || recording}
+        />
 
-          <Button onClick={handleSend} disabled={disabled || uploading || recording || (!text.trim() && attachments.length === 0 && !audioBlob)}
-            className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
-        </div>
+        <Button onClick={handleSend} disabled={disabled || uploading || recording || (!text.trim() && attachments.length === 0 && !audioBlob)}
+          className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </Button>
       </div>
     </div>
   );
