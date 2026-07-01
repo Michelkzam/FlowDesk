@@ -106,30 +106,29 @@ export default function UsersPage() {
         throw new Error("As senhas não coincidem");
       }
 
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: d.email,
-        password: d.password,
-        email_confirm: true,
-        user_metadata: { full_name: d.full_name, role: d.role }
-      });
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Não autenticado");
 
-      const userId = data.user?.id;
-      if (!userId) throw new Error('Erro ao criar usuário');
-
-      const { error: insertError } = await supabase.from('users').upsert({
-        id: userId,
-        email: d.email,
-        password_hash: 'supabase_auth',
-        full_name: d.full_name,
-        role: d.role,
-        role_id: d.role_id || null,
-        phone: d.phone || null,
-        department_id: d.department_id || null,
-        client_id: d.client_id || null,
-        status: 'active'
+      const response = await fetch("/api/users/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          email: d.email,
+          password: d.password,
+          full_name: d.full_name,
+          role: d.role,
+          phone: d.phone,
+          department_id: d.department_id,
+          client_id: d.client_id,
+        }),
       });
-      if (insertError) throw insertError;
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao criar usuário");
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-users"] });
