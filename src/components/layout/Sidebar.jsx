@@ -162,7 +162,7 @@ function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
             "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
             "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
             depth > 0 && "pl-8",
-            isChildActive && "text-sidebar-foreground"
+            open && "text-sidebar-foreground"
           )}
         >
           {item.icon && <item.icon className="w-4 h-4 shrink-0" />}
