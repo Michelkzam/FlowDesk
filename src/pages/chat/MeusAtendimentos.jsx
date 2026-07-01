@@ -270,32 +270,48 @@ export default function MeusAtendimentos() {
     return (
       <div className="flex flex-col h-[calc(100vh-120px)] border border-border rounded-xl overflow-hidden bg-card">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card flex-shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedTicket(null)}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-            <User className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm truncate">{selectedTicket.client_name || "Sem cliente"}</span>
-              <span className="text-sm">{channelEmoji[selectedTicket.channel] || "🌐"}</span>
+        <div className="px-4 py-3 border-b border-border bg-card flex-shrink-0 space-y-2">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedTicket(null)}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-mono text-muted-foreground">{selectedTicket.number}</span>
+                <span className="font-semibold text-sm truncate">{selectedTicket.title}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <Badge variant="outline" className={`text-[10px] ${
+                  selectedTicket.status === "open" ? "bg-red-100 text-red-700 border-red-200" :
+                  selectedTicket.status === "in_progress" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                  "bg-emerald-100 text-emerald-700 border-emerald-200"
+                }`}>
+                  {selectedTicket.status === "open" ? "Aguardando" :
+                   selectedTicket.status === "in_progress" ? "Em Atendimento" :
+                   selectedTicket.status === "resolved" ? "Resolvido" : "Fechado"}
+                </Badge>
+                <Badge variant="outline" className={`text-[10px] ${
+                  selectedTicket.priority === "emergency" ? "bg-red-100 text-red-700 border-red-200" :
+                  selectedTicket.priority === "high" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                  selectedTicket.priority === "normal" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                  "bg-muted text-muted-foreground"
+                }`}>
+                  {selectedTicket.priority === "emergency" ? "Emergência" :
+                   selectedTicket.priority === "high" ? "Alta" :
+                   selectedTicket.priority === "normal" ? "Normal" : "Baixa"}
+                </Badge>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground truncate">{selectedTicket.title}</p>
           </div>
-          <Badge variant="outline" className={`text-xs ${
-            selectedTicket.status === "open" ? "bg-red-100 text-red-700 border-red-200" :
-            selectedTicket.status === "in_progress" ? "bg-amber-100 text-amber-700 border-amber-200" :
-            "bg-emerald-100 text-emerald-700 border-emerald-200"
-          }`}>
-            {selectedTicket.status === "open" ? "Aguardando" :
-             selectedTicket.status === "in_progress" ? "Em Atendimento" :
-             selectedTicket.status === "resolved" ? "Resolvido" : "Fechado"}
-          </Badge>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <span>👤 {selectedTicket.user_name || selectedTicket.client_name || "—"}</span>
+            {selectedTicket.organization_name && <span>🏢 {selectedTicket.organization_name}</span>}
+            {selectedTicket.client_name && selectedTicket.user_name !== selectedTicket.client_name && <span>👤 {selectedTicket.client_name}</span>}
+            <span>🕐 {format(new Date(selectedTicket.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
+          </div>
         </div>
 
-        {/* Messages */}
+{/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {selectedTicket.description && (
             <div className="flex justify-start">
