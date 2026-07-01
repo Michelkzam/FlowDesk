@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, XCircle, ArrowRightLeft, Inbox } from "lucide-react";
+import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, Inbox } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -29,11 +29,9 @@ const channelEmoji = {
 };
 
 const statusConfig = {
-  open: { label: "Aguardando", icon: Clock, class: "bg-red-100 text-red-700" },
-  in_progress: { label: "Em Atendimento", icon: Headphones, class: "bg-amber-100 text-amber-700" },
-  waiting: { label: "Aguardando Retorno", icon: Clock, class: "bg-purple-100 text-purple-700" },
-  resolved: { label: "Resolvido", icon: CheckCircle, class: "bg-emerald-100 text-emerald-700" },
-  closed: { label: "Fechado", icon: XCircle, class: "bg-muted text-muted-foreground" },
+  open: { label: "Aguardando", icon: Clock, class: "bg-yellow-100 text-yellow-700" },
+  in_progress: { label: "Em Atendimento", icon: Headphones, class: "bg-blue-100 text-blue-700" },
+  closed: { label: "Finalizado", icon: CheckCircle, class: "bg-zinc-100 text-zinc-700" },
 };
 
 export default function ChatWindow({ ticket, onClose, onUpdate }) {
@@ -247,9 +245,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             <SelectContent>
               <SelectItem value="open">Aguardando</SelectItem>
               <SelectItem value="in_progress">Em Atendimento</SelectItem>
-              <SelectItem value="waiting">Aguardando Retorno</SelectItem>
-              <SelectItem value="resolved">Resolvido</SelectItem>
-              <SelectItem value="closed">Fechado</SelectItem>
+              <SelectItem value="closed">Finalizado</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Lock, MessageSquare, Check, CheckCircle2, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive, Inbox } from "lucide-react";
+import { ChevronLeft, Lock, MessageSquare, Check, CheckCircle2, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Archive, Inbox } from "lucide-react";
 import QuickReplyPicker from "@/components/shared/QuickReplyPicker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,12 +35,9 @@ import SLATimer from "@/components/tickets/SLATimer";
 import ResolutionModal from "@/components/tickets/ResolutionModal";
 
 const STATUS_CONFIG = [
-  { key: "open",             label: "Pendente",          icon: Clock,        color: "bg-yellow-400", textColor: "text-yellow-800", dotColor: "bg-yellow-500", filterIcon: "🟡" },
-  { key: "in_progress",      label: "Em Atendimento",    icon: Headphones,   color: "bg-blue-500",   textColor: "text-white",     dotColor: "bg-blue-500", filterIcon: "🔵" },
-  { key: "waiting",          label: "Aguardando",        icon: Hourglass,    color: "bg-orange-500", textColor: "text-white",     dotColor: "bg-orange-500", filterIcon: "🟠" },
-  { key: "pending_approval", label: "Aguard. Aprovação", icon: ShieldAlert,  color: "bg-purple-500", textColor: "text-white",     dotColor: "bg-purple-500", filterIcon: "🟣" },
-  { key: "resolved",         label: "Resolvido",         icon: CheckCircle,  color: "bg-green-500",  textColor: "text-white",     dotColor: "bg-green-500", filterIcon: "🟢" },
-  { key: "closed",           label: "Finalizado",        icon: Archive,      color: "bg-zinc-500",   textColor: "text-white",     dotColor: "bg-zinc-500", filterIcon: "⚫" },
+  { key: "open",        label: "Aguardando",     icon: Clock,      color: "bg-yellow-400", textColor: "text-yellow-800", dotColor: "bg-yellow-500", filterIcon: "🟡" },
+  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-blue-500",   textColor: "text-white",     dotColor: "bg-blue-500", filterIcon: "🔵" },
+  { key: "closed",      label: "Finalizado",     icon: Archive,    color: "bg-zinc-500",   textColor: "text-white",     dotColor: "bg-zinc-500", filterIcon: "⚫" },
 ];
 
 export default function TicketDetail({ isPopup = false }) {
@@ -301,7 +298,7 @@ export default function TicketDetail({ isPopup = false }) {
     }
   };
 
-  const isResolved = ticket?.status === "resolved" || ticket?.status === "closed";
+  const isResolved = ticket?.status === "closed";
   const isAssignedToMe = ticket?.agent_id === currentUser?.id;
   const isUnassigned = !ticket?.agent_id;
   const isBlocked = !!blockedInfo;
@@ -506,26 +503,23 @@ export default function TicketDetail({ isPopup = false }) {
             <Select value={ticket.status} onValueChange={v => updateMutation.mutate({ status: v })}>
               <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">Aberto</SelectItem>
-                <SelectItem value="in_progress">Em Andamento</SelectItem>
-                <SelectItem value="waiting">Aguardando</SelectItem>
-                <SelectItem value="pending_approval">Aguard. Aprovação</SelectItem>
-                {isAdmin && <SelectItem value="resolved">Resolvido</SelectItem>}
-                {isAdmin && <SelectItem value="closed">Fechado</SelectItem>}
+                <SelectItem value="open">Aguardando</SelectItem>
+                <SelectItem value="in_progress">Em Atendimento</SelectItem>
+                {isAdmin && <SelectItem value="closed">Finalizado</SelectItem>}
               </SelectContent>
             </Select>
           )}
-          {!["pending_approval", "resolved", "closed"].includes(ticket.status) && (
+          {!["closed"].includes(ticket.status) && (
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5 bg-orange-500 hover:bg-orange-600 text-white"
-              onClick={() => updateMutation.mutate({ status: "pending_approval" })}
+              onClick={() => updateMutation.mutate({ status: "in_progress" })}
               disabled={updateMutation.isPending}
             >
-              <ShieldCheck className="w-3.5 h-3.5" /> Enviar p/ Aprovação
+              <ShieldCheck className="w-3.5 h-3.5" /> Enviar p/ Atendimento
             </Button>
           )}
-          {!["resolved", "closed"].includes(ticket.status) && (isAdmin || isAssignedToMe) && can("tickets.close") && (
+          {!["closed"].includes(ticket.status) && (isAdmin || isAssignedToMe) && can("tickets.close") && (
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -538,17 +532,17 @@ export default function TicketDetail({ isPopup = false }) {
               <CheckCircle2 className="w-3.5 h-3.5" /> Finalizar Atendimento
             </Button>
           )}
-          {ticket.status === "pending_approval" && isAdmin && (
+          {ticket.status === "in_progress" && isAdmin && (
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => updateMutation.mutate({ status: "resolved", closed_date: new Date().toISOString() })}
+              onClick={() => updateMutation.mutate({ status: "closed", closed_date: new Date().toISOString() })}
               disabled={updateMutation.isPending}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" /> Aprovar e Resolver
+              <CheckCircle2 className="w-3.5 h-3.5" /> Finalizar Atendimento
             </Button>
           )}
-          {isAssignedToMe && !["resolved", "closed"].includes(ticket.status) && (
+          {isAssignedToMe && !["closed"].includes(ticket.status) && (
             <Button
               size="sm"
               variant="outline"

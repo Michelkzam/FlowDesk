@@ -72,12 +72,9 @@ export const SYSTEM_PAGES = [
 ];
 
 export const TICKET_STATUSES = {
-  open: { key: "open", label: "Pendente", color: "bg-yellow-400", textColor: "text-yellow-800", dotColor: "bg-yellow-500", badgeCls: "bg-blue-100 text-blue-700 border-blue-200" },
-  in_progress: { key: "in_progress", label: "Em Atendimento", color: "bg-blue-500", textColor: "text-white", dotColor: "bg-blue-500", badgeCls: "bg-amber-100 text-amber-700 border-amber-200" },
-  waiting: { key: "waiting", label: "Aguardando", color: "bg-orange-500", textColor: "text-white", dotColor: "bg-orange-500", badgeCls: "bg-orange-100 text-orange-700 border-orange-200" },
-  pending_approval: { key: "pending_approval", label: "Aguard. Aprovação", color: "bg-purple-500", textColor: "text-white", dotColor: "bg-purple-500", badgeCls: "bg-purple-100 text-purple-700 border-purple-200" },
-  resolved: { key: "resolved", label: "Resolvido", color: "bg-green-500", textColor: "text-white", dotColor: "bg-green-500", badgeCls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  closed: { key: "closed", label: "Finalizado", color: "bg-zinc-500", textColor: "text-white", dotColor: "bg-zinc-500", badgeCls: "bg-muted text-muted-foreground border-border" },
+  open: { key: "open", label: "Aguardando", color: "bg-yellow-400", textColor: "text-yellow-800", dotColor: "bg-yellow-500", badgeCls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  in_progress: { key: "in_progress", label: "Em Atendimento", color: "bg-blue-500", textColor: "text-white", dotColor: "bg-blue-500", badgeCls: "bg-blue-100 text-blue-700 border-blue-200" },
+  closed: { key: "closed", label: "Finalizado", color: "bg-zinc-500", textColor: "text-white", dotColor: "bg-zinc-500", badgeCls: "bg-zinc-100 text-zinc-700 border-zinc-200" },
 };
 
 export const STATUS_LABELS = Object.fromEntries(
@@ -101,11 +98,11 @@ export const PRIORITY_LIST = Object.keys(TICKET_PRIORITIES);
 
 export const SOURCE_EMOJI = { web: "🌐", email: "📧", api: "⚙️", phone: "📞", whatsapp: "💬", telegram: "✈️" };
 
-export const CLOSED_STATUSES = ["resolved", "closed"];
+export const CLOSED_STATUSES = ["closed"];
 
-export const AGENT_STATUSES = ["open", "in_progress", "waiting", "pending_approval"];
+export const AGENT_STATUSES = ["open", "in_progress"];
 
-export const ADMIN_ONLY_STATUSES = ["resolved", "closed"];
+export const ADMIN_ONLY_STATUSES = ["closed"];
 
 export const SLA_HOURS = {
   emergency: 2,

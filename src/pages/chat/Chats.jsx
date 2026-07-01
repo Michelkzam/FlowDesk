@@ -30,9 +30,9 @@ const priorityColors = {
 
 const filterTabs = [
   { key: "all", label: "Todos", icon: MessageSquare, color: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
-  { key: "open", label: "Aguardando", icon: Clock, color: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
-  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
-  { key: "resolved", label: "Finalizado", icon: CheckCircle, color: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
+  { key: "open", label: "Aguardando", icon: Clock, color: "bg-yellow-500 text-white", inactive: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" },
+  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+  { key: "closed", label: "Finalizado", icon: CheckCircle, color: "bg-zinc-500 text-white", inactive: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" },
 ];
 
 export default function Chats() {
@@ -87,7 +87,7 @@ export default function Chats() {
     all: myTickets.length,
     open: myTickets.filter(t => t.status === "open").length,
     in_progress: myTickets.filter(t => t.status === "in_progress").length,
-    resolved: myTickets.filter(t => t.status === "resolved" || t.status === "closed").length,
+    closed: myTickets.filter(t => t.status === "closed").length,
   };
 
   const filtered = myTickets.filter(t => {
@@ -97,7 +97,7 @@ export default function Chats() {
       (t.user_phone || "").toLowerCase().includes(search.toLowerCase());
     if (activeFilter === "open") return matchSearch && t.status === "open";
     if (activeFilter === "in_progress") return matchSearch && t.status === "in_progress";
-    if (activeFilter === "resolved") return matchSearch && (t.status === "resolved" || t.status === "closed");
+    if (activeFilter === "closed") return matchSearch && t.status === "closed";
     return matchSearch;
   });
 
@@ -196,15 +196,13 @@ export default function Chats() {
                       <p className="text-xs text-muted-foreground truncate">{ticket.title}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                          ticket.status === "open" ? "bg-red-100 text-red-700" :
-                          ticket.status === "in_progress" ? "bg-amber-100 text-amber-700" :
-                          ticket.status === "resolved" || ticket.status === "closed" ? "bg-emerald-100 text-emerald-700" :
-                          "bg-muted text-muted-foreground"
+                          ticket.status === "open" ? "bg-yellow-100 text-yellow-700" :
+                          ticket.status === "in_progress" ? "bg-blue-100 text-blue-700" :
+                          "bg-zinc-100 text-zinc-700"
                         }`}>
                           {ticket.status === "open" ? "Aguardando" :
                            ticket.status === "in_progress" ? "Em atendimento" :
-                           ticket.status === "resolved" ? "Resolvido" :
-                           ticket.status === "closed" ? "Fechado" : ticket.status}
+                           "Finalizado"}
                         </span>
                         <span className={`text-xs px-1.5 py-0.5 rounded-full ${priorityColors[ticket.priority] || "bg-muted text-muted-foreground"}`}>
                           {ticket.priority === "low" ? "Baixa" : ticket.priority === "normal" ? "Média" : ticket.priority === "high" ? "Alta" : "Crítica"}

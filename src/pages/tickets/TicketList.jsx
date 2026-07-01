@@ -89,7 +89,7 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
   });
 
   const filtered = tickets.filter(t => {
-    if (!showClosed && (t.status === "resolved" || t.status === "closed")) return false;
+    if (!showClosed && t.status === "closed") return false;
     if (myTickets && currentUser && t.agent_id !== currentUser.id) return false;
     if (statusFilter !== "all" && t.status !== statusFilter) return false;
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
@@ -166,10 +166,8 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
           <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos status</SelectItem>
-            <SelectItem value="open">Aberto</SelectItem>
-            <SelectItem value="in_progress">Em Andamento</SelectItem>
-            <SelectItem value="waiting">Aguardando</SelectItem>
-            <SelectItem value="pending_approval">Aguard. Aprovação</SelectItem>
+            <SelectItem value="open">Aguardando</SelectItem>
+            <SelectItem value="in_progress">Em Atendimento</SelectItem>
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
