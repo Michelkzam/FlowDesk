@@ -347,17 +347,24 @@ export default function MeusAtendimentos() {
 
         {/* Message input */}
         <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-card">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Digite uma mensagem..."
-              className="flex-1 h-9"
-            />
-            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 h-9 px-3" disabled={!message.trim()}>
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
+          {["resolved", "closed"].includes(selectedTicket.status) ? (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+              <CheckCircle className="w-4 h-4" />
+              Este atendimento foi finalizado
+            </div>
+          ) : (
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Digite uma mensagem..."
+                className="flex-1 h-9"
+              />
+              <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 h-9 px-3" disabled={!message.trim()}>
+                <Send className="w-4 h-4" />
+              </Button>
+            </form>
+          )}
         </div>
       </div>
     );
