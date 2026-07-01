@@ -237,17 +237,32 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
           >
             <Inbox className="w-3 h-3" /> Retornar à Fila
           </Button>
-          <Select value={ticket.status} onValueChange={(v) => updateStatusMutation.mutate(v)}>
-            <SelectTrigger className={`h-7 text-xs border-0 ${status.class} font-medium w-auto gap-1`}>
-              <StatusIcon className="w-3 h-3" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="open">Aguardando</SelectItem>
-              <SelectItem value="in_progress">Em Atendimento</SelectItem>
-              <SelectItem value="closed">Finalizado</SelectItem>
-            </SelectContent>
-          </Select>
+          {ticket.status !== "closed" && (
+            <Button
+              size="sm"
+              className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                if (confirm("Deseja finalizar este atendimento?")) {
+                  supabase.from("tickets").update({
+                    status: "closed",
+                    closed_date: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  }).eq("id", ticket.id).then(() => {
+                    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+                    queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+                    if (onClose) onClose();
+                  });
+                }
+              }}
+            >
+              <CheckCircle className="w-3 h-3" /> Finalizar
+            </Button>
+          )}
+          {ticket.status === "closed" && (
+            <span className="flex items-center gap-1 text-xs text-zinc-500 font-medium">
+              <CheckCircle className="w-3 h-3" /> Finalizado
+            </span>
+           )}
         </div>
       </div>
 
