@@ -199,8 +199,24 @@ export default function UsersPage() {
           toast({ title: "Senhas não coincidem", variant: "destructive" });
           return;
         }
-        const { error } = await supabase.auth.admin.updateUserById(editing.id, { password: newPassword });
-        if (error) throw error;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error("Não autenticado");
+
+        const response = await fetch("/api/users/update-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            target_user_id: editing.id,
+            new_password: newPassword,
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Erro ao alterar senha");
         toast({ title: "Senha alterada com sucesso!" });
       }
     } catch (e) {
