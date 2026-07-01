@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Lock, MessageSquare, Check, CheckCircle2, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive } from "lucide-react";
+import { ChevronLeft, Lock, MessageSquare, Check, CheckCircle2, ShieldCheck, Lightbulb, Monitor, ExternalLink, Clock, Headphones, Hourglass, ShieldAlert, CheckCircle, Archive, Inbox } from "lucide-react";
 import QuickReplyPicker from "@/components/shared/QuickReplyPicker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -546,6 +546,25 @@ export default function TicketDetail({ isPopup = false }) {
               disabled={updateMutation.isPending}
             >
               <CheckCircle2 className="w-3.5 h-3.5" /> Aprovar e Resolver
+            </Button>
+          )}
+          {isAssignedToMe && !["resolved", "closed"].includes(ticket.status) && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => {
+                if (confirm("Deseja retornar este ticket à caixa de entrada?")) {
+                  updateMutation.mutate({
+                    agent_id: null,
+                    agent_name: null,
+                    status: "open",
+                  });
+                }
+              }}
+              disabled={updateMutation.isPending}
+            >
+              <Inbox className="w-3.5 h-3.5" /> Retornar à Fila
             </Button>
           )}
         </div>
