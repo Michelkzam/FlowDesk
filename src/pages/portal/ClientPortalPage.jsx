@@ -429,7 +429,19 @@ function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.sender_type === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[75%] p-3 rounded-lg ${m.sender_type === "user" ? "bg-primary text-white" : "bg-gray-100 dark:bg-zinc-800"}`}>
-              <p className="text-sm">{m.body}</p>
+              {m.body?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
+                <a href={m.body} target="_blank" rel="noopener noreferrer">
+                  <img src={m.body} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+                </a>
+              ) : m.body?.match(/\.(mp4|webm|ogg)$/i) ? (
+                <video controls src={m.body} className="max-w-[250px] max-h-[200px] rounded-lg" />
+              ) : m.body?.match(/\.(mp3|wav|ogg|webm)$/i) ? (
+                <audio controls src={m.body} className="w-full h-10" />
+              ) : m.body?.startsWith("http") ? (
+                <a href={m.body} target="_blank" rel="noopener noreferrer" className="underline text-sm">{m.body}</a>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+              )}
               <p className="text-[10px] mt-1 opacity-60">{format(m.created_date)}</p>
             </div>
           </div>

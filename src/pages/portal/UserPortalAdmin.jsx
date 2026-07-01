@@ -402,12 +402,24 @@ export default function UserPortalAdmin() {
                         </div>
                         {(msg.body || msg.message) && (
                           <div className={cn(
-                            "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                            "rounded-2xl px-4 py-2.5 text-sm",
                             msg.sender_type === "user"
                               ? "bg-primary text-primary-foreground rounded-tr-sm"
                               : "bg-card border border-border text-foreground rounded-tl-sm"
                           )}>
-                            {msg.body || msg.message}
+                            {(msg.body || msg.message)?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
+                              <a href={msg.body || msg.message} target="_blank" rel="noopener noreferrer">
+                                <img src={msg.body || msg.message} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+                              </a>
+                            ) : (msg.body || msg.message)?.match(/\.(mp4|webm|ogg)$/i) ? (
+                              <video controls src={msg.body || msg.message} className="max-w-[250px] max-h-[200px] rounded-lg" />
+                            ) : (msg.body || msg.message)?.match(/\.(mp3|wav|ogg|webm)$/i) ? (
+                              <audio controls src={msg.body || msg.message} className="w-full h-10" />
+                            ) : (msg.body || msg.message)?.startsWith("http") ? (
+                              <a href={msg.body || msg.message} target="_blank" rel="noopener noreferrer" className="underline">{msg.body || msg.message}</a>
+                            ) : (
+                              <p className="whitespace-pre-wrap">{msg.body || msg.message}</p>
+                            )}
                           </div>
                         )}
                         {msgAttachments.length > 0 && (

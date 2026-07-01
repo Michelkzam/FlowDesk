@@ -435,12 +435,24 @@ export default function UserPortal() {
                         <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
                       </div>
                       <div className={cn(
-                        "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                        "rounded-2xl px-4 py-2.5 text-sm",
                         msg.sender_type === "user"
                           ? "bg-primary text-primary-foreground rounded-tr-sm"
                           : "bg-card border border-border text-foreground rounded-tl-sm"
                       )}>
-                        {msg.body}
+                        {msg.body?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
+                          <a href={msg.body} target="_blank" rel="noopener noreferrer">
+                            <img src={msg.body} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+                          </a>
+                        ) : msg.body?.match(/\.(mp4|webm|ogg)$/i) ? (
+                          <video controls src={msg.body} className="max-w-[250px] max-h-[200px] rounded-lg" />
+                        ) : msg.body?.match(/\.(mp3|wav|ogg|webm)$/i) ? (
+                          <audio controls src={msg.body} className="w-full h-10" />
+                        ) : msg.body?.startsWith("http") ? (
+                          <a href={msg.body} target="_blank" rel="noopener noreferrer" className="underline">{msg.body}</a>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{msg.body}</p>
+                        )}
                       </div>
                     </div>
                   </div>
