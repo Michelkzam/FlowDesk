@@ -20,6 +20,64 @@ import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+const ATTACHMENT_REGEX = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+
+function renderMessageBody(body) {
+  if (!body) return null;
+  const lines = body.split("\n");
+  const textLines = [];
+  const attachments = [];
+
+  for (const line of lines) {
+    const match = line.match(ATTACHMENT_REGEX);
+    if (match) {
+      const name = match[1].trim();
+      const url = match[2].trim();
+      const ext = name.split(".").pop()?.toLowerCase();
+      const isImage = ["png","jpg","jpeg","gif","webp"].includes(ext);
+      const isVideo = ["mp4","webm","ogg"].includes(ext);
+      const isAudio = ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_");
+      attachments.push({ name, url, ext, isImage, isVideo, isAudio });
+    } else {
+      textLines.push(line);
+    }
+  }
+
+  const text = textLines.join("\n").trim();
+
+  return (
+    <div className="flex flex-col gap-2">
+      {text && <p className="text-sm whitespace-pre-wrap">{text}</p>}
+      {attachments.map((att, i) => {
+        if (att.isImage) {
+          return (
+            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+              <img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
+            </a>
+          );
+        }
+        if (att.isVideo) {
+          return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+        }
+        if (att.isAudio) {
+          return (
+            <div key={i} className="bg-muted/50 border border-border rounded-lg p-2 min-w-[200px]">
+              <span className="text-xs text-muted-foreground mb-1 block">🎵 {att.name}</span>
+              <audio controls src={att.url} className="w-full h-10" preload="metadata" />
+            </div>
+          );
+        }
+        return (
+          <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs">
+            📎 {att.name}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 const channelEmoji = {
   whatsapp: "🟢",
   telegram: "🔵",
@@ -539,19 +597,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                     ? "bg-muted/50 text-muted-foreground italic text-xs"
                     : "bg-muted rounded-tl-sm"
                 }`}>
-                  {msg.body && msg.body.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
-                    <a href={msg.body} target="_blank" rel="noopener noreferrer">
-                      <img src={msg.body} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-                    </a>
-                  ) : msg.body && msg.body.match(/\.(mp4|webm|ogg)$/i) ? (
-                    <video controls src={msg.body} className="max-w-[250px] max-h-[200px] rounded-lg" />
-                  ) : msg.body && msg.body.match(/\.(mp3|wav|ogg|webm)$/i) ? (
-                    <audio controls src={msg.body} className="w-full h-10" />
-                  ) : msg.body && msg.body.startsWith("http") ? (
-                    <a href={msg.body} target="_blank" rel="noopener noreferrer" className="text-sm underline">{msg.body}</a>
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
-                  )}
+                  {msg.body && renderMessageBody(msg.body)}
                 </div>
                 <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
                   {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
