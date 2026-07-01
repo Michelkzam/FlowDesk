@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Invalid token" });
   }
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single();
   if (!profile || profile.role !== "admin") {
     return res.status(403).json({ error: "Only admins can create users" });
   }
