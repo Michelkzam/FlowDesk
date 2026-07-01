@@ -142,17 +142,41 @@ export default function MeusAtendimentos() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (body) => {
-      const { error } = await supabase.from("ticket_messages").insert({
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const { error: msgError } = await supabase.from("ticket_messages").insert({
         ticket_id: selectedTicket.id,
         sender_type: "agent",
-        sender_name: "Operador",
+        sender_id: user.id,
+        sender_name: userProfile?.full_name || user.email || "Operador",
         body,
         type: "message",
       });
-      if (error) throw error;
+      if (msgError) throw msgError;
+
+      if (!selectedTicket.agent_id || selectedTicket.agent_id !== user.id) {
+        const { error: updateError } = await supabase
+          .from("tickets")
+          .update({
+            agent_id: user.id,
+            agent_name: userProfile?.full_name || user.email,
+            status: selectedTicket.status === "open" ? "in_progress" : selectedTicket.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", selectedTicket.id);
+        if (updateError) console.error("[MeusAtendimentos] Erro ao atribuir ticket:", updateError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", selectedTicket?.id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setMessage("");
     },
   });

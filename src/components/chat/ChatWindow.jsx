@@ -69,17 +69,41 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
   const sendMutation = useMutation({
     mutationFn: async (msg) => {
-      const { error } = await supabase.from("ticket_messages").insert({
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+
+      const { error: msgError } = await supabase.from("ticket_messages").insert({
         ticket_id: ticket.id,
         sender_type: "agent",
-        sender_name: "Operador",
+        sender_id: user.id,
+        sender_name: userProfile?.full_name || user.email || "Operador",
         body: msg,
         type: "message",
       });
-      if (error) throw error;
+      if (msgError) throw msgError;
+
+      if (!ticket.agent_id || ticket.agent_id !== user.id) {
+        const { error: updateError } = await supabase
+          .from("tickets")
+          .update({
+            agent_id: user.id,
+            agent_name: userProfile?.full_name || user.email,
+            status: ticket.status === "open" ? "in_progress" : ticket.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", ticket.id);
+        if (updateError) console.error("[Chat] Erro ao atribuir ticket:", updateError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setMessage("");
     },
   });
