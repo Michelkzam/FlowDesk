@@ -22,28 +22,46 @@ import { ptBR } from "date-fns/locale";
 
 const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
 
-function parseBody(body) {
-  if (!body) return { text: "", attachments: [] };
-  const lines = body.split("\n");
+function guessType(name) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/";
+  if (["mp4","webm","avi","mov"].includes(ext)) return "video/";
+  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/";
+  return "other";
+}
+
+function parseBody(msg) {
+  const inlineAttachments = [];
+  let bodyText = msg.body || "";
+  if (msg.attachments) {
+    try {
+      const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
+      if (Array.isArray(atts)) {
+        atts.forEach(a => {
+          const t = guessType(a.name || "");
+          inlineAttachments.push({ name: a.name, url: a.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || a.isAudio });
+        });
+      }
+    } catch {}
+  }
+  const ATTACHLINE = /^\u{1F4CE}\s*(.+?):\s*(https?:\/\/\S+)$/i;
+  const lines = bodyText.split("\n");
   const textLines = [];
-  const attachments = [];
   for (const line of lines) {
-    const match = line.match(ATTACHMENT_LINE);
+    const match = line.match(ATTACHLINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
-      const ext = name.split(".").pop()?.toLowerCase();
-      attachments.push({
-        name, url,
-        isImage: ["png","jpg","jpeg","gif","webp"].includes(ext),
-        isVideo: ["mp4","webm"].includes(ext),
-        isAudio: ["mp3","wav","ogg","webm"].includes(ext) || name.startsWith("audio_"),
-      });
+      const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
+      if (!alreadyHas) {
+        const t = guessType(name);
+        inlineAttachments.push({ name, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
+      }
     } else {
       textLines.push(line);
     }
   }
-  return { text: textLines.join("\n").trim(), attachments };
+  return { text: textLines.join("\n").trim(), attachments: inlineAttachments };
 }
 
 const channelEmoji = {
@@ -80,7 +98,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
         .eq("ticket_id", ticket.id);
       if (error) {
         console.error("[ChatMessages]", error);
