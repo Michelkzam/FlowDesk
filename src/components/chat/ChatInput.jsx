@@ -409,39 +409,43 @@ export default function ChatInput({ onSend, disabled }) {
         </div>
       )}
 
-      <div className="flex gap-1 items-center">
-        <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={handleFileSelect} />
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-1 items-center">
+          <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={handleFileSelect} />
 
-        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={disabled || recording || uploading} title="Anexar arquivo">
-          <Paperclip className="w-4 h-4" />
-        </Button>
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => fileInputRef.current?.click()} disabled={disabled || recording || uploading} title="Anexar arquivo">
+            <Paperclip className="w-4 h-4" />
+          </Button>
 
-        <Button variant="outline" size="icon" className={cn("h-10 w-10 shrink-0", recording && "bg-red-100 border-red-300 text-red-600")} onClick={recording ? stopRecording : startRecording} disabled={disabled || uploading} title="Gravar áudio">
-          <Mic className="w-4 h-4" />
-        </Button>
+          <Button variant="outline" size="icon" className={cn("h-9 w-9 shrink-0", recording && "bg-red-100 border-red-300 text-red-600")} onClick={recording ? stopRecording : startRecording} disabled={disabled || uploading} title="Gravar áudio">
+            <Mic className="w-4 h-4" />
+          </Button>
 
-        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={handleScreenshot} disabled={disabled || isCapturing || uploading} title="Capturar tela">
-          {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-        </Button>
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleScreenshot} disabled={disabled || isCapturing || uploading} title="Capturar tela">
+            {isCapturing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+          </Button>
 
-        <Button variant="outline" size="icon" className={cn("h-10 w-10 shrink-0", isVideoRecording && "bg-red-100 border-red-300 text-red-600")} onClick={isVideoRecording ? stopVideoRecording : startVideoRecording} disabled={disabled || uploading} title="Gravar tela">
-          {isVideoRecording ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
-        </Button>
+          <Button variant="outline" size="icon" className={cn("h-9 w-9 shrink-0", isVideoRecording && "bg-red-100 border-red-300 text-red-600")} onClick={isVideoRecording ? stopVideoRecording : startVideoRecording} disabled={disabled || uploading} title="Gravar tela">
+            {isVideoRecording ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+          </Button>
+        </div>
 
-        <textarea
-          className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
-          placeholder={recording ? "Gravando áudio..." : "Digite sua mensagem..."}
-          value={text}
-          rows={1}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          disabled={disabled || recording}
-        />
+        <div className="flex gap-2 items-end">
+          <textarea
+            className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring min-h-[42px] max-h-32"
+            placeholder={recording ? "Gravando áudio..." : "Digite sua mensagem..."}
+            value={text}
+            rows={1}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            disabled={disabled || recording}
+          />
 
-        <Button onClick={handleSend} disabled={disabled || uploading || recording || (!text.trim() && attachments.length === 0 && !audioBlob)}
-          className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
+          <Button onClick={handleSend} disabled={disabled || uploading || recording || (!text.trim() && attachments.length === 0 && !audioBlob)}
+            className="bg-primary hover:bg-primary/90 shrink-0 h-10 w-10 p-0">
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
