@@ -16,6 +16,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Clock, Headphones, CheckCircle, User, Phone, MessageSquare, Plus, Search, ArrowLeft, Send } from "lucide-react";
+import MessageBubble from "@/components/chat/MessageBubble";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
@@ -177,7 +178,7 @@ export default function MeusAtendimentos() {
       if (!selectedTicket?.id) return [];
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted")
         .eq("ticket_id", selectedTicket.id);
       if (error) return [];
       return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -320,7 +321,7 @@ export default function MeusAtendimentos() {
                   <p className="text-sm">{selectedTicket.description}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 ml-1">
-                  {selectedTicket.client_name || "Cliente"} • {format(new Date(selectedTicket.created_date), "HH:mm", { locale: ptBR })}
+                  {selectedTicket.client_name || "Cliente"} • {format(new Date(selectedTicket.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </p>
               </div>
             </div>
@@ -340,22 +341,7 @@ export default function MeusAtendimentos() {
             </div>
           ) : (
             messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
-                <div className="max-w-xs lg:max-w-md">
-                  <div className={`rounded-2xl px-4 py-2.5 ${
-                    msg.sender_type === "agent"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : msg.sender_type === "system"
-                      ? "bg-muted/50 text-muted-foreground italic text-xs"
-                      : "bg-muted rounded-tl-sm"
-                  }`}>
-                    {(() => { const { text, attachments: atts } = parseBody(msg); return (<>{text && <p className="text-sm whitespace-pre-wrap">{text}</p>}{atts.length > 0 && <div className="flex flex-col gap-1.5 mt-1">{atts.map((a, i) => a.isImage ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"><img src={a.url} alt={a.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a> : a.isVideo ? <video key={i} controls src={a.url} className="max-w-[280px] max-h-[220px] rounded-lg" /> : a.isAudio ? <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={a.url} className="w-full h-10" preload="metadata" /></div> : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><span className="truncate">{a.name}</span></a>)}</div>}</>)})()}
-                  </div>
-                  <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
-                    {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
-                  </p>
-                </div>
-              </div>
+              <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_type === "agent"} currentUser={currentUser} ticketId={selectedTicket.id} />
             ))
           )}
           <div ref={messagesEndRef} />
