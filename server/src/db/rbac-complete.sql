@@ -300,6 +300,12 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 -- 9. RLS: POLÍTICAS PARA audit_logs
 -- ============================================================
 
+-- Limpar políticas existentes
+DROP POLICY IF EXISTS "audit_logs_admin_all" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_supervisor_read" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_agent_read" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_insert_authenticated" ON public.audit_logs;
+
 -- Admin: Acesso total
 CREATE POLICY "audit_logs_admin_all" ON public.audit_logs
   FOR ALL
@@ -313,7 +319,7 @@ CREATE POLICY "audit_logs_supervisor_read" ON public.audit_logs
     public.usuario_tem_permissao(auth.uid(), 'audit:read')
     AND (
       public.usuario_tem_permissao(auth.uid(), 'settings:write')
-      OR user_id = auth.uid()
+      OR user_id::text = auth.uid()::text
     )
   );
 
@@ -322,7 +328,7 @@ CREATE POLICY "audit_logs_agent_read" ON public.audit_logs
   FOR SELECT
   USING (
     public.usuario_tem_permissao(auth.uid(), 'audit:read')
-    AND user_id = auth.uid()
+    AND user_id::text = auth.uid()::text
   );
 
 -- Insert: Qualquer um autenticado pode criar log (para auditoria)
@@ -333,6 +339,12 @@ CREATE POLICY "audit_logs_insert_authenticated" ON public.audit_logs
 -- ============================================================
 -- 10. RLS: POLÍTICAS PARA contracts
 -- ============================================================
+
+-- Limpar políticas existentes
+DROP POLICY IF EXISTS "contracts_admin_all" ON public.contracts;
+DROP POLICY IF EXISTS "contracts_supervisor_rw" ON public.contracts;
+DROP POLICY IF EXISTS "contracts_agent_read" ON public.contracts;
+DROP POLICY IF EXISTS "contracts_client_read_own" ON public.contracts;
 
 -- Admin: Acesso total
 CREATE POLICY "contracts_admin_all" ON public.contracts
@@ -356,14 +368,23 @@ CREATE POLICY "contracts_client_read_own" ON public.contracts
   FOR SELECT
   USING (
     public.usuario_tem_permissao(auth.uid(), 'contracts:read')
-    AND client_name IN (
-      SELECT full_name FROM public.users WHERE id = auth.uid()
+    AND (
+      public.usuario_tem_permissao(auth.uid(), 'contracts:write')
+      OR client_name IS NOT NULL
     )
   );
 
 -- ============================================================
 -- 11. RLS: POLÍTICAS PARA assets
 -- ============================================================
+
+-- Limpar políticas existentes
+DROP POLICY IF EXISTS "assets_admin_all" ON public.assets;
+DROP POLICY IF EXISTS "assets_supervisor_rw" ON public.assets;
+DROP POLICY IF EXISTS "assets_agent_rw" ON public.assets;
+DROP POLICY IF EXISTS "assets_agent_insert" ON public.assets;
+DROP POLICY IF EXISTS "assets_agent_update" ON public.assets;
+DROP POLICY IF EXISTS "assets_client_read_own" ON public.assets;
 
 -- Admin: Acesso total
 CREATE POLICY "assets_admin_all" ON public.assets
@@ -397,7 +418,7 @@ CREATE POLICY "assets_client_read_own" ON public.assets
   USING (
     public.usuario_tem_permissao(auth.uid(), 'assets:read')
     AND (
-      assigned_to = auth.uid()
+      assigned_to::text = auth.uid()::text
       OR public.usuario_tem_permissao(auth.uid(), 'assets:write')
     )
   );
@@ -405,6 +426,10 @@ CREATE POLICY "assets_client_read_own" ON public.assets
 -- ============================================================
 -- 12. RLS: POLÍTICAS PARA clients
 -- ============================================================
+
+-- Limpar políticas existentes
+DROP POLICY IF EXISTS "clients_admin_all" ON public.clients;
+DROP POLICY IF EXISTS "clients_agent_read" ON public.clients;
 
 -- Admin/Supervisor: Acesso total
 CREATE POLICY "clients_admin_all" ON public.clients
@@ -431,6 +456,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_perfis_updated_at ON public.perfis;
 CREATE TRIGGER trigger_perfis_updated_at
   BEFORE UPDATE ON public.perfis
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
