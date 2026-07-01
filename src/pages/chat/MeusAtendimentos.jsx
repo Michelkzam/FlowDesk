@@ -20,6 +20,49 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
 
+const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
+
+function guessType(name) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/";
+  if (["mp4","webm","avi","mov"].includes(ext)) return "video/";
+  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/";
+  return "other";
+}
+
+function parseBody(msg) {
+  const inlineAttachments = [];
+  let bodyText = msg.body || "";
+  if (msg.attachments) {
+    try {
+      const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
+      if (Array.isArray(atts)) {
+        atts.forEach(a => {
+          const t = guessType(a.name || "");
+          inlineAttachments.push({ name: a.name, url: a.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || a.isAudio });
+        });
+      }
+    } catch {}
+  }
+  const lines = bodyText.split("\n");
+  const textLines = [];
+  for (const line of lines) {
+    const match = line.match(ATTACHMENT_LINE);
+    if (match) {
+      const name = match[1].trim();
+      const url = match[2].trim();
+      const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
+      if (!alreadyHas) {
+        const t = guessType(name);
+        inlineAttachments.push({ name, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
+      }
+    } else {
+      textLines.push(line);
+    }
+  }
+  return { text: textLines.join("\n").trim(), attachments: inlineAttachments };
+}
+
 const channelEmoji = { whatsapp: "🟢", telegram: "🔵", email: "📧", phone: "📞", portal: "🌐" };
 
 const columns = [
@@ -127,7 +170,7 @@ export default function MeusAtendimentos() {
       if (!selectedTicket?.id) return [];
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
         .eq("ticket_id", selectedTicket.id);
       if (error) return [];
       return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -283,7 +326,7 @@ export default function MeusAtendimentos() {
                       ? "bg-muted/50 text-muted-foreground italic text-xs"
                       : "bg-muted rounded-tl-sm"
                   }`}>
-                    <p className="text-sm">{msg.body}</p>
+                    {(() => { const { text, attachments: atts } = parseBody(msg); return (<>{text && <p className="text-sm whitespace-pre-wrap">{text}</p>}{atts.length > 0 && <div className="flex flex-col gap-1.5 mt-1">{atts.map((a, i) => a.isImage ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"><img src={a.url} alt={a.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a> : a.isVideo ? <video key={i} controls src={a.url} className="max-w-[280px] max-h-[220px] rounded-lg" /> : a.isAudio ? <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={a.url} className="w-full h-10" preload="metadata" /></div> : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><span className="truncate">{a.name}</span></a>)}</div>}</>)})()}
                   </div>
                   <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
                     {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
