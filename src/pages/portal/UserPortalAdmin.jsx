@@ -8,11 +8,11 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, Paperclip } from "lucide-react";
+import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, Paperclip, Inbox, Headphones } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ChatInput from "@/components/chat/ChatInput";
 import { format } from "date-fns";
@@ -112,6 +112,7 @@ export default function UserPortalAdmin() {
   const { user: currentUser, profile } = useAuth();
   const { toast } = useToast();
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({ title: "", description: "", priority: "normal" });
   const [message, setMessage] = useState("");
@@ -328,6 +329,14 @@ export default function UserPortalAdmin() {
     resolved: tickets.filter(t => ["resolved", "closed"].includes(t.status)).length,
   };
 
+  const filteredTickets = statusFilter
+    ? tickets.filter(t => {
+        if (statusFilter === "open") return ["open", "in_progress", "waiting"].includes(t.status);
+        if (statusFilter === "resolved") return ["resolved", "closed"].includes(t.status);
+        return true;
+      })
+    : tickets;
+
   if (!currentUser) return null;
 
   return (
@@ -351,10 +360,28 @@ export default function UserPortalAdmin() {
           selectedTicket ? "hidden md:flex md:w-80" : "w-full md:w-80"
         )}>
           <div className="p-3 border-b border-border bg-muted/30">
-            <div className="flex gap-2 text-xs">
-              <Badge variant="outline" className="bg-background">{counts.total} total</Badge>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{counts.open} abertos</Badge>
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">{counts.resolved} resolvidos</Badge>
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={() => setStatusFilter(null)} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", !statusFilter ? "bg-primary/10 text-primary ring-1 ring-primary/30" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <Inbox className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-primary text-primary-foreground">{counts.total}</span>
+                </div>
+                <span className="text-[10px] font-medium">Total</span>
+              </button>
+              <button onClick={() => setStatusFilter("open")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "open" ? "bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <Headphones className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-yellow-500 text-white">{counts.open}</span>
+                </div>
+                <span className="text-[10px] font-medium">Abertos</span>
+              </button>
+              <button onClick={() => setStatusFilter("resolved")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "resolved" ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-emerald-500 text-white">{counts.resolved}</span>
+                </div>
+                <span className="text-[10px] font-medium">Resolvidos</span>
+              </button>
             </div>
           </div>
 
@@ -372,7 +399,7 @@ export default function UserPortalAdmin() {
                 <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Ticket" para começar</p>
               </div>
             ) : (
-              tickets.map(ticket => (
+              filteredTickets.map(ticket => (
                 <button
                   key={ticket.id}
                   onClick={() => setSelectedTicket(ticket)}
