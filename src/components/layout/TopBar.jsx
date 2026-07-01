@@ -7,7 +7,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "@/lib/ThemeContext";
-import GlobalSearch from "@/components/shared/GlobalSearch";
 import ProfileMenu from "./ProfileMenu";
 import NotificationBell from "@/components/shared/NotificationBell";
 
@@ -58,10 +57,6 @@ export default function TopBar() {
     <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-border dark:border-zinc-700 h-14 flex items-center justify-between px-4 gap-3">
       <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground dark:text-zinc-400 shrink-0">
         <span>{todayCapitalized}</span>
-      </div>
-
-      <div className="flex-1 flex justify-center px-2 max-w-xl mx-auto">
-        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-1">
