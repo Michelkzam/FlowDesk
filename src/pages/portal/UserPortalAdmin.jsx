@@ -325,13 +325,15 @@ export default function UserPortalAdmin() {
 
   const counts = {
     total: tickets.length,
-    open: tickets.filter(t => ["open", "in_progress", "waiting"].includes(t.status)).length,
+    open: tickets.filter(t => ["open", "waiting"].includes(t.status)).length,
+    in_progress: tickets.filter(t => t.status === "in_progress").length,
     resolved: tickets.filter(t => ["resolved", "closed"].includes(t.status)).length,
   };
 
   const filteredTickets = statusFilter
     ? tickets.filter(t => {
-        if (statusFilter === "open") return ["open", "in_progress", "waiting"].includes(t.status);
+        if (statusFilter === "open") return ["open", "waiting"].includes(t.status);
+        if (statusFilter === "in_progress") return t.status === "in_progress";
         if (statusFilter === "resolved") return ["resolved", "closed"].includes(t.status);
         return true;
       })
@@ -360,27 +362,34 @@ export default function UserPortalAdmin() {
           selectedTicket ? "hidden md:flex md:w-80" : "w-full md:w-80"
         )}>
           <div className="p-3 border-b border-border bg-muted/30">
-            <div className="flex items-center justify-center gap-3">
-              <button onClick={() => setStatusFilter(null)} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", !statusFilter ? "bg-primary/10 text-primary ring-1 ring-primary/30" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+            <div className="flex items-center justify-center gap-2">
+              <button onClick={() => setStatusFilter(null)} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", !statusFilter ? "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
                 <div className="relative">
                   <Inbox className="w-5 h-5" />
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-primary text-primary-foreground">{counts.total}</span>
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-zinc-500 text-white">{counts.total}</span>
                 </div>
-                <span className="text-[10px] font-medium">Total</span>
+                <span className="text-[10px] font-medium">Todos</span>
               </button>
-              <button onClick={() => setStatusFilter("open")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "open" ? "bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+              <button onClick={() => setStatusFilter("open")} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "open" ? "bg-blue-50 text-blue-700 ring-1 ring-blue-300 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-700" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
                 <div className="relative">
                   <Headphones className="w-5 h-5" />
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-yellow-500 text-white">{counts.open}</span>
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-blue-500 text-white">{counts.open}</span>
                 </div>
                 <span className="text-[10px] font-medium">Abertos</span>
               </button>
-              <button onClick={() => setStatusFilter("resolved")} className={cn("flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "resolved" ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+              <button onClick={() => setStatusFilter("in_progress")} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "in_progress" ? "bg-amber-50 text-amber-700 ring-1 ring-amber-300 dark:bg-amber-950 dark:text-amber-400 dark:ring-amber-700" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
+                <div className="relative">
+                  <Clock className="w-5 h-5" />
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-amber-500 text-white">{counts.in_progress}</span>
+                </div>
+                <span className="text-[10px] font-medium">Atendimento</span>
+              </button>
+              <button onClick={() => setStatusFilter("resolved")} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "resolved" ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300 dark:bg-emerald-950 dark:text-emerald-400 dark:ring-emerald-700" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
                 <div className="relative">
                   <CheckCircle className="w-5 h-5" />
                   <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-emerald-500 text-white">{counts.resolved}</span>
                 </div>
-                <span className="text-[10px] font-medium">Resolvidos</span>
+                <span className="text-[10px] font-medium">Finalizados</span>
               </button>
             </div>
           </div>
@@ -392,7 +401,7 @@ export default function UserPortalAdmin() {
                   <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
                 ))}
               </div>
-            ) : tickets.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-16 text-center px-4">
                 <Ticket className="w-10 h-10 text-muted-foreground/30 mb-3" />
                 <p className="text-sm font-medium text-muted-foreground">Nenhum ticket</p>
