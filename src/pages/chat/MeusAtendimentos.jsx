@@ -178,7 +178,7 @@ export default function MeusAtendimentos() {
       if (!selectedTicket?.id) return [];
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted, edited_at")
         .eq("ticket_id", selectedTicket.id);
       if (error) return [];
       return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
