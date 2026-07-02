@@ -232,7 +232,7 @@ export default function ClientPortalPage() {
             <TicketListPanel tickets={filteredTickets} loading={loading} statusFilter={statusFilter} setStatusFilter={setStatusFilter} onSelect={setSelectedTicket} canReopen={canReopen} />
           )}
           {selectedTicket && (
-            <ChatPanel ticket={selectedTicket} messages={messages} newMessage={newMessage} setNewMessage={setNewMessage} onSend={handleSendMessage} onBack={() => setSelectedTicket(null)} profile={profile} />
+            <ChatPanel ticket={selectedTicket} messages={messages} newMessage={newMessage} setNewMessage={setNewMessage} onSend={handleSendMessage} onBack={() => setSelectedTicket(null)} profile={profile} currentUser={currentUser} />
           )}
         </main>
       </div>
@@ -403,7 +403,7 @@ function TicketListPanel({ tickets, loading, statusFilter, setStatusFilter, onSe
   );
 }
 
-function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack, profile }) {
+function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack, profile, currentUser }) {
   const messagesEndRef = React.useRef(null);
 
   useEffect(() => {
