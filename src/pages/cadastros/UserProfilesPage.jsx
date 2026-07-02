@@ -248,7 +248,7 @@ export default function UserProfilesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5" />
@@ -256,13 +256,13 @@ export default function UserProfilesPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="config" className="flex-1 flex flex-col min-h-0">
+          <Tabs defaultValue="config" className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="config">Configurações</TabsTrigger>
               <TabsTrigger value="pages">Páginas ({form.pages.length}/{SYSTEM_PAGES.length})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="config" className="space-y-4 mt-4">
+            <TabsContent value="config" className="space-y-4 mt-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Nome do Perfil *</Label>
@@ -282,8 +282,8 @@ export default function UserProfilesPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="pages" className="flex-1 flex flex-col min-h-0 mt-4">
-              <div className="flex items-center gap-3 mb-4">
+            <TabsContent value="pages" className="flex-1 flex flex-col min-h-0 mt-4 overflow-hidden">
+              <div className="flex items-center gap-3 mb-4 flex-shrink-0">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input placeholder="Buscar página..." value={searchPage} onChange={e => setSearchPage(e.target.value)} className="pl-9" />
@@ -293,7 +293,7 @@ export default function UserProfilesPage() {
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1 pr-2">
+              <ScrollArea className="flex-1 pr-2 max-h-[50vh]">
                 <div className="space-y-4">
                   {Object.entries(groupedPages).map(([category, pages]) => {
                     const CatIcon = CATEGORY_ICONS[category] || Settings;
