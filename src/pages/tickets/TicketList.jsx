@@ -201,7 +201,7 @@ export default function TicketList({ myTickets = false, showNewDialog = false, s
       {/* Kanban View */}
       {viewMode === "kanban" && (
         isLoading
-          ? <div className="w-full overflow-hidden" style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: "6px" }}>{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-56 rounded-lg" />)}</div>
+          ? <div className="w-full overflow-hidden" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "6px" }}>{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-56 rounded-lg" />)}</div>
           : <KanbanBoard tickets={filtered} />
       )}
 

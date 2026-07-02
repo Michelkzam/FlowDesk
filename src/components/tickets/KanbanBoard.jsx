@@ -12,9 +12,7 @@ import { openTicketWindow } from "@/lib/ticketWindow";
 const COLUMNS = [
   { id: "open",             label: "Pendente",           headerColor: "bg-yellow-400",  textColor: "text-yellow-800" },
   { id: "in_progress",      label: "Em Atendimento",     headerColor: "bg-blue-500",    textColor: "text-white" },
-  { id: "waiting",          label: "Aguardando",         headerColor: "bg-purple-500",  textColor: "text-white" },
   { id: "pending_approval", label: "Aguard. Aprovacao",  headerColor: "bg-orange-500",  textColor: "text-white" },
-  { id: "resolved",         label: "Resolvido",          headerColor: "bg-green-500",   textColor: "text-white" },
   { id: "closed",           label: "Finalizado",         headerColor: "bg-muted0",    textColor: "text-white" },
 ];
 
@@ -112,7 +110,7 @@ export default function KanbanBoard({ tickets }) {
   }, {});
 
   return (
-    <div className="w-full overflow-hidden" style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: "6px" }}>
+    <div className="w-full overflow-hidden" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "6px" }}>
       {COLUMNS.map(col => (
         <KanbanColumn
           key={col.id}
