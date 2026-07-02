@@ -5,52 +5,82 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Pencil, Trash2, Star, MoreVertical } from "lucide-react";
 
+function guessType(name) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/" + (ext === "jpg" ? "jpeg" : ext);
+  if (["mp4","webm","avi","mov"].includes(ext)) return "video/" + ext;
+  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/webm";
+  if (["pdf"].includes(ext)) return "application/pdf";
+  if (["doc","docx"].includes(ext)) return "application/msword";
+  if (["xls","xlsx"].includes(ext)) return "application/vnd.ms-excel";
+  return "application/octet-stream";
+}
+
 function parseBody(msg) {
   const atts = [];
   let bodyText = msg.body || "";
+
   if (msg.attachments) {
     try {
       const a = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
       if (Array.isArray(a)) {
         a.forEach(x => {
+          const t = x.type || guessType(x.name || "");
           const ext = (x.name || "").split(".").pop()?.toLowerCase() || "";
-          const t = ["png","jpg","jpeg","gif","webp","svg"].includes(ext) ? "image/" : ["mp4","webm"].includes(ext) ? "video/" : ["mp3","wav","ogg"].includes(ext) || x.name?.startsWith("audio_") ? "audio/" : "other";
-          atts.push({ name: x.name || x.url?.split("/").pop() || "arquivo", url: x.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || x.isAudio });
+          atts.push({
+            name: x.name || x.url?.split("/").pop() || "arquivo",
+            url: x.url,
+            isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+            isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+            isAudio: t.startsWith("audio/") || x.isAudio || ["mp3","wav","ogg"].includes(ext) || (x.name || "").startsWith("audio_"),
+          });
         });
       }
     } catch {}
   }
+
+  const ATTACH_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
   const lines = bodyText.split("\n");
   const textLines = [];
+
   for (const raw of lines) {
-    const line = raw.trim();
-    if (line.match(/^https?:\/\/\S+$/) && line.match(/\.(png|jpg|jpeg|gif|webp|mp4|webm|mp3|wav|ogg|pdf)/i)) {
-      if (!atts.some(a => a.url === line)) {
-        const fn = line.split("/").pop().split("?")[0] || "arquivo";
-        const ext = fn.split(".").pop()?.toLowerCase() || "";
-        const t = ["png","jpg","jpeg","gif","webp"].includes(ext) ? "image/" : ["mp4","webm"].includes(ext) ? "video/" : ["mp3","wav","ogg"].includes(ext) ? "audio/" : "other";
-        atts.push({ name: fn, url: line, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
+    const trimmed = raw.trim();
+    const match = trimmed.match(ATTACH_LINE);
+    if (match) {
+      const name = match[1].trim();
+      const url = match[2].trim();
+      if (!atts.some(a => a.url === url || a.name === name)) {
+        const t = guessType(name);
+        const ext = name.split(".").pop()?.toLowerCase() || "";
+        atts.push({
+          name, url,
+          isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+          isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+          isAudio: t.startsWith("audio/") || ["mp3","wav","ogg"].includes(ext) || name.startsWith("audio_"),
+        });
       }
-    } else if (line.includes("\uD83D\uDCCE") && line.includes("://")) {
-      const rest = line.replace(/^\uD83D\uDCCE\s*/, "");
-      const colonIdx = rest.indexOf(": ");
-      if (colonIdx > 0) {
-        const name = rest.substring(0, colonIdx).trim();
-        const url = rest.substring(colonIdx + 2).trim();
-        if (url.match(/^https?:\/\//) && !atts.some(a => a.url === url || a.name === name)) {
-          const ext = name.split(".").pop()?.toLowerCase() || "";
-          const t = ["png","jpg","jpeg","gif","webp"].includes(ext) ? "image/" : ["mp4","webm"].includes(ext) ? "video/" : ["mp3","wav","ogg"].includes(ext) ? "audio/" : "other";
-          atts.push({ name, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
-        } else { textLines.push(raw); }
-      } else { textLines.push(raw); }
+    } else if (trimmed.match(/^https?:\/\/\S+$/) && trimmed.match(/\.(png|jpg|jpeg|gif|webp|mp4|webm|mp3|wav|ogg|pdf)/i)) {
+      const url = trimmed;
+      if (!atts.some(a => a.url === url)) {
+        const fn = url.split("/").pop().split("?")[0] || "arquivo";
+        const ext = fn.split(".").pop()?.toLowerCase() || "";
+        const t = guessType(fn);
+        atts.push({
+          name: fn, url,
+          isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+          isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+          isAudio: t.startsWith("audio/") || ["mp3","wav","ogg"].includes(ext) || fn.startsWith("audio_"),
+        });
+      }
     } else {
       textLines.push(raw);
     }
   }
+
   return { text: textLines.join("\n").trim(), attachments: atts };
 }
 
-export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
+function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
   const [openMenu, setOpenMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -151,3 +181,5 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
     </>
   );
 }
+MessageBubble.displayName = 'MessageBubble';
+export default MessageBubble;

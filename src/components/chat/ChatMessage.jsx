@@ -24,7 +24,15 @@ function parseAttachments(msg) {
       if (Array.isArray(atts)) {
         atts.forEach(a => {
           const t = a.type || guessType(a.name || a.url?.split("/").pop() || "");
-          inlineAttachments.push({ ...a, name: a.name || a.url?.split("/").pop() || "arquivo", type: t });
+          const ext = (a.name || "").split(".").pop()?.toLowerCase() || "";
+          inlineAttachments.push({
+            ...a,
+            name: a.name || a.url?.split("/").pop() || "arquivo",
+            type: t,
+            isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+            isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+            isAudio: t.startsWith("audio/") || a.isAudio || ["mp3","wav","ogg"].includes(ext) || (a.name || "").startsWith("audio_"),
+          });
         });
       }
     } catch {}
@@ -41,13 +49,27 @@ function parseAttachments(msg) {
       const name = match[1].trim();
       const url = match[2].trim();
       if (!inlineAttachments.some(a => a.url === url || a.name === name)) {
-        inlineAttachments.push({ name, url, type: guessType(name) });
+        const t = guessType(name);
+        const ext = name.split(".").pop()?.toLowerCase() || "";
+        inlineAttachments.push({
+          name, url, type: t,
+          isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+          isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+          isAudio: t.startsWith("audio/") || ["mp3","wav","ogg"].includes(ext) || name.startsWith("audio_"),
+        });
       }
     } else if (trimmed.match(/^https?:\/\/\S+$/) && trimmed.match(/\.(png|jpg|jpeg|gif|webp|mp4|webm|mp3|wav|ogg|pdf)/i)) {
       const url = trimmed;
       if (!inlineAttachments.some(a => a.url === url)) {
         const fileName = url.split("/").pop().split("?")[0] || "arquivo";
-        inlineAttachments.push({ name: fileName, url, type: guessType(fileName) });
+        const t = guessType(fileName);
+        const ext = fileName.split(".").pop()?.toLowerCase() || "";
+        inlineAttachments.push({
+          name: fileName, url, type: t,
+          isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+          isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+          isAudio: t.startsWith("audio/") || ["mp3","wav","ogg"].includes(ext) || fileName.startsWith("audio_"),
+        });
       }
     } else {
       textLines.push(line);
@@ -65,13 +87,9 @@ function MessageBody({ body, attachments }) {
     <div className="flex flex-col gap-2">
       {body && <p className="whitespace-pre-wrap">{body}</p>}
       {allAttachments.map((att, i) => {
-        const ext = att.name?.split(".").pop()?.toLowerCase() || "";
-        const isImage = att.type?.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext);
-        const isVideo = att.type?.startsWith("video/") || ["mp4","webm"].includes(ext);
-        const isAudio = att.type?.startsWith("audio/") || att.isAudio || ["mp3","wav","ogg"].includes(ext) || att.name?.startsWith("audio_");
-        if (isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
-        if (isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-        if (isAudio) return <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
+        if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
+        if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+        if (att.isAudio) return <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
         return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><Paperclip className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{att.name}</span></a>;
       })}
     </div>

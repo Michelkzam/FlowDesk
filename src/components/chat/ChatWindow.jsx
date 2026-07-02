@@ -20,47 +20,66 @@ import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const ATTACHMENT_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
-
 function guessType(name) {
   const ext = name.split(".").pop()?.toLowerCase() || "";
-  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/";
-  if (["mp4","webm","avi","mov"].includes(ext)) return "video/";
-  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/";
-  return "other";
+  if (["png","jpg","jpeg","gif","webp","svg"].includes(ext)) return "image/" + (ext === "jpg" ? "jpeg" : ext);
+  if (["mp4","webm","avi","mov"].includes(ext)) return "video/" + ext;
+  if (["mp3","wav","ogg","m4a"].includes(ext) || name.startsWith("audio_")) return "audio/webm";
+  if (["pdf"].includes(ext)) return "application/pdf";
+  if (["doc","docx"].includes(ext)) return "application/msword";
+  if (["xls","xlsx"].includes(ext)) return "application/vnd.ms-excel";
+  return "application/octet-stream";
 }
 
 function parseBody(msg) {
   const inlineAttachments = [];
   let bodyText = msg.body || "";
+
   if (msg.attachments) {
     try {
       const atts = typeof msg.attachments === "string" ? JSON.parse(msg.attachments) : msg.attachments;
       if (Array.isArray(atts)) {
         atts.forEach(a => {
-          const t = guessType(a.name || "");
-          inlineAttachments.push({ name: a.name, url: a.url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" || a.isAudio });
+          const t = a.type || guessType(a.name || "");
+          const ext = (a.name || "").split(".").pop()?.toLowerCase() || "";
+          inlineAttachments.push({
+            name: a.name || a.url?.split("/").pop() || "arquivo",
+            url: a.url,
+            type: t,
+            isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+            isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+            isAudio: t.startsWith("audio/") || a.isAudio || ["mp3","wav","ogg"].includes(ext) || (a.name || "").startsWith("audio_"),
+          });
         });
       }
     } catch {}
   }
-  const ATTACHLINE = /^\u{1F4CE}\s*(.+?):\s*(https?:\/\/\S+)$/i;
+
+  const ATTACH_LINE = /^📎\s*(.+?):\s*(https?:\/\/\S+)$/i;
   const lines = bodyText.split("\n");
   const textLines = [];
+
   for (const line of lines) {
-    const match = line.match(ATTACHLINE);
+    const trimmed = line.trim();
+    const match = trimmed.match(ATTACH_LINE);
     if (match) {
       const name = match[1].trim();
       const url = match[2].trim();
-      const alreadyHas = inlineAttachments.some(a => a.url === url || a.name === name);
-      if (!alreadyHas) {
+      if (!inlineAttachments.some(a => a.url === url || a.name === name)) {
         const t = guessType(name);
-        inlineAttachments.push({ name, url, isImage: t === "image/", isVideo: t === "video/", isAudio: t === "audio/" });
+        const ext = name.split(".").pop()?.toLowerCase() || "";
+        inlineAttachments.push({
+          name, url, type: t,
+          isImage: t.startsWith("image/") || ["png","jpg","jpeg","gif","webp"].includes(ext),
+          isVideo: t.startsWith("video/") || ["mp4","webm"].includes(ext),
+          isAudio: t.startsWith("audio/") || ["mp3","wav","ogg"].includes(ext) || name.startsWith("audio_"),
+        });
       }
     } else {
       textLines.push(line);
     }
   }
+
   return { text: textLines.join("\n").trim(), attachments: inlineAttachments };
 }
 
@@ -257,15 +276,17 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       const fileUrl = urlData?.publicUrl;
+      const attachmentsJson = JSON.stringify([{ name: file.name, url: fileUrl, type: guessType(file.name) }]);
 
       await supabase.from("ticket_messages").insert({
         ticket_id: ticket.id,
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: `📎 ${file.name}: ${fileUrl}`,
+        body: file.name,
         type: "message",
         is_internal: false,
+        attachments: attachmentsJson,
       });
 
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
@@ -320,15 +341,18 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       const audioUrl = urlData?.publicUrl;
+      const audioName = `audio_${Date.now()}.webm`;
+      const attachmentsJson = JSON.stringify([{ name: audioName, url: audioUrl, type: "audio/webm", isAudio: true }]);
 
       await supabase.from("ticket_messages").insert({
         ticket_id: ticket.id,
         sender_type: "agent",
         sender_id: session?.user?.id,
         sender_name: "Operador",
-        body: `📎 audio_${Date.now()}.webm: ${audioUrl}`,
+        body: audioName,
         type: "message",
         is_internal: false,
+        attachments: attachmentsJson,
       });
 
       queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
@@ -364,15 +388,18 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
           const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
           const imageUrl = urlData?.publicUrl;
+          const imgName = `screenshot_${Date.now()}.png`;
+          const attachmentsJson = JSON.stringify([{ name: imgName, url: imageUrl, type: "image/png" }]);
 
           await supabase.from("ticket_messages").insert({
             ticket_id: ticket.id,
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: `📎 screenshot_${Date.now()}.png: ${imageUrl}`,
+            body: imgName,
             type: "message",
             is_internal: false,
+            attachments: attachmentsJson,
           });
 
           queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
@@ -425,15 +452,18 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
 
           const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
           const videoUrl = urlData?.publicUrl;
+          const vidName = `recording_${Date.now()}.webm`;
+          const attachmentsJson = JSON.stringify([{ name: vidName, url: videoUrl, type: "video/webm" }]);
 
           await supabase.from("ticket_messages").insert({
             ticket_id: ticket.id,
             sender_type: "agent",
             sender_id: session?.user?.id,
             sender_name: "Operador",
-            body: `📎 recording_${Date.now()}.webm: ${videoUrl}`,
+            body: vidName,
             type: "message",
             is_internal: false,
+            attachments: attachmentsJson,
           });
 
           queryClient.invalidateQueries({ queryKey: ["chat-messages", ticket.id] });
@@ -573,41 +603,37 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda. Inicie a conversa!</p>
           </div>
         ) : (
-          messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
-              <div className="max-w-xs lg:max-w-md">
-                <div className={`rounded-2xl px-4 py-2.5 ${
-                  msg.sender_type === "agent"
-                    ? "bg-primary text-primary-foreground rounded-tr-sm"
-                    : msg.sender_type === "system"
-                    ? "bg-muted/50 text-muted-foreground italic text-xs"
-                    : "bg-muted rounded-tl-sm"
-                }`}>
-                  {(() => {
-                    const { text: msgText, attachments: inlineAtts } = parseBody(msg);                    if (!msgText && inlineAtts.length === 0) return null;
-                    return (
-                      <>
-                        {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}
-                        {inlineAtts.length > 0 && (
-                          <div className="flex flex-col gap-1.5 mt-1">
-                            {inlineAtts.map((att, i) => {
-                              if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
-                              if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-                              if (att.isAudio) return <audio key={i} controls src={att.url} className="w-full h-10" />;
-                              return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs underline">{att.name}</a>;
-                            })}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
+          messages.map(msg => {
+            const { text: msgText, attachments: inlineAtts } = parseBody(msg);
+            return (
+              <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
+                <div className="max-w-xs lg:max-w-md">
+                  <div className={`rounded-2xl px-4 py-2.5 ${
+                    msg.sender_type === "agent"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : msg.sender_type === "system"
+                      ? "bg-muted/50 text-muted-foreground italic text-xs"
+                      : "bg-muted rounded-tl-sm"
+                  }`}>
+                    {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}
+                    {inlineAtts.length > 0 && (
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        {inlineAtts.map((att, i) => {
+                          if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
+                          if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
+                          if (att.isAudio) return <div key={i} className="bg-primary/10 rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
+                          return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-xs"><Paperclip className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{att.name}</span></a>;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
+                    {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
+                  </p>
                 </div>
-                <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
-                  {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
-                </p>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
