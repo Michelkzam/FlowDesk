@@ -1,5 +1,5 @@
+import { supabase } from '@/lib/supabase';
 import { db } from '@/api/flowdeskClient';
-
 
 import { useQuery } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,87 +7,65 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, X } from "lucide-react";
 
-// Defines which screens each profile can access
-const profilePermissions = {
-  tecnico: {
-    label: "Técnico",
-    cls: "bg-blue-100 text-blue-700 border-blue-200",
-    screens: [
-      { name: "Dashboard", path: "/" },
-      { name: "Meus Tickets", path: "/tickets/meus" },
-      { name: "Acesso Remoto", path: "/acesso-remoto" },
-      { name: "Videoconferência", path: "/videoconferencia" },
-      { name: "Agendamentos", path: "/agendamentos" },
-    ]
-  },
-  analista: {
-    label: "Analista",
-    cls: "bg-purple-100 text-purple-700 border-purple-200",
-    screens: [
-      { name: "Dashboard", path: "/" },
-      { name: "Todos os Tickets", path: "/tickets/todos" },
-      { name: "Meus Tickets", path: "/tickets/meus" },
-      { name: "Clientes", path: "/clientes" },
-      { name: "Acesso Remoto", path: "/acesso-remoto" },
-      { name: "Videoconferência", path: "/videoconferencia" },
-      { name: "Agendamentos", path: "/agendamentos" },
-      { name: "Base de Conhecimento", path: "/kb/artigos" },
-      { name: "Inventário", path: "/inventario" },
-      { name: "Contratos", path: "/contratos" },
-      { name: "Relatórios", path: "/relatorios" },
-    ]
-  },
-  administrador: {
-    label: "Administrador",
-    cls: "bg-red-100 text-red-700 border-red-200",
-    screens: [
-      { name: "Dashboard", path: "/" },
-      { name: "Todos os Tickets", path: "/tickets/todos" },
-      { name: "Meus Tickets", path: "/tickets/meus" },
-      { name: "Clientes", path: "/clientes" },
-      { name: "Técnicos", path: "/agentes" },
-      { name: "Departamentos", path: "/departamentos" },
-      { name: "Equipes", path: "/equipes" },
-      { name: "Funções", path: "/funcoes" },
-      { name: "Organizações", path: "/organizacoes" },
-      { name: "Usuários", path: "/usuarios" },
-      { name: "Acesso Remoto", path: "/acesso-remoto" },
-      { name: "Videoconferência", path: "/videoconferencia" },
-      { name: "Agendamentos", path: "/agendamentos" },
-      { name: "Base de Conhecimento", path: "/kb/artigos" },
-      { name: "Inventário", path: "/inventario" },
-      { name: "Contratos", path: "/contratos" },
-      { name: "Financeiro", path: "/financeiro" },
-      { name: "Relatórios", path: "/relatorios" },
-      { name: "Configurações", path: "/admin/configuracoes" },
-      { name: "Escalas de Trabalho", path: "/admin/escala" },
-      { name: "Feriados", path: "/admin/feriados" },
-      { name: "Planos SLA", path: "/admin/sla" },
-      { name: "Sincronizar", path: "/admin/sincronizar" },
-      { name: "Log de Auditoria", path: "/admin/auditoria" },
-    ]
-  },
+import { SYSTEM_PAGES } from "@/lib/constants";
+
+const ROLE_COLORS = {
+  admin: "bg-red-100 text-red-700 border-red-200",
+  supervisor: "bg-purple-100 text-purple-700 border-purple-200",
+  agent: "bg-blue-100 text-blue-700 border-blue-200",
 };
 
-const allScreens = [
-  "Dashboard", "Todos os Tickets", "Meus Tickets", "Clientes", "Técnicos",
-  "Departamentos", "Equipes", "Funções", "Organizações", "Usuários",
-  "Acesso Remoto", "Videoconferência", "Agendamentos", "Base de Conhecimento",
-  "Inventário", "Contratos", "Financeiro", "Relatórios",
-  "Configurações", "Escalas de Trabalho", "Feriados", "Planos SLA",
-  "Sincronizar", "Log de Auditoria",
-];
+const PAGE_ID_TO_NAME = {};
+SYSTEM_PAGES.forEach(p => { PAGE_ID_TO_NAME[p.id] = p.label; });
+
+const allScreens = SYSTEM_PAGES.map(p => p.label);
 
 export default function UserProfilesTable() {
-  const { data: agents = [], isLoading } = useQuery({
+  const { data: agents = [], isLoading: loadingAgents } = useQuery({
     queryKey: ["agents-profiles"],
     queryFn: () => db.entities.Agent.list("-created_date", 200),
   });
 
+  const { data: roles = [], isLoading: loadingRoles } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("roles").select("*");
+      if (error) throw error;
+      return (data || []).map(r => {
+        let pages = r.pages || [];
+        if (typeof pages === "string") { try { pages = JSON.parse(pages); } catch { pages = []; } }
+        if (!Array.isArray(pages)) pages = [];
+        return { ...r, pages };
+      });
+    },
+  });
+
+  const roleMap = {};
+  roles.forEach(r => { roleMap[r.id] = r; });
+
+  const isLoading = loadingAgents || loadingRoles;
+
   const userScreens = (agent) => {
-    const perfil = agent.perfil || "tecnico";
-    const permissions = profilePermissions[perfil] || profilePermissions.tecnico;
-    return new Set(permissions.screens.map(s => s.name));
+    const role = roleMap[agent.role_id];
+    if (role && Array.isArray(role.pages)) {
+      const screenNames = role.pages.map(id => PAGE_ID_TO_NAME[id]).filter(Boolean);
+      return new Set(screenNames);
+    }
+    if (agent.role === 'admin') {
+      return new Set(allScreens);
+    }
+    return new Set();
+  };
+
+  const getRoleBadge = (agent) => {
+    if (agent.role === 'admin') {
+      return { label: "Administrador", cls: ROLE_COLORS.admin };
+    }
+    const role = roleMap[agent.role_id];
+    if (role) {
+      return { label: role.name, cls: ROLE_COLORS[agent.role] || "bg-gray-100 text-gray-700 border-gray-200" };
+    }
+    return { label: agent.role === 'agent' ? "Agente" : "Usuário", cls: ROLE_COLORS[agent.role] || "bg-gray-100 text-gray-700 border-gray-200" };
   };
 
   if (isLoading) return <Skeleton className="h-48 w-full rounded-xl" />;
@@ -109,13 +87,13 @@ export default function UserProfilesTable() {
         <TableBody>
           {agents.map(agent => {
             const screens = userScreens(agent);
-            const cfg = profilePermissions[agent.perfil] || profilePermissions.tecnico;
+            const badge = getRoleBadge(agent);
             return (
               <TableRow key={agent.id} className="hover:bg-muted/20">
                 <TableCell className="text-sm font-medium whitespace-nowrap">{agent.name}</TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{agent.email}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <Badge variant="outline" className={`text-xs font-medium ${cfg.cls}`}>{cfg.label}</Badge>
+                  <Badge variant="outline" className={`text-xs font-medium ${badge.cls}`}>{badge.label}</Badge>
                 </TableCell>
                 {allScreens.map(s => (
                   <TableCell key={s} className="text-center">
