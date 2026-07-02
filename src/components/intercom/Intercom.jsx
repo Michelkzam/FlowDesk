@@ -170,7 +170,7 @@ function useSocketRef() {
 }
 
 export default function Intercom() {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [activeTab, setActiveTab] = useState("team")
   const [activeChannel, setActiveChannel] = useState("geral")
   const [searchQuery, setSearchQuery] = useState("")
@@ -583,7 +583,7 @@ export default function Intercom() {
                           ))}
                         </div>
                       </div>
-                      <ScrollArea className="flex-1 px-3 py-2">
+                      <ScrollArea className="px-3 py-2 max-h-[320px]">
                         <div className="space-y-0.5">
                           {filteredTeam.map((op) => {
                             const initials = op.full_name?.split(" ").map((n) => n[0]).join("") || "?"
