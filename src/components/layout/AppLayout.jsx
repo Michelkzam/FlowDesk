@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Intercom from "@/components/intercom/Intercom";
 import { useAuth } from "@/lib/AuthContext";
+import { connectCallSignaling, onCallEvent } from "@/services/callSignaling";
+import { playRingtone } from "@/lib/sounds";
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
-  const { canAccessPage } = useAuth();
+  const { canAccessPage, user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    connectCallSignaling();
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -19,7 +26,7 @@ export default function AppLayout() {
             <Outlet />
           </div>
         </main>
-        {canAccessPage("intercom") && <Intercom />}
+        <Intercom />
       </div>
     </div>
   );

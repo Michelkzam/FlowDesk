@@ -193,7 +193,7 @@ export default function Intercom() {
   const peerConnectionRef = useRef(null)
   const remoteAudioRef = useRef(null)
 
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, canAccessPage } = useAuth()
   const getSocket = useSocketRef()
 
   const { data: teamData = [] } = useQuery({
@@ -512,6 +512,7 @@ export default function Intercom() {
   }
 
   const channelMessages = messages.filter((m) => m.channel === activeChannel)
+  const hasPermission = canAccessPage("intercom")
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -524,8 +525,8 @@ export default function Intercom() {
 
         <audio ref={remoteAudioRef} autoPlay />
 
+        {hasPermission && (
         <AnimatePresence mode="wait">
-          {expanded ? (
             <motion.div key="panel" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} transition={{ duration: 0.2 }} className="flex h-[600px] w-[380px] flex-col rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/40 overflow-hidden">
               <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -667,6 +668,7 @@ export default function Intercom() {
             </motion.button>
           )}
         </AnimatePresence>
+        )}
       </div>
     </TooltipProvider>
   )
