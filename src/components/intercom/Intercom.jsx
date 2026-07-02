@@ -563,7 +563,7 @@ export default function Intercom() {
               ) : (
                 <>
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    <div className="px-3 pt-3">
+                    <div className="px-3 pt-3 flex-shrink-0">
                       <TabsList className="h-8 w-full rounded-lg bg-zinc-800/50 p-0.5">
                         <TabsTrigger value="team" className="h-full flex-1 rounded-md text-[11px] data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-200"><Users className="mr-1 h-3 w-3" />Equipe</TabsTrigger>
                         <TabsTrigger value="channels" className="h-full flex-1 rounded-md text-[11px] data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-200"><Hash className="mr-1 h-3 w-3" />Canais</TabsTrigger>
@@ -571,7 +571,7 @@ export default function Intercom() {
                       </TabsList>
                     </div>
 
-                    <TabsContent value="team" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <TabsContent value="team" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden" style={{ height: 'calc(100% - 44px)' }}>
                       <div className="space-y-2 px-3 pt-3 flex-shrink-0">
                         <div className="relative">
                           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
@@ -612,8 +612,8 @@ export default function Intercom() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="channels" className="mt-0">
-                      <ScrollArea className="h-[360px] px-3 py-2">
+                    <TabsContent value="channels" className="mt-0 flex-1 overflow-y-auto" style={{ height: 'calc(100% - 44px)' }}>
+                      <div className="px-3 py-2">
                         <div className="space-y-0.5">
                           {CHANNELS.map((ch) => (
                             <button key={ch.id} onClick={() => setActiveChannel(ch.id)} className={cn("flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors", activeChannel === ch.id ? "bg-zinc-700 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200")}>
@@ -621,11 +621,11 @@ export default function Intercom() {
                             </button>
                           ))}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
 
-                    <TabsContent value="messages" className="mt-0 flex flex-1 flex-col">
-                      <ScrollArea className="flex-1 px-3 py-2">
+                    <TabsContent value="messages" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden" style={{ height: 'calc(100% - 44px)' }}>
+                      <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
                         <div className="space-y-2">
                           {channelMessages.map((msg) => (
                             <div key={msg.id} className="rounded-md bg-zinc-800/50 px-3 py-2">
@@ -648,7 +648,7 @@ export default function Intercom() {
                           )}
                           <div ref={messagesEndRef} />
                         </div>
-                      </ScrollArea>
+                      </div>
                       <Separator className="bg-zinc-800" />
                       <div className="flex items-center gap-2 px-3 py-2">
                         <Input placeholder="Mensagem rápida..." value={messageInput} onChange={(e) => { setMessageInput(e.target.value); handleTyping(); }} onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} className="h-8 flex-1 border-zinc-700 bg-zinc-800 text-xs text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-600" />
