@@ -142,8 +142,34 @@ export default function UserPortalAdmin() {
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({ title: "", description: "", priority: "normal" });
   const [message, setMessage] = useState("");
+  const [systemName, setSystemName] = useState("FlowDesk");
+  const [logoUrl, setLogoUrl] = useState("");
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const savedLogo = localStorage.getItem("appLogo");
+      if (savedLogo) setLogoUrl(savedLogo);
+      const savedName = localStorage.getItem("appName");
+      if (savedName) setSystemName(savedName);
+      try {
+        const { data } = await supabase.from('system_settings').select('*');
+        if (data) {
+          const map = {};
+          data.forEach(s => { map[s.key] = s.value; });
+          if (map.helpdesk_name) {
+            setSystemName(map.helpdesk_name);
+            document.title = map.helpdesk_name;
+          }
+          if (map.helpdesk_logo) {
+            setLogoUrl(map.helpdesk_logo);
+          }
+        }
+      } catch {}
+    };
+    loadSettings();
+  }, []);
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["my-tickets", currentUser?.id, profile?.role],
@@ -370,11 +396,20 @@ export default function UserPortalAdmin() {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Ticket className="w-5 h-5" /> Portal do Usuário
-          </h1>
-          <p className="text-sm text-muted-foreground">Abra tickets e acompanhe seus atendimentos</p>
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            <img src={logoUrl} alt={systemName} className="w-10 h-10 rounded-lg object-contain" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Ticket className="w-5 h-5 text-primary" />
+            </div>
+          )}
+          <div>
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+              {systemName}
+            </h1>
+            <p className="text-sm text-muted-foreground">Abra tickets e acompanhe seus atendimentos</p>
+          </div>
         </div>
         <Button onClick={() => setNewTicketOpen(true)} className="gap-2">
           <Plus className="w-4 h-4" /> Novo Ticket

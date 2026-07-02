@@ -184,8 +184,34 @@ export default function UserPortal() {
   const [profile, setProfile] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null);
+  const [systemName, setSystemName] = useState("FlowDesk");
+  const [logoUrl, setLogoUrl] = useState("");
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      const savedLogo = localStorage.getItem("appLogo");
+      if (savedLogo) setLogoUrl(savedLogo);
+      const savedName = localStorage.getItem("appName");
+      if (savedName) setSystemName(savedName);
+      try {
+        const { data } = await supabase.from('system_settings').select('*');
+        if (data) {
+          const map = {};
+          data.forEach(s => { map[s.key] = s.value; });
+          if (map.helpdesk_name) {
+            setSystemName(map.helpdesk_name);
+            document.title = map.helpdesk_name;
+          }
+          if (map.helpdesk_logo) {
+            setLogoUrl(map.helpdesk_logo);
+          }
+        }
+      } catch {}
+    };
+    loadSettings();
+  }, []);
 
   const { data: currentUser, isLoading: loadingUser, refetch } = useQuery({
     queryKey: ["me"],
@@ -328,10 +354,16 @@ export default function UserPortal() {
     <div className="h-screen flex flex-col bg-background">
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><MessageSquare className="w-4 h-4 text-white" /></div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={systemName} className="w-8 h-8 rounded-lg object-contain" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-white" />
+            </div>
+          )}
           <div>
-            <h1 className="text-sm font-bold text-foreground">Central de Suporte</h1>
-            <p className="text-xs text-muted-foreground">{profile.company} · {profile.phone}</p>
+            <h1 className="text-sm font-bold text-foreground">{systemName}</h1>
+            <p className="text-xs text-muted-foreground">{profile?.company} · {profile?.phone}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
