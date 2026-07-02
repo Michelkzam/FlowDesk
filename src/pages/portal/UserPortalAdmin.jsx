@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, Paperclip, Inbox, Headphones } from "lucide-react";
+import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, ArrowRight, Ticket, Paperclip, Headphones } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
@@ -138,7 +138,7 @@ export default function UserPortalAdmin() {
   const { user: currentUser, profile } = useAuth();
   const { toast } = useToast();
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [statusFilter, setStatusFilter] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("open");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [ticketForm, setTicketForm] = useState({ title: "", description: "", priority: "normal" });
   const [message, setMessage] = useState("");
@@ -391,11 +391,19 @@ export default function UserPortalAdmin() {
     resolved: tickets.filter(t => ["resolved", "closed"].includes(t.status)).length,
   };
 
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
   const filteredTickets = statusFilter
     ? tickets.filter(t => {
         if (statusFilter === "open") return ["open", "waiting"].includes(t.status);
         if (statusFilter === "in_progress") return t.status === "in_progress";
-        if (statusFilter === "resolved") return ["resolved", "closed"].includes(t.status);
+        if (statusFilter === "resolved") {
+          if (!["resolved", "closed"].includes(t.status)) return false;
+          const closedDate = t.closed_date ? new Date(t.closed_date) : null;
+          if (closedDate && closedDate > todayEnd) return false;
+          return true;
+        }
         return true;
       })
     : tickets;
@@ -433,13 +441,6 @@ export default function UserPortalAdmin() {
         )}>
           <div className="p-3 border-b border-border bg-muted/30">
             <div className="flex items-center justify-center gap-2">
-              <button onClick={() => setStatusFilter(null)} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", !statusFilter ? "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
-                <div className="relative">
-                  <Inbox className="w-5 h-5" />
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold flex items-center justify-center px-1 bg-zinc-500 text-white">{counts.total}</span>
-                </div>
-                <span className="text-[10px] font-medium">Todos</span>
-              </button>
               <button onClick={() => setStatusFilter("open")} className={cn("flex flex-col items-center gap-1 px-2.5 py-2 rounded-lg transition-all cursor-pointer", statusFilter === "open" ? "bg-blue-50 text-blue-700 ring-1 ring-blue-300 dark:bg-blue-950 dark:text-blue-400 dark:ring-blue-700" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
                 <div className="relative">
                   <Headphones className="w-5 h-5" />
