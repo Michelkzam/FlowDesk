@@ -525,7 +525,7 @@ export default function Intercom() {
 
         <AnimatePresence mode="wait">
           {expanded ? (
-            <motion.div key="panel" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} transition={{ duration: 0.2 }} className="flex h-[520px] w-[380px] flex-col rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/40">
+            <motion.div key="panel" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} transition={{ duration: 0.2 }} className="flex h-[600px] w-[380px] flex-col rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/40 overflow-hidden">
               <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Radio className="h-4 w-4 text-emerald-400" />
@@ -571,13 +571,13 @@ export default function Intercom() {
                       </TabsList>
                     </div>
 
-                    <TabsContent value="team" className="mt-0 flex-1 flex flex-col min-h-0">
+                    <TabsContent value="team" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden">
                       <div className="space-y-2 px-3 pt-3 flex-shrink-0">
                         <div className="relative">
                           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
                           <Input placeholder="Buscar por nome ou cargo..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 border-zinc-700 bg-zinc-800 pl-7 text-xs text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-600" />
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           {GROUPS.map((g) => (
                             <button key={g.id} onClick={() => setGroupFilter(g.id)} className={cn("rounded-md px-2 py-1 text-[10px] font-medium transition-colors", groupFilter === g.id ? "bg-zinc-700 text-zinc-200" : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300")}>{g.label}</button>
                           ))}
