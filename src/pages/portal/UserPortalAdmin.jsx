@@ -187,7 +187,7 @@ export default function UserPortalAdmin() {
       if (profile?.role === "admin") {
         // Admin vê todos
       } else if (profile?.role === "agent") {
-        query = query.eq("agent_id", currentUser.id);
+        query = query.or(`agent_id.eq.${currentUser.id},user_id.eq.${currentUser.id}`);
       } else {
         query = query.eq("user_id", currentUser.id);
       }
