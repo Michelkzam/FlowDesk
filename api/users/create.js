@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "Only admins can create users" });
   }
 
-  const { email, password, full_name, role, phone, department_id, client_id } = req.body;
+  const { email, password, full_name, role, phone, department_id, client_id, status } = req.body;
 
   if (!email || !password || !full_name) {
     return res.status(400).json({ error: "Email, password and full_name are required" });
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       phone: phone || null,
       department_id: department_id || null,
       client_id: client_id || null,
-      status: "active"
+      status: status || "active"
     });
 
     if (insertError) {

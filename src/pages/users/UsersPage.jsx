@@ -30,6 +30,7 @@ const defaultForm = {
   role_id: "",
   client_id: "",
   department_id: "",
+  status: "active",
 };
 
 export default function UsersPage() {
@@ -50,10 +51,10 @@ export default function UsersPage() {
     queryKey: ["all-users"],
     queryFn: async () => {
       const { data: usersData } = await supabase.from('users').select('*');
-      const { data: clientsData } = await supabase.from('clients').select('id, name');
+      const { data: clientsData } = await supabase.from('clients').select('id, name, nome_fantasia');
       const { data: rolesData } = await supabase.from('roles').select('id, name');
       const { data: deptsData } = await supabase.from('departments').select('id, name');
-      const clientMap = Object.fromEntries((clientsData || []).map(c => [c.id, c.name]));
+      const clientMap = Object.fromEntries((clientsData || []).map(c => [c.id, c.nome_fantasia || c.name]));
       const roleMap = Object.fromEntries((rolesData || []).map(r => [r.id, r.name]));
       const deptMap = Object.fromEntries((deptsData || []).map(d => [d.id, d.name]));
       return (usersData || []).map(u => ({
@@ -68,8 +69,8 @@ export default function UsersPage() {
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      const { data } = await supabase.from('clients').select('id, name').order('name');
-      return data || [];
+      const { data } = await supabase.from('clients').select('id, name, nome_fantasia').order('nome_fantasia');
+      return (data || []).map(c => ({ id: c.id, name: c.nome_fantasia || c.name }));
     }
   });
 
@@ -123,6 +124,7 @@ export default function UsersPage() {
           phone: d.phone,
           department_id: d.department_id,
           client_id: d.client_id,
+          status: d.status,
         }),
       });
 
@@ -180,6 +182,7 @@ export default function UsersPage() {
       phone: user.phone || "",
       client_id: user.client_id || "",
       department_id: user.department_id || "",
+      status: user.status || "active",
     });
     setNewPassword("");
     setConfirmPassword("");
@@ -404,6 +407,17 @@ export default function UsersPage() {
               </Select>
             </div>
 
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button type="submit" disabled={createM.isPending}>
@@ -471,6 +485,17 @@ export default function UsersPage() {
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={editForm.status || "active"} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
