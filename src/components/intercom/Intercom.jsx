@@ -227,9 +227,11 @@ export default function Intercom() {
   useEffect(() => {
     if (!currentUser?.id) return
 
+    console.log("[Intercom] Connecting call signaling for user:", currentUser.id)
     connectCallSignaling()
 
     const unsubOffer = onCallEvent("call:offer", async (data) => {
+      console.log("[Intercom] Received call:offer, target:", data.targetUserId, "my id:", currentUser.id)
       if (data.targetUserId !== currentUser.id) return
       console.log("[Intercom] Incoming call from", data.caller.full_name)
       setIncomingCall(data)
@@ -237,6 +239,7 @@ export default function Intercom() {
     })
 
     const unsubAnswer = onCallEvent("call:answer", async (data) => {
+      console.log("[Intercom] Received call:answer, target:", data.targetUserId)
       if (data.targetUserId !== currentUser.id) return
       console.log("[Intercom] Call answered")
       stopDialTone()
@@ -340,6 +343,7 @@ export default function Intercom() {
   const handleStartCall = useCallback(async (operator) => {
     if (callState || operator.status === "offline") return
 
+    console.log("[Intercom] Starting call to:", operator.id, operator.full_name)
     setCallTarget(operator)
     setCallState("ringing")
     playDialTone()
@@ -349,11 +353,13 @@ export default function Intercom() {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
 
-      sendCallOffer(operator.id, pc.localDescription.toJSON(), {
+      console.log("[Intercom] Sending call offer to:", operator.id)
+      await sendCallOffer(operator.id, pc.localDescription.toJSON(), {
         id: currentUser.id,
         full_name: currentUser.full_name || currentUser.email,
         role: currentUser.role,
       })
+      console.log("[Intercom] Call offer sent successfully")
     } catch (e) {
       console.error("[Intercom] Error starting call:", e)
       cleanupCall()
