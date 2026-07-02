@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ChatInput from "@/components/chat/ChatInput";
+import MessageBubble from "@/components/chat/MessageBubble";
 
 function parseAttachments(msg) {
   const inlineAttachments = [];
@@ -203,7 +204,7 @@ export default function UserPortal() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted, edited_at")
         .eq("ticket_id", selectedTicket?.id);
       if (error) return [];
       return (data || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -414,25 +415,9 @@ export default function UserPortal() {
                   <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda</p>
                   <p className="text-xs text-muted-foreground mt-1">Digite uma mensagem para iniciar o atendimento</p>
                 </div>
-              ) : messages.filter(m => !m.is_internal).map(msg => {
-                const { text, attachments: atts } = parseAttachments(msg);
-                return (
-                  <div key={msg.id} className={cn("flex gap-2.5", msg.sender_type === "user" ? "flex-row-reverse" : "")}>
-                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0", msg.sender_type === "user" ? "bg-primary/20 text-primary" : "bg-emerald-100 text-emerald-700")}>
-                      {(msg.sender_name || "?")[0]?.toUpperCase()}
-                    </div>
-                    <div className={cn("max-w-[78%] flex flex-col gap-1", msg.sender_type === "user" ? "items-end" : "items-start")}>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">{msg.sender_name}</span>
-                        <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), "HH:mm") : ""}</span>
-                      </div>
-                      <div className={cn("rounded-2xl px-4 py-2.5 text-sm", msg.sender_type === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border text-foreground rounded-tl-sm")}>
-                        <MessageBody body={text} attachments={atts} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              ) : messages.filter(m => !m.is_internal).map(msg => (
+                  <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_type === "user"} currentUser={{ id: currentUser?.id }} ticketId={selectedTicket.id} />
+                ))}
               <div ref={messagesEndRef} />
             </div>
 
