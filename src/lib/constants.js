@@ -69,6 +69,7 @@ export const SYSTEM_PAGES = [
   { id: "admin.auditoria", label: "Log de Auditoria", path: "/admin/auditoria", category: "Sistema", icon: "ShieldCheck" },
   { id: "admin.realtime-test", label: "Teste Realtime", path: "/admin/realtime-test", category: "Sistema", icon: "Radio" },
   { id: "inventario", label: "Inventário", path: "/inventario", category: "Cadastros", icon: "Monitor" },
+  { id: "intercom", label: "Intercomunicador", path: "", category: "Atendimento", icon: "Radio" },
 ];
 
 export const TICKET_STATUSES = {
