@@ -170,7 +170,7 @@ function useSocketRef() {
 }
 
 export default function Intercom() {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState("team")
   const [activeChannel, setActiveChannel] = useState("geral")
   const [searchQuery, setSearchQuery] = useState("")
@@ -562,7 +562,7 @@ export default function Intercom() {
                 </div>
               ) : (
                 <>
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
                     <div className="px-3 pt-3">
                       <TabsList className="h-8 w-full rounded-lg bg-zinc-800/50 p-0.5">
                         <TabsTrigger value="team" className="h-full flex-1 rounded-md text-[11px] data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-200"><Users className="mr-1 h-3 w-3" />Equipe</TabsTrigger>
