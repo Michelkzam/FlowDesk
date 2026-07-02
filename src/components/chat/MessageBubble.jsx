@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Pencil, Trash2, Star, MoreVertical, X, Save } from "lucide-react";
+import { Pencil, Trash2, Star, MoreVertical } from "lucide-react";
 
 function parseBody(msg) {
   const atts = [];
@@ -70,7 +70,7 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
       const { error } = await supabase.from("ticket_messages").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); setOpenMenu(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); setShowDeleteConfirm(false); },
   });
 
   const highlightMutation = useMutation({
@@ -87,51 +87,54 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
   const showMenu = isCurrentUser && msg.sender_type !== "system";
 
   return (
-    <div className={`group relative flex ${isOwn ? "justify-end" : "justify-start"}`}>
-      <div className="max-w-xs lg:max-w-md">
-        {isHighlighted && <div className="text-[10px] text-amber-600 mb-0.5 ml-1 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Destacada</div>}
-        <div className={`rounded-2xl px-4 py-2.5 ${
-          isOwn ? "bg-primary text-primary-foreground rounded-tr-sm" :
-          msg.sender_type === "system" ? "bg-muted/50 text-muted-foreground italic text-xs" :
-          "bg-muted rounded-tl-sm"
-        }`}>
-          {isEditing ? (
-            <div className="flex flex-col gap-2">
-              <textarea className="text-sm bg-background text-foreground border border-border rounded-lg p-2 w-full resize-none" value={editText} onChange={e => setEditText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); editMutation.mutate({ id: msg.id, body: editText }); } }} autoFocus rows={2} />
-              <div className="flex gap-1 justify-end">
-                <button onClick={() => setIsEditing(false)} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80"><X className="w-3 h-3" /></button>
-                <button onClick={() => editMutation.mutate({ id: msg.id, body: editText })} className="text-xs px-2 py-0.5 rounded bg-primary text-primary-foreground hover:bg-primary/90"><Save className="w-3 h-3" /></button>
+    <>
+      <div className={`group relative flex ${isOwn ? "justify-end" : "justify-start"}`}>
+        <div className="max-w-xs lg:max-w-md">
+          {isHighlighted && <div className="text-[10px] text-amber-600 mb-0.5 ml-1 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Destacada</div>}
+          <div className={`rounded-2xl px-4 py-2.5 ${
+            isOwn ? "bg-primary text-primary-foreground rounded-tr-sm" :
+            msg.sender_type === "system" ? "bg-muted/50 text-muted-foreground italic text-xs" :
+            "bg-muted rounded-tl-sm"
+          }`}>
+            {text && <p className="text-sm whitespace-pre-wrap">{text}</p>}
+            {atts.length > 0 && (
+              <div className="flex flex-col gap-1.5 mt-1">
+                {atts.map((a, i) => a.isImage ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"><img src={a.url} alt={a.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a> : a.isVideo ? <video key={i} controls src={a.url} className="max-w-[280px] max-h-[220px] rounded-lg" /> : a.isAudio ? <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={a.url} className="w-full h-10" preload="metadata" /></div> : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><span className="truncate">{a.name}</span></a>)}
               </div>
-            </div>
-          ) : (
-            <>
-              {text && <p className="text-sm whitespace-pre-wrap">{text}</p>}
-              {atts.length > 0 && (
-                <div className="flex flex-col gap-1.5 mt-1">
-                  {atts.map((a, i) => a.isImage ? <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"><img src={a.url} alt={a.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a> : a.isVideo ? <video key={i} controls src={a.url} className="max-w-[280px] max-h-[220px] rounded-lg" /> : a.isAudio ? <div key={i} className="bg-muted rounded-lg p-2"><audio controls src={a.url} className="w-full h-10" preload="metadata" /></div> : <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-xs"><span className="truncate">{a.name}</span></a>)}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-        <div className={`flex items-center gap-1.5 mt-1 ${isOwn ? "justify-end mr-1" : "ml-1"}`}>
-          <p className="text-xs text-muted-foreground">
-            {msg.sender_name || (isOwn ? "Operador" : "Cliente")} {msg.edited_at && <span className="italic opacity-70">(editada em {format(new Date(msg.edited_at), "dd/MM/yyyy HH:mm", { locale: ptBR })})</span>} • {format(new Date(msg.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-          </p>
-          {showMenu && (
-            <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => setOpenMenu(!openMenu)} className="p-0.5 rounded hover:bg-muted"><MoreVertical className="w-3 h-3 text-muted-foreground" /></button>
-              {openMenu && (
-                <div className="absolute right-0 top-6 z-10 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                  <button onClick={() => { setIsEditing(true); setEditText(msg.body); setOpenMenu(false); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Pencil className="w-3 h-3" /> Editar</button>
-                  <button onClick={() => { highlightMutation.mutate({ id: msg.id, isHighlighted: !isHighlighted }); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Star className={`w-3 h-3 ${isHighlighted ? "fill-amber-400 text-amber-400" : ""}`} /> {isHighlighted ? "Remover destaque" : "Destacar"}</button>
-                  <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+          <div className={`flex items-center gap-1.5 mt-1 ${isOwn ? "justify-end mr-1" : "ml-1"}`}>
+            <p className="text-xs text-muted-foreground">
+              {msg.sender_name || (isOwn ? "Operador" : "Cliente")} {msg.edited_at && <span className="italic opacity-70">(editada em {format(new Date(msg.edited_at), "dd/MM/yyyy HH:mm", { locale: ptBR })})</span>} • {format(new Date(msg.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+            </p>
+            {showMenu && (
+              <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => setOpenMenu(!openMenu)} className="p-0.5 rounded hover:bg-muted"><MoreVertical className="w-3 h-3 text-muted-foreground" /></button>
+                {openMenu && (
+                  <div className="absolute right-0 top-6 z-10 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
+                    <button onClick={() => { setIsEditing(true); setEditText(msg.body); setOpenMenu(false); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Pencil className="w-3 h-3" /> Editar</button>
+                    <button onClick={() => { highlightMutation.mutate({ id: msg.id, isHighlighted: !isHighlighted }); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Star className={`w-3 h-3 ${isHighlighted ? "fill-amber-400 text-amber-400" : ""}`} /> {isHighlighted ? "Remover destaque" : "Destacar"}</button>
+                    <button onClick={() => { setOpenMenu(false); setShowDeleteConfirm(true); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Editar mensagem</h3>
+            <textarea className="w-full h-32 text-sm bg-background text-foreground border border-border rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-ring" value={editText} onChange={e => setEditText(e.target.value)} autoFocus />
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors">Cancelar</button>
+              <button onClick={() => editMutation.mutate({ id: msg.id, body: editText })} disabled={!editText.trim() || editText === msg.body} className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -140,11 +143,11 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
             <p className="text-sm text-muted-foreground mb-4">Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors">Cancelar</button>
-              <button onClick={() => { deleteMutation.mutate(msg.id); setShowDeleteConfirm(false); }} className="px-4 py-2 text-sm rounded-lg bg-destructive text-white hover:bg-destructive/90 transition-colors">Excluir</button>
+              <button onClick={() => deleteMutation.mutate(msg.id)} className="px-4 py-2 text-sm rounded-lg bg-destructive text-white hover:bg-destructive/90 transition-colors">Excluir</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
