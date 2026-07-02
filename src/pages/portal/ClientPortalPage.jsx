@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { Mail, Lock, Loader2, Ticket, Eye, EyeOff, List, MessageSquare, Send, ExternalLink, CheckCircle, Clock, XCircle
 } from "lucide-react";
+import MessageBubble from "@/components/chat/MessageBubble";
 
 const STATUS_CONFIG = {
   open: { label: "Aberto", icon: Clock, color: "bg-yellow-100 text-yellow-700" },
@@ -95,9 +96,9 @@ export default function ClientPortalPage() {
     queryKey: ["portal-messages", selectedTicket?.id],
     queryFn: async () => {
       const { data } = await supabase.from('ticket_messages')
-        .select('*')
+        .select('id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted, edited_at')
         .eq('ticket_id', selectedTicket.id)
-        .order('created_date', { ascending: true });
+        .order('created_at', { ascending: true });
       return data || [];
     },
     enabled: !!selectedTicket,
@@ -427,24 +428,7 @@ function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack
 
       <div className="flex-1 overflow-y-auto border border-border rounded-lg bg-white dark:bg-zinc-900 p-4 space-y-3 mb-4">
         {messages.map(m => (
-          <div key={m.id} className={`flex ${m.sender_type === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[75%] p-3 rounded-lg ${m.sender_type === "user" ? "bg-primary text-white" : "bg-gray-100 dark:bg-zinc-800"}`}>
-              {m.body?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? (
-                <a href={m.body} target="_blank" rel="noopener noreferrer">
-                  <img src={m.body} alt="Imagem" className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-80" />
-                </a>
-              ) : m.body?.match(/\.(mp4|webm|ogg)$/i) ? (
-                <video controls src={m.body} className="max-w-[250px] max-h-[200px] rounded-lg" />
-              ) : m.body?.match(/\.(mp3|wav|ogg|webm)$/i) ? (
-                <audio controls src={m.body} className="w-full h-10" />
-              ) : m.body?.startsWith("http") ? (
-                <a href={m.body} target="_blank" rel="noopener noreferrer" className="underline text-sm">{m.body}</a>
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-              )}
-              <p className="text-[10px] mt-1 opacity-60">{format(m.created_date)}</p>
-            </div>
-          </div>
+          <MessageBubble key={m.id} msg={m} isOwn={m.sender_type === "user"} currentUser={{ id: currentUser?.id }} ticketId={ticket.id} />
         ))}
         <div ref={messagesEndRef} />
       </div>

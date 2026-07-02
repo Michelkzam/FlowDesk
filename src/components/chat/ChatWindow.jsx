@@ -19,6 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, User, Clock, Headphones, CheckCircle, ArrowRightLeft, Inbox, Paperclip, Mic, Camera, Video, Square, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/lib/AuthContext";
+import MessageBubble from "@/components/chat/MessageBubble";
 
 function guessType(name) {
   const ext = name.split(".").pop()?.toLowerCase() || "";
@@ -98,6 +100,7 @@ const statusConfig = {
 };
 
 export default function ChatWindow({ ticket, onClose, onUpdate }) {
+  const { user: currentUser } = useAuth();
   const [message, setMessage] = useState("");
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [transferData, setTransferData] = useState({ agentId: "", agentName: "", note: "" });
@@ -117,7 +120,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ticket_messages")
-        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments")
+        .select("id, ticket_id, body, sender_type, sender_id, sender_name, type, is_internal, created_at, attachments, is_highlighted, edited_at")
         .eq("ticket_id", ticket.id);
       if (error) {
         console.error("[ChatMessages]", error);
@@ -584,7 +587,7 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
                 <p className="text-sm">{ticket.description}</p>
               </div>
               <p className="text-xs text-muted-foreground mt-1 ml-1">
-                {ticket.client_name || "Cliente"} • {format(new Date(ticket.created_date), "HH:mm", { locale: ptBR })}
+                {ticket.client_name || "Cliente"} • {format(new Date(ticket.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}
               </p>
             </div>
           </div>
@@ -603,37 +606,9 @@ export default function ChatWindow({ ticket, onClose, onUpdate }) {
             <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda. Inicie a conversa!</p>
           </div>
         ) : (
-          messages.map(msg => {
-            const { text: msgText, attachments: inlineAtts } = parseBody(msg);
-            return (
-              <div key={msg.id} className={`flex ${msg.sender_type === "agent" ? "justify-end" : "justify-start"}`}>
-                <div className="max-w-xs lg:max-w-md">
-                  <div className={`rounded-2xl px-4 py-2.5 ${
-                    msg.sender_type === "agent"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : msg.sender_type === "system"
-                      ? "bg-muted/50 text-muted-foreground italic text-xs"
-                      : "bg-muted rounded-tl-sm"
-                  }`}>
-                    {msgText && <p className="text-sm whitespace-pre-wrap">{msgText}</p>}
-                    {inlineAtts.length > 0 && (
-                      <div className="flex flex-col gap-1.5 mt-1">
-                        {inlineAtts.map((att, i) => {
-                          if (att.isImage) return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"><img src={att.url} alt={att.name} className="max-w-[280px] max-h-[220px] rounded-lg object-cover" /></a>;
-                          if (att.isVideo) return <video key={i} controls src={att.url} className="max-w-[280px] max-h-[220px] rounded-lg" />;
-                          if (att.isAudio) return <div key={i} className="bg-primary/10 rounded-lg p-2"><audio controls src={att.url} className="w-full h-10" preload="metadata" /></div>;
-                          return <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-xs"><Paperclip className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{att.name}</span></a>;
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <p className={`text-xs text-muted-foreground mt-1 ${msg.sender_type === "agent" ? "text-right mr-1" : "ml-1"}`}>
-                    {msg.sender_name || (msg.sender_type === "agent" ? "Operador" : "Cliente")} • {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
-                  </p>
-                </div>
-              </div>
-            );
-          })
+          messages.map(msg => (
+            <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_type === "agent"} currentUser={currentUser} ticketId={ticket.id} />
+          ))
         )}
         <div ref={messagesEndRef} />
       </div>

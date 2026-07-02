@@ -92,7 +92,7 @@ function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
       const { error } = await supabase.from("ticket_messages").update({ body, edited_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); setIsEditing(false); setEditText(""); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["portal-messages", ticketId] }); setIsEditing(false); setEditText(""); },
   });
 
   const deleteMutation = useMutation({
@@ -100,7 +100,7 @@ function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
       const { error } = await supabase.from("ticket_messages").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); setShowDeleteConfirm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["portal-messages", ticketId] }); setShowDeleteConfirm(false); },
   });
 
   const highlightMutation = useMutation({
@@ -108,13 +108,13 @@ function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
       const { error } = await supabase.from("ticket_messages").update({ is_highlighted: isHighlighted }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); setOpenMenu(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["chat-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] }); queryClient.invalidateQueries({ queryKey: ["portal-messages", ticketId] }); setOpenMenu(false); },
   });
 
   const { text, attachments: atts } = parseBody(msg);
   const isHighlighted = msg.is_highlighted;
   const isCurrentUser = currentUser?.id === msg.sender_id;
-  const showMenu = isCurrentUser && msg.sender_type !== "system";
+  const showMenu = msg.sender_type !== "system";
 
   return (
     <>
