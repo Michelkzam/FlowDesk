@@ -17,6 +17,14 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/AuthContext"
+import {
+  connectCallSignaling, onCallEvent, sendCallOffer, sendCallAnswer,
+  sendIceCandidate, sendCallReject, sendCallHangup,
+} from "@/services/callSignaling"
+import {
+  playDialTone, stopDialTone, stopRingback,
+  playRingtone, stopRingtone, playConnectSound, stopAllSounds,
+} from "@/lib/sounds"
 
 const GROUPS = [
   { id: "all", label: "Todos" },
@@ -35,6 +43,13 @@ const STATUS_MAP = {
   available: { label: "Disponível", color: "bg-emerald-500" },
   busy: { label: "Ocupado", color: "bg-amber-500" },
   offline: { label: "Offline", color: "bg-zinc-500" },
+}
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+  ],
 }
 
 function formatTimer(seconds) {
@@ -108,9 +123,37 @@ function CallScreen({ operator, callState, elapsed, onAnswer, onHold, onResume, 
   )
 }
 
+function IncomingCallDialog({ caller, onAnswer, onReject }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-80 rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/60 p-4">
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-zinc-700 text-sm text-zinc-300">
+              {caller?.full_name?.split(" ").map((n) => n[0]).join("") || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <motion.div className="absolute inset-0 rounded-full border-2 border-emerald-500" animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }} transition={{ duration: 1, repeat: Infinity }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-zinc-100 truncate">{caller?.full_name}</p>
+          <motion.p className="text-xs text-zinc-400" animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity }}>Chamando...</motion.p>
+        </div>
+        <div className="flex items-center gap-2">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onReject} className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30">
+            <PhoneOff className="h-4 w-4 text-white" />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onAnswer} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/30">
+            <Phone className="h-4 w-4 text-white" />
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 function useSocketRef() {
   const channelRef = useRef(null)
-
   const getChannel = useCallback(async () => {
     if (channelRef.current) return channelRef.current
     try {
@@ -123,7 +166,6 @@ function useSocketRef() {
       return null
     }
   }, [])
-
   return getChannel
 }
 
@@ -139,10 +181,18 @@ export default function Intercom() {
   const [isMutedMic, setIsMutedMic] = useState(false)
   const [isMutedHeadphones, setIsMutedHeadphones] = useState(false)
   const messagesEndRef = useRef(null)
+
   const [callState, setCallState] = useState(null)
   const [callTarget, setCallTarget] = useState(null)
   const [callElapsed, setCallElapsed] = useState(0)
+  const [incomingCall, setIncomingCall] = useState(null)
   const callTimerRef = useRef(null)
+
+  const localStreamRef = useRef(null)
+  const remoteStreamRef = useRef(null)
+  const peerConnectionRef = useRef(null)
+  const remoteAudioRef = useRef(null)
+
   const { user: currentUser } = useAuth()
   const getSocket = useSocketRef()
 
@@ -159,6 +209,12 @@ export default function Intercom() {
   });
 
   useEffect(() => {
+    remoteAudioRef.current = document.createElement("audio")
+    remoteAudioRef.current.autoplay = true
+    return () => { remoteAudioRef.current = null }
+  }, [])
+
+  useEffect(() => {
     if (callState === "active") {
       callTimerRef.current = setInterval(() => setCallElapsed((p) => p + 1), 1000)
     } else if (callState !== "hold") {
@@ -169,12 +225,207 @@ export default function Intercom() {
   }, [callState])
 
   useEffect(() => {
-    if (callState !== "ringing") return
-    const t = setTimeout(() => setCallState("active"), 3000)
-    return () => clearTimeout(t)
-  }, [callState])
+    if (!currentUser?.id) return
 
-  const [typingUsers, setTypingUsers] = useState([])
+    connectCallSignaling()
+
+    const unsubOffer = onCallEvent("call:offer", async (data) => {
+      if (data.targetUserId !== currentUser.id) return
+      console.log("[Intercom] Incoming call from", data.caller.full_name)
+      setIncomingCall(data)
+      playRingtone()
+    })
+
+    const unsubAnswer = onCallEvent("call:answer", async (data) => {
+      if (data.targetUserId !== currentUser.id) return
+      console.log("[Intercom] Call answered")
+      stopDialTone()
+      stopRingback()
+      playConnectSound()
+
+      if (peerConnectionRef.current) {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer))
+      }
+      setCallState("active")
+    })
+
+    const unsubIce = onCallEvent("call:ice-candidate", async (data) => {
+      if (data.targetUserId !== currentUser.id) return
+      if (peerConnectionRef.current && data.candidate) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate))
+        } catch (e) {
+          console.warn("[Intercom] ICE candidate error:", e)
+        }
+      }
+    })
+
+    const unsubReject = onCallEvent("call:reject", (data) => {
+      if (data.targetUserId !== currentUser.id) return
+      console.log("[Intercom] Call rejected")
+      cleanupCall()
+      toast_call("Chamada recusada")
+    })
+
+    const unsubHangup = onCallEvent("call:hangup", (data) => {
+      if (data.targetUserId !== currentUser.id) return
+      console.log("[Intercom] Call hung up")
+      cleanupCall()
+    })
+
+    return () => {
+      unsubOffer()
+      unsubAnswer()
+      unsubIce()
+      unsubReject()
+      unsubHangup()
+    }
+  }, [currentUser?.id])
+
+  const toast_call = (msg) => {
+    console.log("[Intercom]", msg)
+  }
+
+  const cleanupCall = useCallback(() => {
+    stopAllSounds()
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close()
+      peerConnectionRef.current = null
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop())
+      localStreamRef.current = null
+    }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null
+    }
+    remoteStreamRef.current = null
+    setCallState(null)
+    setCallTarget(null)
+    setCallElapsed(0)
+    setIsMutedMic(false)
+    clearInterval(callTimerRef.current)
+  }, [])
+
+  const createPeerConnection = useCallback(async () => {
+    const pc = new RTCPeerConnection(ICE_SERVERS)
+    peerConnectionRef.current = pc
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && callTarget) {
+        sendIceCandidate(callTarget.id, event.candidate.toJSON())
+      }
+    }
+
+    pc.ontrack = (event) => {
+      remoteStreamRef.current = event.streams[0]
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = event.streams[0]
+      }
+    }
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
+        cleanupCall()
+      }
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    localStreamRef.current = stream
+    stream.getTracks().forEach(track => pc.addTrack(track, stream))
+
+    return pc
+  }, [callTarget, cleanupCall])
+
+  const handleStartCall = useCallback(async (operator) => {
+    if (callState || operator.status === "offline") return
+
+    setCallTarget(operator)
+    setCallState("ringing")
+    playDialTone()
+
+    try {
+      const pc = await createPeerConnection()
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+
+      sendCallOffer(operator.id, pc.localDescription.toJSON(), {
+        id: currentUser.id,
+        full_name: currentUser.full_name || currentUser.email,
+        role: currentUser.role,
+      })
+    } catch (e) {
+      console.error("[Intercom] Error starting call:", e)
+      cleanupCall()
+    }
+  }, [callState, currentUser, createPeerConnection, cleanupCall])
+
+  const handleAnswer = useCallback(async () => {
+    if (!incomingCall) return
+
+    stopRingtone()
+    setCallTarget({
+      id: incomingCall.caller.id,
+      full_name: incomingCall.caller.full_name,
+      role: incomingCall.caller.role,
+    })
+    setCallState("ringing")
+    setIncomingCall(null)
+
+    try {
+      const pc = await createPeerConnection()
+      await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer))
+      const answer = await pc.createAnswer()
+      await pc.setLocalDescription(answer)
+
+      sendCallAnswer(incomingCall.caller.id, pc.localDescription.toJSON())
+      playConnectSound()
+      setCallState("active")
+    } catch (e) {
+      console.error("[Intercom] Error answering call:", e)
+      cleanupCall()
+    }
+  }, [incomingCall, createPeerConnection, cleanupCall])
+
+  const handleReject = useCallback(() => {
+    if (!incomingCall) return
+    stopRingtone()
+    sendCallReject(incomingCall.caller.id)
+    setIncomingCall(null)
+  }, [incomingCall])
+
+  const handleHold = () => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.getSenders().forEach(s => {
+        if (s.track) s.track.enabled = false
+      })
+    }
+    setCallState("hold")
+  }
+
+  const handleResume = () => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.getSenders().forEach(s => {
+        if (s.track) s.track.enabled = true
+      })
+    }
+    setCallState("active")
+  }
+
+  const handleHangUp = useCallback(() => {
+    if (callTarget) {
+      sendCallHangup(callTarget.id)
+    }
+    if (incomingCall) {
+      sendCallReject(incomingCall.caller.id)
+      setIncomingCall(null)
+    }
+    cleanupCall()
+  }, [callTarget, incomingCall, cleanupCall])
+
+  useEffect(() => {
+    return () => cleanupCall()
+  }, [cleanupCall])
 
   useEffect(() => {
     if (!expanded) return
@@ -185,13 +436,13 @@ export default function Intercom() {
     getSocket().then(async (ch) => {
       if (!ch || !mounted) return
       const { onGlobalEvent } = await import("@/services/realtime")
-      
+
       unsubMessage = onGlobalEvent("intercom:message", (data) => {
         if (data?.channel === activeChannel) {
           setMessages(prev => [...prev, { id: String(Date.now()), user: data.user, text: data.text, time: data.time, channel: data.channel }])
         }
       })
-      
+
       unsubTyping = onGlobalEvent("intercom:typing", (data) => {
         if (data?.channel === activeChannel && data.user !== currentUser?.full_name) {
           setTypingUsers(prev => {
@@ -221,11 +472,7 @@ export default function Intercom() {
   const scrollToBottom = useCallback(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [])
   useEffect(() => { if (expanded) scrollToBottom() }, [messages, expanded, scrollToBottom])
 
-  const handleStartCall = (operator) => { if (callState || operator.status === "offline") return; setCallTarget(operator); setCallState("ringing") }
-  const handleAnswer = () => setCallState("active")
-  const handleHold = () => setCallState("hold")
-  const handleResume = () => setCallState("active")
-  const handleHangUp = () => { clearInterval(callTimerRef.current); setCallState(null); setCallTarget(null); setCallElapsed(0); setIsMutedMic(false) }
+  const [typingUsers, setTypingUsers] = useState([])
 
   const handleSendMessage = async () => {
     if (!messageInput.trim()) return
@@ -250,11 +497,26 @@ export default function Intercom() {
     }
   }
 
+  const toggleMuteMic = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMutedMic })
+    }
+    setIsMutedMic(p => !p)
+  }
+
   const channelMessages = messages.filter((m) => m.channel === activeChannel)
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="fixed bottom-4 right-4 z-50">
+        <AnimatePresence>
+          {incomingCall && !callState && (
+            <IncomingCallDialog caller={incomingCall.caller} onAnswer={handleAnswer} onReject={handleReject} />
+          )}
+        </AnimatePresence>
+
+        <audio ref={remoteAudioRef} autoPlay />
+
         <AnimatePresence mode="wait">
           {expanded ? (
             <motion.div key="panel" initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }} transition={{ duration: 0.2 }} className="flex h-[520px] w-[380px] flex-col rounded-xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/40">
@@ -279,7 +541,7 @@ export default function Intercom() {
                   <CallScreen operator={callTarget} callState={callState} elapsed={callElapsed} onAnswer={handleAnswer} onHold={handleHold} onResume={handleResume} onHangUp={handleHangUp} />
                   {(callState === "active" || callState === "hold") && (
                     <div className="flex items-center justify-center gap-3 border-t border-zinc-800 px-4 py-3">
-                      <Button variant="ghost" size="icon" className={cn("h-8 w-8", isMutedMic ? "text-red-400" : "text-zinc-500 hover:text-zinc-300")} onClick={() => setIsMutedMic(p => !p)}>
+                      <Button variant="ghost" size="icon" className={cn("h-8 w-8", isMutedMic ? "text-red-400" : "text-zinc-500 hover:text-zinc-300")} onClick={toggleMuteMic}>
                         {isMutedMic ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                       </Button>
                       <Button variant="ghost" size="icon" className={cn("h-8 w-8", isMutedHeadphones ? "text-red-400" : "text-zinc-500 hover:text-zinc-300")} onClick={() => setIsMutedHeadphones(p => !p)}>
@@ -319,7 +581,7 @@ export default function Intercom() {
                         <div className="space-y-0.5">
                           {filteredTeam.map((op) => {
                             const initials = op.full_name?.split(" ").map((n) => n[0]).join("") || "?"
-                            const canCall = op.status !== "offline" && !callState
+                            const canCall = op.status !== "offline" && !callState && op.id !== currentUser?.id
                             const roleLabel = op.role === "admin" ? "Administrador" : op.role === "agent" ? "Técnico" : "Usuário"
                             return (
                               <div key={op.id} className={cn("flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors", canCall ? "cursor-pointer hover:bg-zinc-800" : "opacity-50")} onClick={() => canCall && handleStartCall(op)}>
@@ -394,7 +656,7 @@ export default function Intercom() {
           ) : (
             <motion.button key="fab" initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setExpanded(true)} className="relative flex h-12 w-12 items-center justify-center rounded-full bg-zinc-800 shadow-lg shadow-black/40 hover:bg-zinc-700">
               <Radio className="h-5 w-5 text-zinc-300" />
-              {callState && <motion.span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-zinc-900 bg-emerald-500" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />}
+              {(callState || incomingCall) && <motion.span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-zinc-900 bg-emerald-500" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />}
             </motion.button>
           )}
         </AnimatePresence>
