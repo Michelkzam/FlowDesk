@@ -115,7 +115,7 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
         </div>
         <div className={`flex items-center gap-1.5 mt-1 ${isOwn ? "justify-end mr-1" : "ml-1"}`}>
           <p className="text-xs text-muted-foreground">
-            {msg.sender_name || (isOwn ? "Operador" : "Cliente")} {msg.edited_at && <span className="italic opacity-70">(editada)</span>} • {format(new Date(msg.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+            {msg.sender_name || (isOwn ? "Operador" : "Cliente")} {msg.edited_at && <span className="italic opacity-70">(editada em {format(new Date(msg.edited_at), "dd/MM/yyyy HH:mm", { locale: ptBR })})</span>} • {format(new Date(msg.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
           </p>
           {showMenu && (
             <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
