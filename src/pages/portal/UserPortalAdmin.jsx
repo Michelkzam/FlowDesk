@@ -504,7 +504,7 @@ export default function UserPortalAdmin() {
                 </div>
               ) : (
                 messages.filter(m => !m.is_internal).map(msg => (
-                  <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_type === "agent"} currentUser={{ id: currentUser?.id }} ticketId={selectedTicket.id} />
+                  <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_id === currentUser?.id} currentUser={{ id: currentUser?.id }} ticketId={selectedTicket.id} />
                 ))
               )}
               <div ref={messagesEndRef} />

@@ -416,7 +416,7 @@ export default function UserPortal() {
                   <p className="text-xs text-muted-foreground mt-1">Digite uma mensagem para iniciar o atendimento</p>
                 </div>
               ) : messages.filter(m => !m.is_internal).map(msg => (
-                  <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_type === "user"} currentUser={{ id: currentUser?.id }} ticketId={selectedTicket.id} />
+                  <MessageBubble key={msg.id} msg={msg} isOwn={msg.sender_id === currentUser?.id} currentUser={{ id: currentUser?.id }} ticketId={selectedTicket.id} />
                 ))}
               <div ref={messagesEndRef} />
             </div>

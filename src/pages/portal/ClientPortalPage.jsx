@@ -428,7 +428,7 @@ function ChatPanel({ ticket, messages, newMessage, setNewMessage, onSend, onBack
 
       <div className="flex-1 overflow-y-auto border border-border rounded-lg bg-white dark:bg-zinc-900 p-4 space-y-3 mb-4">
         {messages.map(m => (
-          <MessageBubble key={m.id} msg={m} isOwn={m.sender_type === "user"} currentUser={{ id: currentUser?.id }} ticketId={ticket.id} />
+          <MessageBubble key={m.id} msg={m} isOwn={m.sender_id === currentUser?.id} currentUser={{ id: currentUser?.id }} ticketId={ticket.id} />
         ))}
         <div ref={messagesEndRef} />
       </div>
