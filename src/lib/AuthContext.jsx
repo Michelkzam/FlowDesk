@@ -35,6 +35,17 @@ export function AuthProvider({ children }) {
         return null;
       }
 
+      if (data.role_id) {
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('name')
+          .eq('id', data.role_id)
+          .single();
+        if (roleData) {
+          data.role_name = roleData.name;
+        }
+      }
+
       return data;
     } catch (err) {
       console.error('[Auth] Erro ao buscar perfil:', err);

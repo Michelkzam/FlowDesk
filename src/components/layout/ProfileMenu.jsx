@@ -48,6 +48,13 @@ export default function ProfileMenu() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const getRoleLabel = () => {
+    if (isAdmin) return "Administrador";
+    if (profile?.role_name) return profile.role_name;
+    if (isAgent) return "Agente";
+    return "Usuário";
+  };
+
   const initials = (profile?.full_name || profile?.email || "U")
     .split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
@@ -90,7 +97,7 @@ export default function ProfileMenu() {
             </Avatar>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-semibold leading-tight text-gray-900 dark:text-zinc-100">{profile?.full_name || profile?.email || "Usuário"}</p>
-              <p className="text-xs text-muted-foreground dark:text-zinc-400">{profile?.role === "admin" ? "Administrador" : "Técnico"}</p>
+              <p className="text-xs text-muted-foreground dark:text-zinc-400">{getRoleLabel()}</p>
             </div>
           </button>
         </DropdownMenuTrigger>
@@ -168,7 +175,7 @@ export default function ProfileMenu() {
               <div>
                 <p className="text-sm font-semibold">{profile?.full_name || profile?.email}</p>
                 <p className="text-xs text-muted-foreground">
-                  Cargo: <Badge variant="outline" className="ml-1">{isAdmin ? "Administrador" : isAgent ? "Técnico" : "Usuário"}</Badge>
+                  Cargo: <Badge variant="outline" className="ml-1">{getRoleLabel()}</Badge>
                 </p>
                 {profile?.updated_at ? (
                   <p className="text-[11px] text-muted-foreground mt-1">
