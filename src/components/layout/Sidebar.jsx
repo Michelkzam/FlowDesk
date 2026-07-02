@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/", pageId: "dashboard" },
@@ -211,7 +212,30 @@ function NavItem({ item, depth = 0, collapsed, openMenu, setOpenMenu }) {
 export default function Sidebar({ collapsed, onToggleCollapse }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
+  const [appLogo, setAppLogo] = useState(localStorage.getItem("appLogo") || "");
+  const [appName, setAppName] = useState(localStorage.getItem("appName") || "FlowDesk");
   const { logout, profile, can, canAccessPage } = useAuth();
+
+  useEffect(() => {
+    const syncSettings = async () => {
+      try {
+        const { data, error } = await supabase.from('system_settings').select('key, value');
+        if (error || !data) return;
+        const map = {};
+        data.forEach(s => { map[s.key] = s.value; });
+        if (map.helpdesk_name) {
+          setAppName(map.helpdesk_name);
+          localStorage.setItem("appName", map.helpdesk_name);
+          document.title = map.helpdesk_name;
+        }
+        if (map.helpdesk_logo) {
+          setAppLogo(map.helpdesk_logo);
+          localStorage.setItem("appLogo", map.helpdesk_logo);
+        }
+      } catch {}
+    };
+    syncSettings();
+  }, []);
 
   const filteredNavItems = navItems.filter(item => {
     if (item.permission && !can(item.permission)) return false;
@@ -254,9 +278,9 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
         <div className={cn("p-4 border-b border-sidebar-border flex flex-col items-center gap-2", collapsed && "justify-center p-3")}>
           {!collapsed ? (
             <>
-              {localStorage.getItem("appLogo") ? (
+              {appLogo ? (
                 <img
-                  src={localStorage.getItem("appLogo")}
+                  src={appLogo}
                   alt="Logo"
                   className="w-40 h-40 object-contain rounded-lg"
                   onError={e => { e.target.style.display = "none"; }}
@@ -267,15 +291,15 @@ export default function Sidebar({ collapsed, onToggleCollapse }) {
                 </div>
               )}
               <div className="w-full text-center">
-                <h1 className="text-sm font-bold text-sidebar-foreground truncate">{localStorage.getItem("appName") || "FlowDesk"}</h1>
+                <h1 className="text-sm font-bold text-sidebar-foreground truncate">{appName}</h1>
                 <p className="text-xs text-sidebar-foreground/40">Sistema de Suporte</p>
               </div>
             </>
           ) : (
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-sidebar-primary/10 flex items-center justify-center">
-              {localStorage.getItem("appLogo") ? (
+              {appLogo ? (
                 <img
-                  src={localStorage.getItem("appLogo")}
+                  src={appLogo}
                   alt="Logo"
                   className="w-full h-full object-contain"
                   onError={e => { e.target.style.display = "none"; e.target.parentElement.innerHTML = '<svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'; }}

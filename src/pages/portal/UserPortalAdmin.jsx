@@ -152,21 +152,30 @@ export default function UserPortalAdmin() {
       const savedLogo = localStorage.getItem("appLogo");
       if (savedLogo) setLogoUrl(savedLogo);
       const savedName = localStorage.getItem("appName");
-      if (savedName) setSystemName(savedName);
+      if (savedName) {
+        setSystemName(savedName);
+      }
       try {
-        const { data } = await supabase.from('system_settings').select('*');
-        if (data) {
+        const { data, error } = await supabase.from('system_settings').select('key, value');
+        if (error) {
+          console.error("[UserPortalAdmin] Error loading settings:", error);
+          return;
+        }
+        if (data && data.length > 0) {
           const map = {};
           data.forEach(s => { map[s.key] = s.value; });
           if (map.helpdesk_name) {
             setSystemName(map.helpdesk_name);
-            document.title = map.helpdesk_name;
+            localStorage.setItem("appName", map.helpdesk_name);
           }
           if (map.helpdesk_logo) {
             setLogoUrl(map.helpdesk_logo);
+            localStorage.setItem("appLogo", map.helpdesk_logo);
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error("[UserPortalAdmin] Exception loading settings:", e);
+      }
     };
     loadSettings();
   }, []);
