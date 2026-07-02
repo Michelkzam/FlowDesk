@@ -54,6 +54,7 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
   const [openMenu, setOpenMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const queryClient = useQueryClient();
 
   const editMutation = useMutation({
@@ -124,13 +125,26 @@ export default function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
                 <div className="absolute right-0 top-6 z-10 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
                   <button onClick={() => { setIsEditing(true); setEditText(msg.body); setOpenMenu(false); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Pencil className="w-3 h-3" /> Editar</button>
                   <button onClick={() => { highlightMutation.mutate({ id: msg.id, isHighlighted: !isHighlighted }); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Star className={`w-3 h-3 ${isHighlighted ? "fill-amber-400 text-amber-400" : ""}`} /> {isHighlighted ? "Remover destaque" : "Destacar"}</button>
-                  <button onClick={() => { if (confirm("Excluir esta mensagem?")) deleteMutation.mutate(msg.id); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>
+                  <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Excluir mensagem</h3>
+            <p className="text-sm text-muted-foreground mb-4">Tem certeza que deseja excluir esta mensagem? Esta ação não pode ser desfeita.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors">Cancelar</button>
+              <button onClick={() => { deleteMutation.mutate(msg.id); setShowDeleteConfirm(false); }} className="px-4 py-2 text-sm rounded-lg bg-destructive text-white hover:bg-destructive/90 transition-colors">Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
