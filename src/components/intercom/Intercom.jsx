@@ -341,7 +341,7 @@ export default function Intercom() {
   }, [callTarget, cleanupCall])
 
   const handleStartCall = useCallback(async (operator) => {
-    if (callState || operator.status === "offline") return
+    if (callState || operator.status === "offline" || operator.id === currentUser?.id) return
 
     console.log("[Intercom] Starting call to:", operator.id, operator.full_name)
     setCallTarget(operator)
@@ -470,6 +470,7 @@ export default function Intercom() {
   }, [expanded, activeChannel, currentUser])
 
   const filteredTeam = teamData.filter((op) => {
+    if (op.id === currentUser?.id) return false
     const matchSearch = op.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) || op.role?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchGroup = groupFilter === "all" || op.group === groupFilter
     return matchSearch && matchGroup
