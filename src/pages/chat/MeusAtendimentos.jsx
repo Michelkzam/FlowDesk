@@ -162,7 +162,7 @@ export default function MeusAtendimentos() {
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("open");
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
@@ -248,6 +248,9 @@ export default function MeusAtendimentos() {
     },
   });
 
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
   const byStatus = (status) => {
     const searchFiltered = tickets.filter(t =>
       !search ||
@@ -255,11 +258,18 @@ export default function MeusAtendimentos() {
       (t.title || "").toLowerCase().includes(search.toLowerCase()) ||
       (t.user_phone || "").toLowerCase().includes(search.toLowerCase())
     );
-    if (status === "resolved") return searchFiltered.filter(t => t.status === "resolved" || t.status === "closed");
+    if (status === "resolved") {
+      return searchFiltered.filter(t => {
+        if (t.status !== "resolved" && t.status !== "closed") return false;
+        const closedDate = t.closed_date ? new Date(t.closed_date) : null;
+        if (closedDate && closedDate > todayEnd) return false;
+        return true;
+      });
+    }
     return searchFiltered.filter(t => t.status === status);
   };
 
-  const visibleColumns = activeFilter === "all" ? columns : columns.filter(c => {
+  const visibleColumns = columns.filter(c => {
     if (activeFilter === "open") return c.key === "open";
     if (activeFilter === "in_progress") return c.key === "in_progress";
     if (activeFilter === "waiting") return c.key === "waiting";
@@ -394,11 +404,10 @@ export default function MeusAtendimentos() {
       {/* Filter buttons */}
       <div className="flex gap-2 flex-wrap">
         {[
-          { key: "all", icon: MessageSquare, label: "Todos", cls: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
-          { key: "open", icon: Clock, label: "Aguardando", cls: "bg-red-500 text-white", inactive: "bg-red-100 text-red-700 hover:bg-red-200" },
-          { key: "in_progress", icon: Headphones, label: "Em Atendimento", cls: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
-          { key: "waiting", icon: Clock, label: "Na Espera", cls: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
-          { key: "resolved", icon: CheckCircle, label: "Atendidos Hoje", cls: "bg-emerald-600 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
+          { key: "open", icon: Clock, label: "Aguardando", cls: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+          { key: "in_progress", icon: Headphones, label: "Em Atendimento", cls: "bg-yellow-500 text-white", inactive: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" },
+          { key: "waiting", icon: Clock, label: "Na Espera", cls: "bg-purple-500 text-white", inactive: "bg-purple-100 text-purple-700 hover:bg-purple-200" },
+          { key: "resolved", icon: CheckCircle, label: "Atendidos Hoje", cls: "bg-emerald-500 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
         ].map(f => {
           const Icon = f.icon;
           const count = f.key === "all" ? tickets.length :

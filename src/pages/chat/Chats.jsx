@@ -29,15 +29,14 @@ const priorityColors = {
 };
 
 const filterTabs = [
-  { key: "all", label: "Todos", icon: MessageSquare, color: "bg-primary text-primary-foreground", inactive: "bg-muted text-muted-foreground hover:bg-muted/80" },
-  { key: "open", label: "Aguardando", icon: Clock, color: "bg-yellow-500 text-white", inactive: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" },
-  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
-  { key: "closed", label: "Finalizado", icon: CheckCircle, color: "bg-zinc-500 text-white", inactive: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" },
+  { key: "open", label: "Aguardando", icon: Clock, color: "bg-blue-500 text-white", inactive: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+  { key: "in_progress", label: "Em Atendimento", icon: Headphones, color: "bg-yellow-500 text-white", inactive: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" },
+  { key: "closed", label: "Finalizado", icon: CheckCircle, color: "bg-emerald-500 text-white", inactive: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
 ];
 
 export default function Chats() {
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("open");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [formData, setFormData] = useState({ title: "", priority: "normal", status: "open", channel: "portal" });
@@ -84,11 +83,18 @@ export default function Chats() {
   });
 
   const counts = {
-    all: myTickets.length,
     open: myTickets.filter(t => t.status === "open").length,
     in_progress: myTickets.filter(t => t.status === "in_progress").length,
-    closed: myTickets.filter(t => t.status === "closed").length,
+    closed: myTickets.filter(t => {
+      if (t.status !== "closed") return false;
+      const closedDate = t.closed_date ? new Date(t.closed_date) : null;
+      if (closedDate && closedDate > todayEnd) return false;
+      return true;
+    }).length,
   };
+
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
 
   const filtered = myTickets.filter(t => {
     const matchSearch = !search ||
@@ -97,7 +103,12 @@ export default function Chats() {
       (t.user_phone || "").toLowerCase().includes(search.toLowerCase());
     if (activeFilter === "open") return matchSearch && t.status === "open";
     if (activeFilter === "in_progress") return matchSearch && t.status === "in_progress";
-    if (activeFilter === "closed") return matchSearch && t.status === "closed";
+    if (activeFilter === "closed") {
+      if (t.status !== "closed") return false;
+      const closedDate = t.closed_date ? new Date(t.closed_date) : null;
+      if (closedDate && closedDate > todayEnd) return false;
+      return matchSearch;
+    }
     return matchSearch;
   });
 
