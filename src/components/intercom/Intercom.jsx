@@ -571,8 +571,8 @@ export default function Intercom() {
                       </TabsList>
                     </div>
 
-                    <TabsContent value="team" className="mt-0 flex flex-1 flex-col">
-                      <div className="space-y-2 px-3 pt-3">
+                    <TabsContent value="team" className="mt-0 flex-1 flex flex-col min-h-0">
+                      <div className="space-y-2 px-3 pt-3 flex-shrink-0">
                         <div className="relative">
                           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
                           <Input placeholder="Buscar por nome ou cargo..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 border-zinc-700 bg-zinc-800 pl-7 text-xs text-zinc-300 placeholder:text-zinc-600 focus-visible:ring-zinc-600" />
@@ -583,7 +583,7 @@ export default function Intercom() {
                           ))}
                         </div>
                       </div>
-                      <ScrollArea className="px-3 py-2 max-h-[320px]">
+                      <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
                         <div className="space-y-0.5">
                           {filteredTeam.map((op) => {
                             const initials = op.full_name?.split(" ").map((n) => n[0]).join("") || "?"
@@ -609,7 +609,7 @@ export default function Intercom() {
                           })}
                           {filteredTeam.length === 0 && <p className="py-8 text-center text-xs text-zinc-600">Nenhum membro encontrado</p>}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
 
                     <TabsContent value="channels" className="mt-0">
