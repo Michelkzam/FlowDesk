@@ -142,9 +142,9 @@ function MessageBubble({ msg, isOwn, currentUser, ticketId }) {
                 <button onClick={() => setOpenMenu(!openMenu)} className="p-0.5 rounded hover:bg-muted"><MoreVertical className="w-3 h-3 text-muted-foreground" /></button>
                 {openMenu && (
                   <div className="absolute right-0 top-6 z-10 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                    <button onClick={() => { setIsEditing(true); setEditText(msg.body); setOpenMenu(false); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Pencil className="w-3 h-3" /> Editar</button>
+                    {isCurrentUser && <button onClick={() => { setIsEditing(true); setEditText(msg.body); setOpenMenu(false); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Pencil className="w-3 h-3" /> Editar</button>}
                     <button onClick={() => { highlightMutation.mutate({ id: msg.id, isHighlighted: !isHighlighted }); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted w-full text-left"><Star className={`w-3 h-3 ${isHighlighted ? "fill-amber-400 text-amber-400" : ""}`} /> {isHighlighted ? "Remover destaque" : "Destacar"}</button>
-                    <button onClick={() => { setOpenMenu(false); setShowDeleteConfirm(true); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>
+                    {isCurrentUser && <button onClick={() => { setOpenMenu(false); setShowDeleteConfirm(true); }} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"><Trash2 className="w-3 h-3" /> Excluir</button>}
                   </div>
                 )}
               </div>
